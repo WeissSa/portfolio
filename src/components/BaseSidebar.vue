@@ -11,17 +11,19 @@
     >
       {{ isShowing ? "←" : "→" }}
     </button>
-    <div v-if="isShowing" id="sidebar-content" class="my-auto w-80">
+    <div v-if="isShowing" id="sidebar-content" class="my-auto w-20 sm:w-80">
       <img
         src="../assets/Profile.png"
-        class="w-40 mx-auto py-7"
+        class="w-20 sm:w-40 mx-auto py-7"
         alt="a photo of myself"
       />
-      <h1 class="text-3xl">Samuel Weiss</h1>
-      <h2 class="text-xl my-4">
+      <h1 class="text-xl sm:text-3xl">Samuel Weiss</h1>
+      <h2 class="text-sm sm:text-xl my-4">
         Computer Science Student at University of Toronto
       </h2>
-      <nav class="flex flex-col text-center m-auto text-xl space-y-5">
+      <nav
+        class="flex flex-col text-center m-auto text-sm sm:text-xl space-y-5"
+      >
         <router-link
           v-for="tab in tabs"
           :key="tab.name"
@@ -34,7 +36,7 @@
       <a href="https://github.com/WeissSa">
         <img
           src="../assets/GitHub.png"
-          class="w-20 mx-auto pt-7"
+          class="w-5 sm:w-20 mx-auto pt-7"
           alt="github logo"
         />
       </a>
