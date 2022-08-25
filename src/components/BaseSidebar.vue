@@ -1,12 +1,16 @@
 <template>
-  <div
-    class="h-screen bg-gray-700 align-middle text-gray-200 flex flex-col text-center"
+  <aside
+    class="transform top-0 left-0 bg-gray-500 w-20 sm:w-80 text-gray-200 text-center fixed h-full overflow-auto ease-in-out transition-all duration-300 z-30 flex flex-col"
+    :class="isOpen ? 'translate-x-0' : '-translate-x-1/2 sm:-translate-x-3/4'"
   >
     <button
       id="expand-button"
-      @click="isShowing = !isShowing"
-      class="ml-auto text-3xl pt-2"
-      :class="{ 'pr-2': isShowing, 'px-4': !isShowing }"
+      @click="isOpen = !isOpen"
+      class="text-3xl pt-2 z-50"
+      :class="{
+        'pr-2 mx-auto sm:mx-0 sm:ml-auto': isShowing,
+        'absolute -top-1 right-2 sm:right-4': !isShowing,
+      }"
       aria-label="expand/contract the sidebar"
     >
       {{ isShowing ? "←" : "→" }}
@@ -41,18 +45,18 @@
         />
       </a>
     </div>
-  </div>
+  </aside>
 </template>
 
 <script>
 export const tabs = [
   {
     link: "/",
-    name: "home",
+    name: "Home",
   },
   {
     link: "/resume",
-    name: "resume",
+    name: "Resume",
   },
 ];
 
@@ -60,8 +64,23 @@ export default {
   data() {
     return {
       isShowing: true,
+      isOpen: true,
       tabs,
     };
+  },
+  watch: {
+    isOpen: {
+      immediate: true,
+      async handler(isOpen) {
+        if (!isOpen) {
+          setTimeout(() => {
+            this.isShowing = false;
+          }, 150);
+        } else {
+          this.isShowing = true;
+        }
+      },
+    },
   },
 };
 </script>

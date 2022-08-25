@@ -1,4 +1,4 @@
-import { shallowMount } from "@vue/test-utils";
+import { flushPromises, shallowMount } from "@vue/test-utils";
 import BaseSidebar, { tabs } from "../../src/components/BaseSidebar";
 
 describe("BaseSidebar", () => {
@@ -6,18 +6,33 @@ describe("BaseSidebar", () => {
   beforeEach(() => {
     wrapper = shallowMount(BaseSidebar);
   });
-  it("should expand and contract when clicking on the expand/contract button", async () => {
+  it("should expand and contract when clicking on the expand/contract button with animation", async () => {
+    jest.useFakeTimers();
     const button = await wrapper.find("#expand-button");
+
+    expect(wrapper.vm.isOpen).toBeTruthy();
+
+    jest.runAllTimers();
+    await flushPromises();
 
     expect(wrapper.vm.isShowing).toBeTruthy();
     expect(wrapper.find("#sidebar-content").exists()).toBeTruthy();
 
     await button.trigger("click");
 
+    expect(wrapper.vm.isOpen).toBeFalsy();
+
+    jest.runAllTimers();
+    await flushPromises();
     expect(wrapper.vm.isShowing).toBeFalsy();
     expect(wrapper.find("#sidebar-content").exists()).toBeFalsy();
 
     await button.trigger("click");
+
+    expect(wrapper.vm.isOpen).toBeTruthy();
+
+    jest.runAllTimers();
+    await flushPromises();
 
     expect(wrapper.vm.isShowing).toBeTruthy();
     expect(wrapper.find("#sidebar-content").exists()).toBeTruthy();
@@ -36,7 +51,6 @@ describe("BaseSidebar", () => {
   });
 
   it("should show a link for each desired tab", () => {
-    console.log(wrapper.html());
     tabs.forEach((tab) => {
       expect(wrapper.find(`.${tab.name}`).exists()).toBeTruthy();
     });
