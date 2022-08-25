@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col">
+  <div class="flex flex-col mx-auto">
     <div class="flex flex-row text-center mx-auto">
       <nav>
         <router-link to="/">Home</router-link> |

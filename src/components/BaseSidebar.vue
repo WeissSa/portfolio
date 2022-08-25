@@ -1,12 +1,12 @@
 <template>
   <aside
-    class="transform top-0 left-0 bg-gray-500 w-20 sm:w-80 text-gray-200 text-center fixed h-full overflow-auto ease-in-out transition-all duration-300 z-30 flex flex-col"
+    class="transform top-0 left-0 bg-gray-700 w-20 sm:w-80 text-gray-200 text-center fixed h-full overflow-auto ease-in-out transition-all duration-300 z-30 flex flex-col"
     :class="isOpen ? 'translate-x-0' : '-translate-x-1/2 sm:-translate-x-3/4'"
   >
     <button
       id="expand-button"
       @click="isOpen = !isOpen"
-      class="text-3xl pt-2 z-50"
+      class="text-3xl pt-2 z-50 hover:text-gray-400"
       :class="{
         'pr-2 mx-auto sm:mx-0 sm:ml-auto': isShowing,
         'absolute -top-1 right-1 mx-auto sm:right-6': !isShowing,
@@ -32,6 +32,7 @@
           v-for="tab in tabs"
           :key="tab.name"
           :to="tab.link"
+          class="hover:text-gray-400"
           :class="tab.name"
         >
           {{ tab.name }}
