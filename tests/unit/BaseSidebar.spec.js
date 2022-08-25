@@ -1,12 +1,19 @@
-import { flushPromises, shallowMount } from "@vue/test-utils";
+import { flushPromises, shallowMount, RouterLinkStub } from "@vue/test-utils";
 import BaseSidebar, { tabs } from "../../src/components/BaseSidebar";
 
 describe("BaseSidebar", () => {
   let wrapper;
   beforeEach(() => {
-    wrapper = shallowMount(BaseSidebar);
+    wrapper = shallowMount(BaseSidebar, {
+      stubs: { RouterLink: RouterLinkStub },
+    });
   });
   it("should expand and contract when clicking on the expand/contract button with animation", async () => {
+    await wrapper.setData({
+      isOpen: true,
+      isShowing: true,
+    });
+
     jest.useFakeTimers();
     const button = await wrapper.find("#expand-button");
 
@@ -39,18 +46,23 @@ describe("BaseSidebar", () => {
   });
 
   it("should change icon when expanded/contracted", async () => {
-    expect(wrapper.html()).toContain("←");
-    expect(wrapper.html()).not.toContain("→");
-
-    await wrapper.setData({
-      isShowing: false,
-    });
-
     expect(wrapper.html()).not.toContain("←");
     expect(wrapper.html()).toContain("→");
+
+    await wrapper.setData({
+      isShowing: true,
+    });
+
+    expect(wrapper.html()).toContain("←");
+    expect(wrapper.html()).not.toContain("→");
   });
 
-  it("should show a link for each desired tab", () => {
+  it("should show a link for each desired tab", async () => {
+    await wrapper.setData({
+      isOpen: true,
+      isShowing: true,
+    });
+
     tabs.forEach((tab) => {
       expect(wrapper.find(`.${tab.name}`).exists()).toBeTruthy();
     });
