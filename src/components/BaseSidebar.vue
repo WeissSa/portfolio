@@ -9,7 +9,7 @@
       class="text-3xl pt-2 z-50"
       :class="{
         'pr-2 mx-auto sm:mx-0 sm:ml-auto': isShowing,
-        'absolute -top-1 right-2 sm:right-4': !isShowing,
+        'absolute -top-1 right-1 mx-auto sm:right-6': !isShowing,
       }"
       aria-label="expand/contract the sidebar"
     >
@@ -26,21 +26,21 @@
         Computer Science Student at University of Toronto
       </h2>
       <nav
-        class="flex flex-col text-center m-auto text-sm sm:text-xl space-y-5"
+        class="flex flex-col text-center m-auto text-sm sm:text-xl sm:space-y-5"
       >
-        <router-link
+        <RouterLink
           v-for="tab in tabs"
           :key="tab.name"
           :to="tab.link"
           :class="tab.name"
         >
           {{ tab.name }}
-        </router-link>
+        </RouterLink>
       </nav>
       <a href="https://github.com/WeissSa">
         <img
           src="../assets/GitHub.png"
-          class="w-5 sm:w-20 mx-auto pt-7"
+          class="w-5 sm:w-20 mx-auto pt-3 sm:pt-7"
           alt="github logo"
         />
       </a>
@@ -63,8 +63,8 @@ export const tabs = [
 export default {
   data() {
     return {
-      isShowing: true,
-      isOpen: true,
+      isShowing: false,
+      isOpen: false,
       tabs,
     };
   },
