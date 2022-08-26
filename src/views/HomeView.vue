@@ -1,14 +1,15 @@
 <template>
-  <div class="flex flex-col mx-auto">
-    <div class="flex flex-row text-center mx-auto">
-      <nav>
-        <router-link to="/">Home</router-link> |
-        <router-link to="/about">About</router-link>
-      </nav>
-    </div>
+  <div class="flex flex-col mx-auto h-screen">
+    <BaseHeader text="My Experience/Projects" />
+    <PostList class="pt-5" />
   </div>
 </template>
 
 <script>
-export default {};
+import BaseHeader from "@/components/BaseHeader.vue";
+import PostList from "@/components/PostList.vue";
+
+export default {
+  components: { BaseHeader, PostList },
+};
 </script>
