@@ -1,24 +1,32 @@
 <template>
   <div
-    class="w-full mx-auto rounded border border-gray-400 drop-shadow shadow p-5"
+    class="w-44 ml-20 sm:w-full sm:mx-auto rounded border border-gray-500 drop-shadow shadow p-5"
   >
-    <button class="flex flex-col mx-auto w-[36rem]" @click="handleExpansion">
+    <button
+      class="flex flex-col mx-auto w-44 md:w-[36rem]"
+      @click="handleExpansion"
+    >
       <div class="flex flex-row justify-between">
-        <p class="text-5xl" :class="isExpanded ? 'mt-4' : 'mb-12'">
+        <p
+          class="text-5xl hidden sm:block"
+          :class="isExpanded ? 'mt-4' : 'mb-12'"
+        >
           {{ isExpanded ? "⌃" : "⌄" }}
         </p>
-        <h2 class="text-gray-700 text-xl text-center">{{ title }}</h2>
+        <h2 class="text-gray-800 text-sm sm:text-xl text-left sm:text-center">
+          {{ title }}
+        </h2>
         <a :href="repo">
           <img
             alt="github logo"
             src="../assets/GitHub.png"
-            class="w-6 ml-5"
+            class="w-6 ml-5 hidden sm:block"
             @click="handleExpansion"
           />
         </a>
       </div>
       <div
-        class="flex flex-row-reverse"
+        class="flex pt-12 sm:pt-0 flex-col sm:flex-row-reverse"
         :class="isExpanded ? '-mt-1 pb-2' : '-mt-12'"
       >
         <PostTag
@@ -30,13 +38,15 @@
       </div>
     </button>
     <div v-if="isExpanded" class="tw-flex-col mx-auto">
-      <p class="w-[36rem] overflow-auto text-left text-base">
+      <p
+        class="w-40 md:w-[36rem] overflow-auto text-gray-800 text-left text-sm sm:text-base"
+      >
         {{ description }}
       </p>
       <img
         :alt="`Screenshot or picture of ${title}`"
         :src="`${publicPath}${thumbnail}`"
-        class="mx-auto w-60 h-60 object-cover"
+        class="mx-auto w-32 h-32 sm:w-60 sm:h-60 object-cover"
       />
     </div>
   </div>

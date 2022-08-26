@@ -1,5 +1,5 @@
 <template>
-  <div class="flex pr-1">
+  <div class="flex px-0 pt-4 sm:pr-1">
     <button
       class="text-gray-700 text-sm px-3 rounded-2xl hover:bg-blue-100 active:bg-blue-300"
       :class="{

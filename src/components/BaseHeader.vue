@@ -1,5 +1,7 @@
 <template>
-  <h1 class="text-2xl text-gray-200 py-1 text-center w-screen bg-purple-800">
+  <h1
+    class="text-lg sm:text-2xl text-gray-200 py-1 text-center w-screen bg-purple-800"
+  >
     {{ text }}:
   </h1>
 </template>
