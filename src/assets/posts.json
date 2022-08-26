@@ -1,0 +1,16 @@
+[
+    {
+        "title": "DreamZzz - Game Development Project",
+        "repo": "https://github.com/WeissSa/DreamZzz",
+        "description": "DreamZzz is a game development project I started during my last year in highschool built with Godot and GDScript. I designed it to be a blending of two game genres I really enjoy: platformers and stealth games. During this project I learned a lot about UI design, pixel art, and game logic. Unfortunately, as I was approaching the end of my last year in high school, I found that I was not having as much fun working on DreamZzz as I would have wished so I decided to finish work on it once I was satisfied with the demo. To try out the game, you will have to download the Godot launcher, clone the repo, and run the game from within the engine.",
+        "tags": ["Godot", "GDScript", "Game Development"],
+        "image": "Dream.png"
+    },
+    {
+        "title": "Interactive Cipher Encoder/Decoder",
+        "repo": "https://github.com/WeissSa/Cipher",
+        "description": "This is a Cipher translater/decoder I made using the Godot engine and GDScript. Currently it is set to use any key (up to 26) for the Caesar Cipher and translate in and out of the Monoalphabetic Cipher given a key of 27 letters.",
+        "tags": ["Godot", "GDScript"],
+        "image": "cipher.png"
+    }
+]

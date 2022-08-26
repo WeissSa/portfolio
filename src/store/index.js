@@ -1,9 +1,12 @@
 import { createStore } from "vuex";
 
 export default createStore({
-  state: {},
-  getters: {},
-  mutations: {},
-  actions: {},
-  modules: {},
+  state: {
+    currentTag: null,
+  },
+  mutations: {
+    SET_TAG(state, tag) {
+      state.currentTag = tag;
+    },
+  },
 });
