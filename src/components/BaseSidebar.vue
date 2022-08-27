@@ -37,7 +37,7 @@
           :key="tab.name"
           :to="tab.link"
           class="hover:text-gray-400"
-          :class="tab.name"
+          :class="tab.name.split(' ')[0]"
         >
           {{ tab.name }}
         </RouterLink>

@@ -64,7 +64,7 @@ describe("BaseSidebar", () => {
     });
 
     tabs.forEach((tab) => {
-      expect(wrapper.find(`.${tab.name}`).exists()).toBeTruthy();
+      expect(wrapper.find(`.${tab.name.split(" ")[0]}`).exists()).toBeTruthy();
     });
   });
 });
