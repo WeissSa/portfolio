@@ -20,7 +20,7 @@ export default {
   },
   computed: {
     isCurrentTagInFilter() {
-      return this.$store.state.currentTag === this.tag;
+      return this.$store.state.currentTags.includes(this.tag);
     },
     tagClass() {
       let tagClass = "";
@@ -41,8 +41,8 @@ export default {
   methods: {
     handleClick() {
       this.isCurrentTagInFilter
-        ? this.$store.commit("SET_TAG", null)
-        : this.$store.commit("SET_TAG", this.tag);
+        ? this.$store.commit("REMOVE_TAG", this.tag)
+        : this.$store.commit("ADD_TAG", this.tag);
     },
   },
 };

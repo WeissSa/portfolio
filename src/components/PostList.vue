@@ -26,11 +26,22 @@ export default {
   },
   computed: {
     filteredPosts() {
-      return posts.filter(
-        (post) =>
-          this.$store.state.currentTag === null ||
-          post.tags.includes(this.$store.state.currentTag)
-      );
+      if (this.$store.state.currentTags.length === 0) {
+        return posts;
+      } else {
+        //could be 2 filter methods, but this feels more readable to me
+        const currentPosts = [];
+        posts.forEach((post) => {
+          if (
+            post.tags.filter((tag) =>
+              this.$store.state.currentTags.includes(tag)
+            ).length > 0
+          ) {
+            currentPosts.push(post);
+          }
+        });
+        return currentPosts;
+      }
     },
   },
 };
