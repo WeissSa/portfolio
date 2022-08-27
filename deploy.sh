@@ -18,6 +18,6 @@ git add --a
 
 git commit -m "deploy"
 
-git push git@github.com:WeissSa/portfolio.git master:gh-pages
+git push -f git@github.com:WeissSa/portfolio.git master:gh-pages
 
 cd ..
