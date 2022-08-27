@@ -1,7 +1,7 @@
 <template>
   <div class="flex px-0 pt-1 sm:pt-4 sm:pr-1">
     <button
-      class="text-xs sm:text-sm px-3 rounded-2xl active:bg-blue-300 py-1 w-36 sm:w-fit"
+      class="tag text-xs sm:text-sm px-3 rounded-2xl active:bg-blue-300 py-1 w-36 sm:w-fit"
       :class="tagClass"
       @click="handleClick"
     >
