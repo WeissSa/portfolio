@@ -2,7 +2,7 @@
   <!-- This could 100% be turned into components/v-for but since it is such a static page I think simplifying it to html makes more sense for now-->
   <div class="flex flex-col sm:flex-row gap-y-4 w-screen sm:pl-20">
     <div
-      class="flex flex-col bg-violet-300 h-[250vh] sm:h-auto text-gray-700 pt-10 sm:pt-3 pb-10 sm:pb-0 w-full sm:w-1/3 justify-center mx-auto text-center"
+      class="flex flex-col bg-violet-300 h-[250vh] sm:h-auto text-gray-700 pt-10 sm:pt-3 pb-10 sm:pb-20 w-full sm:w-1/3 justify-center mx-auto text-center"
     >
       <h2 class="text-lg sm:text-4xl mb-auto">My Experiences</h2>
       <div class="flex flex-col">
@@ -42,7 +42,7 @@
       </div>
     </div>
     <div
-      class="flex flex-col bg-purple-400 h-[250vh] sm:h-auto text-gray-700 pt-10 sm:pt-3 pb-10 sm:pb-0 w-full sm:w-1/3 justify-center mx-auto text-center"
+      class="flex flex-col bg-purple-400 h-[250vh] sm:h-auto text-gray-700 pt-10 sm:pt-3 pb-10 sm:pb-20 w-full sm:w-1/3 justify-center mx-auto text-center"
     >
       <h2 class="text-lg sm:text-4xl mb-auto">My Values</h2>
       <div class="flex flex-col">
@@ -82,7 +82,7 @@
       </div>
     </div>
     <div
-      class="flex flex-col bg-purple-500 h-[250vh] sm:h-auto text-gray-700 pt-10 sm:pt-3 pb-10 sm:pb-0 w-full sm:w-1/3 justify-center mx-auto text-center"
+      class="flex flex-col bg-purple-500 h-[250vh] sm:h-auto text-gray-700 pt-10 sm:pt-3 pb-10 sm:pb-20 w-full sm:w-1/3 justify-center mx-auto text-center"
     >
       <h2 class="text-lg sm:text-4xl mb-auto">My Hobbies</h2>
       <div class="flex flex-col">
