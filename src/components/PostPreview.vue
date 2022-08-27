@@ -45,7 +45,7 @@
         />
       </div>
     </button>
-    <div v-if="isExpanded" class="tw-flex-col mx-auto">
+    <div v-if="isExpanded" class="flex-col mx-auto">
       <div
         class="w-36 md:w-[36rem] overflow-autotext-left text-sm sm:text-base"
         v-html="description"
