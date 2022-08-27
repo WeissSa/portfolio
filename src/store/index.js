@@ -2,11 +2,14 @@ import { createStore } from "vuex";
 
 export default createStore({
   state: {
-    currentTag: null,
+    currentTags: [],
   },
   mutations: {
-    SET_TAG(state, tag) {
-      state.currentTag = tag;
+    ADD_TAG(state, tag) {
+      state.currentTags.push(tag);
+    },
+    REMOVE_TAG(state, tag) {
+      state.currentTags = state.currentTags.filter((t) => t !== tag);
     },
   },
 });

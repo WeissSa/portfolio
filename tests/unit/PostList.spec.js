@@ -5,7 +5,7 @@ import Vuex from "vuex";
 
 const store = Vuex.createStore({
   state: {
-    currentTag: null,
+    currentTags: [],
   },
 });
 
