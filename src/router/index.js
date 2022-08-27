@@ -4,18 +4,18 @@ import HomeView from "../views/HomeView.vue";
 const routes = [
   {
     path: "/",
-    name: "home",
+    name: "Home",
     component: HomeView,
   },
   {
-    path: "/resume",
-    name: "resume",
+    path: "/about-me",
+    name: "About me",
     component: () =>
-      import(/* webpackChunkName: "about" */ "../views/ResumeView.vue"),
+      import(/* webpackChunkName: "about" */ "../views/AboutView.vue"),
   },
   {
     path: "/private",
-    name: "private",
+    name: "Private",
     component: () =>
       import(/* webpackChunkName: "about" */ "../views/PrivateView.vue"),
   },

@@ -15,10 +15,14 @@
     >
       {{ isShowing ? "←" : "→" }}
     </button>
-    <div v-if="isShowing" id="sidebar-content" class="my-auto w-20 sm:w-80">
+    <div
+      v-if="isShowing"
+      id="sidebar-content"
+      class="mt-5 sm:my-auto w-20 sm:w-80"
+    >
       <img
         src="../assets/Profile.png"
-        class="w-20 sm:w-40 mx-auto py-7"
+        class="w-15 sm:w-40 mx-auto py-7"
         alt="a photo of myself"
       />
       <h1 class="text-xl sm:text-3xl">Samuel Weiss</h1>
@@ -26,7 +30,7 @@
         Computer Science Student at University of Toronto
       </h2>
       <nav
-        class="flex flex-col text-center m-auto text-sm sm:text-xl sm:space-y-5"
+        class="flex flex-col text-center m-auto text-sm sm:text-xl gap-y-2 sm:gap-y-5"
       >
         <RouterLink
           v-for="tab in tabs"
@@ -38,13 +42,22 @@
           {{ tab.name }}
         </RouterLink>
       </nav>
-      <a href="https://github.com/WeissSa">
-        <img
-          src="../assets/GitHub.png"
-          class="w-5 sm:w-20 mx-auto pt-3 sm:pt-7"
-          alt="github logo"
-        />
-      </a>
+      <nav class="flex flex-col sm:flex-row justify-center gap-y-2 sm:gap-x-5">
+        <a href="https://github.com/WeissSa">
+          <img
+            src="../assets/GitHub.png"
+            class="w-10 sm:w-20 mx-auto pt-3 sm:pt-7"
+            alt="github logo"
+          />
+        </a>
+        <a href="https://linkedin.com/in/samuelbsweiss">
+          <img
+            src="../assets/Linkedin.png"
+            class="w-10 sm:w-20 mx-auto pt-3 sm:pt-7"
+            alt="linkedin logo"
+          />
+        </a>
+      </nav>
     </div>
   </aside>
 </template>
@@ -56,8 +69,8 @@ export const tabs = [
     name: "Home",
   },
   {
-    link: "/resume",
-    name: "Resume",
+    link: "/about-me",
+    name: "About Me",
   },
 ];
 

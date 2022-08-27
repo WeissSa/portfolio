@@ -1,7 +1,7 @@
 <template>
   <div class="flex flex-col mx-auto h-screen bg-purple-400">
     <BaseHeader text="My Experience/Projects" />
-    <PostList class="pt-5" />
+    <PostList class="py-5" />
   </div>
 </template>
 
