@@ -1,11 +1,8 @@
 <template>
-  <div class="flex px-0 pt-4 sm:pr-1">
+  <div class="flex px-0 pt-1 sm:pt-4 sm:pr-1">
     <button
-      class="text-gray-700 text-sm px-3 rounded-2xl hover:bg-blue-100 active:bg-blue-300"
-      :class="{
-        'bg-blue-300': isCurrentTagInFilter,
-        'bg-blue-200': !isCurrentTagInFilter,
-      }"
+      class="text-xs sm:text-sm px-3 rounded-2xl active:bg-blue-300 py-1 w-36 sm:w-fit"
+      :class="tagClass"
       @click="handleClick"
     >
       {{ tag }}
@@ -24,6 +21,21 @@ export default {
   computed: {
     isCurrentTagInFilter() {
       return this.$store.state.currentTag === this.tag;
+    },
+    tagClass() {
+      let tagClass = "";
+
+      tagClass += this.isCurrentTagInFilter
+        ? "bg-gray-700 hover:bg-gray-600 "
+        : "bg-blue-200 hover:bg-blue-100 ";
+      tagClass +=
+        this.tag === "★"
+          ? "text-yellow-500"
+          : this.isCurrentTagInFilter
+          ? "text-gray-200"
+          : "text-gray-700";
+
+      return tagClass;
     },
   },
   methods: {

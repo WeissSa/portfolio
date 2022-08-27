@@ -16,7 +16,7 @@
         <h2 class="text-gray-800 text-sm sm:text-xl text-left sm:text-center">
           {{ title }}
         </h2>
-        <a :href="repo">
+        <a v-if="repo !== '/private'" :href="repo">
           <img
             alt="github logo"
             src="../assets/GitHub.png"
@@ -24,10 +24,18 @@
             @click="handleExpansion"
           />
         </a>
+        <router-link v-else :to="repo">
+          <img
+            alt="github logo"
+            src="../assets/GitHub.png"
+            class="w-6 ml-5 hidden sm:block"
+            @click="handleExpansion"
+          />
+        </router-link>
       </div>
       <div
-        class="flex pt-12 sm:pt-0 flex-col sm:flex-row-reverse"
-        :class="isExpanded ? '-mt-1 pb-2' : '-mt-12'"
+        class="flex pt-12 sm:pt-0 flex-col sm:flex-row-reverse sm:w-[34rem] flex-wrap"
+        :class="isExpanded ? '-mt-12 sm:-mt-1 pb-2' : '-mt-12'"
       >
         <PostTag
           v-for="tag in tags"
@@ -38,11 +46,10 @@
       </div>
     </button>
     <div v-if="isExpanded" class="tw-flex-col mx-auto">
-      <p
-        class="w-40 md:w-[36rem] overflow-auto text-gray-800 text-left text-sm sm:text-base"
-      >
-        {{ description }}
-      </p>
+      <div
+        class="w-36 md:w-[36rem] overflow-autotext-left text-sm sm:text-base"
+        v-html="description"
+      />
       <img
         :alt="`Screenshot or picture of ${title}`"
         :src="`${publicPath}${thumbnail}`"
