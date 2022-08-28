@@ -40,7 +40,7 @@ export default {
             "Went to high school at the University of Toronto Schools and developed a love of Classical History",
             "Developed a love for Computer Science in grade 10 and began working on a game development project for a year in grade 12",
             "Went to University of Toronto for Computer Science with a minor in Math",
-            "Currently I am exploring fields of computer science but am particularly interested in software development and AI",
+            "Currently I am exploring fields of Computer Science but am particularly interested in software development and AI",
           ],
           pic: "experience.jpg",
           picAlt:
