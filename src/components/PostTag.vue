@@ -8,7 +8,7 @@
     >
       {{ tag }}
       <span
-        class="absolute hidden group-hover:flex -top-2 -right-3 translate-x-full w-48 px-2 py-1 bg-gray-700 rounded-lg text-center text-white text-sm before:content-[''] before:absolute before:top-1/4 before:right-[100%] before:-translate-y-1/2 before:border-8 before:border-y-transparent before:border-l-transparent before:border-r-gray-700"
+        class="sm:absolute hidden sm:z-50 sm:group-hover:flex sm:-top-2 sm:-right-3 sm:translate-x-full sm:w-72 sm:px-2 sm:py-1 sm:bg-gray-700 sm:rounded-lg sm:text-center sm:text-white sm:text-sm sm:before:content-[''] sm:before:absolute sm:before:top-1/4 sm:before:right-[100%] sm:before:-translate-y-1/2 sm:before:border-8 sm:before:border-y-transparent sm:before:border-l-transparent sm:before:border-r-gray-700"
         >Click to filter out any post unrelated to {{ tag }}. Click multiple
         tags to broaden the filter.
       </span>
