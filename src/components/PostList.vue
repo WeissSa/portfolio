@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col-reverse sm:mx-auto gap-y-4">
+  <div class="flex flex-col-reverse mx-auto gap-y-4">
     <PostPreview
       v-for="post in filteredPosts"
       :key="post.title"
