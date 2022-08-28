@@ -1,5 +1,5 @@
 <template>
-  <div class="text-center items-center mx-auto flex flex-col">
+  <div class="text-center mx-auto flex flex-col">
     <BaseHeader text="About Me" />
     <AboutMe />
   </div>
