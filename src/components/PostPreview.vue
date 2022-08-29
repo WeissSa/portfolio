@@ -6,7 +6,7 @@
       class="flex flex-col mx-auto w-44 sm:w-[34rem] md:w-[36rem]"
       @click="handleExpansion"
     >
-      <div class="flex flex-row justify-between">
+      <div class="flex flex-row justify-around">
         <p class="hidden sm:block w-10 -mt-1">
           <img v-if="isExpanded" alt="caret up" src="../assets/caret-up.svg" />
           <img v-else alt="caret dpwn" src="../assets/caret-down.svg" />
