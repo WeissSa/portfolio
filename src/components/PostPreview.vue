@@ -6,7 +6,7 @@
       class="flex flex-col mx-auto w-44 sm:w-[34rem] md:w-[36rem]"
       @click="handleExpansion"
     >
-      <div class="flex flex-row justify-around">
+      <div class="flex flex-col sm:flex-row justify-around">
         <p class="hidden sm:block w-10 -mt-1">
           <img v-if="isExpanded" alt="caret up" src="../assets/caret-up.svg" />
           <img v-else alt="caret dpwn" src="../assets/caret-down.svg" />
@@ -22,7 +22,7 @@
           <img
             alt="github logo"
             src="../assets/GitHub.png"
-            class="w-6 sm:mr-10 hidden md:ml-5 sm:flex float-right"
+            class="w-6 sm:mr-10 md:ml-5 sm:flex mx-auto sm:mx-0 ml-[3.5rem]"
             @click="handleExpansion"
           />
         </a>
@@ -30,7 +30,7 @@
           <img
             alt="github logo"
             src="../assets/GitHub.png"
-            class="w-6 sm:mr-10 md:ml-5 hidden sm:flex"
+            class="w-6 sm:mr-10 md:ml-5 sm:flex mx-auto sm:mx-0 ml-[3.5rem]"
             @click="handleExpansion"
           />
         </router-link>
