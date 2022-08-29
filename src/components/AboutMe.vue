@@ -36,7 +36,7 @@ export default {
         {
           title: "Experiences",
           entries: [
-            "Have gone to camp since from ages 8-16 in Algonquin park which has made me feel connection and safety with the outdoors",
+            "Have gone to camp since from ages 8-16 in Algonquin Park which has made me feel connection and safety with the outdoors",
             "Went to high school at the University of Toronto Schools and developed a love of Classical History",
             "Developed a love for Computer Science in grade 10 and began working on a game development project for a year in grade 12",
             "Went to University of Toronto for Computer Science with a minor in Math",
@@ -44,7 +44,7 @@ export default {
           ],
           pic: "experience.jpg",
           picAlt:
-            "Me Standing on a cliff in Algonquin park with my former dog Katie (RIP) (2021)",
+            "Me Standing on a cliff in Algonquin Park with my former dog Katie (RIP) (2021)",
           colour: "bg-violet-300",
         },
         {
