@@ -9,7 +9,7 @@
       <div class="flex flex-col sm:flex-row justify-around">
         <p class="hidden sm:block w-10 -mt-1">
           <img v-if="isExpanded" alt="caret up" src="../assets/caret-up.svg" />
-          <img v-else alt="caret dpwn" src="../assets/caret-down.svg" />
+          <img v-else alt="caret down" src="../assets/caret-down.svg" />
         </p>
         <div class="sm:w-[29rem] md:w-[32rem]">
           <h2

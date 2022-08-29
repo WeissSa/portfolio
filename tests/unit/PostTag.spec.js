@@ -32,7 +32,7 @@ describe("PostTag", () => {
 
   it("should display the tag name", () => {
     wrapper = getWrapper();
-    expect(wrapper.find(".tag").text()).toBe(propsData.tag);
+    expect(wrapper.find(".tag").text()).toContain(propsData.tag);
   });
 
   it("should set the text colour to yellow if the test is a star", () => {

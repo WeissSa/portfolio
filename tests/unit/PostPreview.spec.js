@@ -38,12 +38,12 @@ describe("PostPreview", () => {
     await wrapper.find("button").trigger("click");
 
     expect(wrapper.html()).toContain(basicProps.description);
-    expect(wrapper.html()).toContain("⌃");
+    expect(wrapper.find("img[alt='caret up']").exists()).toBe(true);
 
     await wrapper.find("button").trigger("click");
 
     expect(wrapper.html()).not.toContain(basicProps.description);
-    expect(wrapper.html()).toContain("⌄");
+    expect(wrapper.find("img[alt='caret down']").exists()).toBe(true);
   });
 
   it("should not expand when the github button is clicked", async () => {
