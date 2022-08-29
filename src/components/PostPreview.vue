@@ -1,26 +1,26 @@
 <template>
   <div
-    class="w-44 ml-[3.1rem] sm:w-full sm:mx-auto rounded-lg border border-gray-500 drop-shadow shadow p-5"
+    class="w-44 ml-[3.1rem] sm:w-[34rem] md:w-full md:mx-auto rounded-lg border border-gray-500 drop-shadow shadow p-5"
   >
     <button
-      class="flex flex-col mx-auto w-44 md:w-[36rem]"
+      class="flex flex-col mx-auto w-44 sm:w-[34rem] md:w-[36rem]"
       @click="handleExpansion"
     >
       <div class="flex flex-row justify-between">
-        <p
-          class="text-5xl hidden sm:block"
-          :class="isExpanded ? 'mt-4' : 'mb-12'"
-        >
-          {{ isExpanded ? "⌃" : "⌄" }}
+        <p class="hidden sm:block w-10 -mt-1">
+          <img v-if="isExpanded" alt="caret up" src="../assets/caret-up.svg" />
+          <img v-else alt="caret dpwn" src="../assets/caret-down.svg" />
         </p>
-        <h2 class="text-gray-800 text-sm sm:text-xl text-left sm:text-center">
+        <h2
+          class="text-gray-800 text-sm md:text-xl text-left md:text-center md:pb-12"
+        >
           {{ title }}
         </h2>
         <a v-if="repo !== '/private'" :href="repo">
           <img
             alt="github logo"
             src="../assets/GitHub.png"
-            class="w-6 ml-5 hidden sm:block"
+            class="w-6 ml-5 hidden md:block"
             @click="handleExpansion"
           />
         </a>
@@ -28,14 +28,14 @@
           <img
             alt="github logo"
             src="../assets/GitHub.png"
-            class="w-6 ml-5 hidden sm:block"
+            class="w-6 sm:mr-10 md:ml-5 hidden sm:block"
             @click="handleExpansion"
           />
         </router-link>
       </div>
       <div
-        class="flex pt-12 sm:pt-0 flex-col sm:flex-row-reverse sm:w-[34rem] flex-wrap"
-        :class="isExpanded ? '-mt-12 sm:-mt-1 pb-2' : '-mt-12'"
+        class="flex pt-12 md:pt-0 flex-col sm:mr-10 md:mr-0 sm:flex-row-reverse md:w-[34rem] flex-wrap"
+        :class="isExpanded ? '-mt-12 md:-mt-1 pb-2' : '-mt-12'"
       >
         <PostTag
           v-for="tag in tags"
@@ -47,13 +47,13 @@
     </button>
     <div v-if="isExpanded" class="flex-col mx-auto">
       <div
-        class="w-36 md:w-[36rem] overflow-autotext-left text-sm sm:text-base"
+        class="w-36 md:w-[36rem] overflow-autotext-left text-sm md:text-base"
         v-html="description"
       />
       <img
         :alt="`Screenshot or picture of ${title}`"
         :src="`${publicPath}${thumbnail}`"
-        class="mx-auto w-32 h-32 sm:w-60 sm:h-60 object-cover"
+        class="mx-auto w-32 h-32 md:w-60 md:h-60 object-cover"
       />
     </div>
   </div>
