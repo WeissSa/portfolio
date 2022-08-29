@@ -11,16 +11,18 @@
           <img v-if="isExpanded" alt="caret up" src="../assets/caret-up.svg" />
           <img v-else alt="caret dpwn" src="../assets/caret-down.svg" />
         </p>
-        <h2
-          class="text-gray-800 text-sm md:text-xl text-left md:text-center md:pb-12"
-        >
-          {{ title }}
-        </h2>
+        <div class="sm:w-[29rem] md:w-[32rem]">
+          <h2
+            class="text-gray-800 text-sm sm:text-xl text-left md:text-center whitespace-pre-wrap md:pb-12"
+          >
+            {{ title }}
+          </h2>
+        </div>
         <a v-if="repo !== '/private'" :href="repo">
           <img
             alt="github logo"
             src="../assets/GitHub.png"
-            class="w-6 ml-5 hidden md:block"
+            class="w-6 sm:mr-10 hidden md:ml-5 sm:flex float-right"
             @click="handleExpansion"
           />
         </a>
@@ -28,7 +30,7 @@
           <img
             alt="github logo"
             src="../assets/GitHub.png"
-            class="w-6 sm:mr-10 md:ml-5 hidden sm:block"
+            class="w-6 sm:mr-10 md:ml-5 hidden sm:flex"
             @click="handleExpansion"
           />
         </router-link>
