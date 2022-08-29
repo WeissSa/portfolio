@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col w-screen sm:pl-20">
+  <div class="flex flex-col w-screen">
     <div
       v-for="category in categories"
       :key="category.title"
