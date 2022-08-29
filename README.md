@@ -2,7 +2,9 @@
 
 A personal portfolio project built with Vue and Tailwind.
 
-## Project setup
+See website at https://weisssa.github.io/portfolio/#/
+
+## Project setup on local
 ```
 npm install
 ```
@@ -26,6 +28,3 @@ npm run test:unit
 ```
 npm run lint
 ```
-
-### Customize configuration
-See [Configuration Reference](https://cli.vuejs.org/config/).
