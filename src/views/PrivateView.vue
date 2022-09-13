@@ -4,7 +4,7 @@
       <h1 class="text-center text-5xl m-auto">
         This repository is private. Sorry!
       </h1>
-      <a class="text-blue-700 underline font-bold" href="/">
+      <a class="text-blue-700 underline font-bold" href="/portfolio">
         Click this to go back to the home page!
       </a>
     </div>
