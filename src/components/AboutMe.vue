@@ -13,7 +13,7 @@
         <p
           v-for="entry in category.entries"
           :key="entry.split(' ').join('-')"
-          class="flex text-base sm:text-2xl pl-10 pr-1 sm:pl-2 sm:pr-2 pb-[3.5rem]"
+          class="flex text-base sm:text-2xl sm:ml-20 pl-10 pr-1 sm:pl-2 sm:pr-2 pb-[3.5rem]"
         >
           · {{ entry }}
         </p>
