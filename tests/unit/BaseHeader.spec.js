@@ -8,6 +8,6 @@ describe("BaseHeader", () => {
         text: "header",
       },
     });
-    expect(wrapper.html()).toContain("header:");
+    expect(wrapper.html()).toContain("header");
   });
 });
