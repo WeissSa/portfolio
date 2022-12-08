@@ -24,6 +24,14 @@
         />
       </div>
     </div>
+    <footer class="text-gray-100 bg-desaturated-purple w-full text-center">
+      Shoutout to
+      <a href="https://www.linkedin.com/in/kaylee-chan/" class="text-blue-500">
+        Kaylee Chan
+      </a>
+      for helping me with the colour palette of this website. It used to be much
+      worse.
+    </footer>
   </div>
 </template>
 
