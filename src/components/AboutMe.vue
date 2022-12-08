@@ -1,9 +1,9 @@
 <template>
-  <div class="flex flex-col w-screen">
+  <div class="flex flex-col w-screen bg-zinc-700">
     <div
       v-for="category in categories"
       :key="category.title"
-      class="flex flex-col h-[220] sm:h-auto text-gray-700 pt-2 sm:pt-3 pb-10 sm:pb-20 w-full mx-auto text-center"
+      class="flex flex-col h-[220] sm:h-auto text-gray-700 pt-2 sm:pt-3 pb-10 sm:pb-20 w-4/5 mx-auto text-center rounded-md my-5"
       :class="category.colour"
     >
       <h2 class="text-4xl sm:mb-auto whitespace-pre-wrap pl-10 sm:pl-0">
@@ -24,6 +24,14 @@
         />
       </div>
     </div>
+    <footer class="text-gray-100 bg-desaturated-purple w-full text-center">
+      Shoutout to
+      <a href="https://www.linkedin.com/in/kaylee-chan/" class="text-blue-500">
+        Kaylee Chan
+      </a>
+      for helping me with the colour palette of this website. It used to be much
+      worse.
+    </footer>
   </div>
 </template>
 
@@ -45,7 +53,7 @@ export default {
           pic: "experience.jpg",
           picAlt:
             "Me Standing on a cliff in Algonquin Park with my former dog Katie (RIP) (2021)",
-          colour: "bg-violet-300",
+          colour: "bg-desaturated-purple-200",
         },
         {
           title: "Values",
@@ -59,7 +67,7 @@ export default {
           ],
           pic: "values.jpg",
           picAlt: "Me Standing in front of a mural (2021)",
-          colour: "bg-purple-400",
+          colour: "bg-violet-300",
         },
         {
           title: "Hobbies",
@@ -71,7 +79,7 @@ export default {
           ],
           pic: "hobby.jpg",
           picAlt: "Me playing Valorant at the CNE (2022)",
-          colour: "bg-purple-500",
+          colour: "bg-desaturated-purple-200",
         },
       ],
     };

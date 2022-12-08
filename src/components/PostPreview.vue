@@ -1,6 +1,6 @@
 <template>
   <div
-    class="w-44 ml-[3.1rem] sm:w-[34rem] md:w-full md:mx-auto rounded-lg border border-gray-500 drop-shadow shadow p-5"
+    class="w-44 ml-[3.1rem] sm:w-[34rem] md:w-full md:mx-auto rounded-lg border hover:bg-desaturated-purple-200 bg-violet-300 border-gray-500 drop-shadow shadow p-5"
   >
     <button
       class="flex flex-col mx-auto w-44 sm:w-[34rem] md:w-[36rem]"
