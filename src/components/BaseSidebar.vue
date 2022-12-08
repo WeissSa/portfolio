@@ -1,6 +1,6 @@
 <template>
   <aside
-    class="transform top-0 left-0 bg-gray-700 w-20 sm:w-80 text-gray-200 text-center fixed h-full overflow-auto ease-in-out transition-all duration-300 z-30 flex flex-col"
+    class="transform top-0 left-0 bg-slate-800 w-20 sm:w-80 text-gray-200 text-center fixed h-full overflow-auto ease-in-out transition-all duration-300 z-30 flex flex-col"
     :class="isOpen ? 'translate-x-0' : '-translate-x-1/2 sm:-translate-x-3/4'"
   >
     <button
