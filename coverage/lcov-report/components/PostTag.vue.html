@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/7</span>
+                <span class='fraction'>7/7</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/8</span>
+                <span class='fraction'>8/8</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/3</span>
+                <span class='fraction'>3/3</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/7</span>
+                <span class='fraction'>7/7</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -137,7 +137,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -146,27 +146,27 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">11x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">11x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">11x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">11x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">11x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -177,7 +177,7 @@
   &lt;div class="flex px-0 pt-1 sm:pt-4 sm:pr-1"&gt;
     &lt;button
       data-tooltip-target="tooltip-default"
-      class="tag text-xs sm:text-sm px-3 rounded-2xl active:bg-blue-300 py-1 w-36 sm:w-fit group relative inline-block"
+      class="tag text-xs sm:text-sm px-3 rounded-2xl active:bg-violet-300 py-1 w-36 sm:w-fit group relative inline-block"
       :class="tagClass"
       @click="handleClick"
     &gt;
@@ -192,7 +192,7 @@
 &lt;/template&gt;
 &nbsp;
 &lt;script&gt;
-export default <span class="cstat-no" title="statement not covered" >{</span>
+export default {
   props: {
     tag: {
       required: true,
@@ -200,28 +200,28 @@ export default <span class="cstat-no" title="statement not covered" >{</span>
     },
   },
   computed: {
-<span class="fstat-no" title="function not covered" >    isCurrentTagInFilter(</span>) {
-<span class="cstat-no" title="statement not covered" >      return t</span>his.$store.state.currentTags.includes(this.tag);
+    isCurrentTagInFilter() {
+      return this.$store.state.currentTags.includes(this.tag);
     },
-<span class="fstat-no" title="function not covered" >    tagClass(</span>) {
-      let tagClass = <span class="cstat-no" title="statement not covered" >"";</span>
+    tagClass() {
+      let tagClass = "";
 &nbsp;
-<span class="cstat-no" title="statement not covered" >      tagClass </span>+= this.isCurrentTagInFilter
+      tagClass += this.isCurrentTagInFilter
         ? "bg-gray-700 hover:bg-gray-600 "
-        : "bg-blue-200 hover:bg-blue-100 ";
-<span class="cstat-no" title="statement not covered" >      tagClass </span>+=
+        : "bg-violet-400 hover:bg-sky-200 ";
+      tagClass +=
         this.tag === "★"
           ? "text-yellow-500"
           : this.isCurrentTagInFilter
           ? "text-gray-200"
-          : "text-gray-700";
+          : "text-gray-800";
 &nbsp;
-<span class="cstat-no" title="statement not covered" >      return t</span>agClass;
+      return tagClass;
     },
   },
   methods: {
-<span class="fstat-no" title="function not covered" >    handleClick(</span>) {
-<span class="cstat-no" title="statement not covered" >      this.i</span>sCurrentTagInFilter
+    handleClick() {
+      this.isCurrentTagInFilter
         ? this.$store.commit("REMOVE_TAG", this.tag)
         : this.$store.commit("ADD_TAG", this.tag);
     },
@@ -235,7 +235,7 @@ export default <span class="cstat-no" title="statement not covered" >{</span>
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2022-08-29T14:42:21.472Z
+                at 2022-12-08T01:57:47.545Z
             </div>
         <script src="../prettify.js"></script>
         <script>

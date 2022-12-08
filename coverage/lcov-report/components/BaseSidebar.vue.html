@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/7</span>
+                <span class='fraction'>7/7</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/2</span>
+                <span class='fraction'>2/2</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/3</span>
+                <span class='fraction'>3/3</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/7</span>
+                <span class='fraction'>7/7</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -228,7 +228,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -239,11 +239,9 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -251,12 +249,14 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -265,7 +265,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">&lt;template&gt;
   &lt;aside
-    class="transform top-0 left-0 bg-gray-700 w-20 sm:w-80 text-gray-200 text-center fixed h-full overflow-auto ease-in-out transition-all duration-300 z-30 flex flex-col"
+    class="transform top-0 left-0 bg-slate-800 w-20 sm:w-80 text-gray-200 text-center fixed h-full overflow-auto ease-in-out transition-all duration-300 z-30 flex flex-col"
     :class="isOpen ? 'translate-x-0' : '-translate-x-1/2 sm:-translate-x-3/4'"
   &gt;
     &lt;button
@@ -328,7 +328,7 @@
 &lt;/template&gt;
 &nbsp;
 &lt;script&gt;
-export const tabs = <span class="cstat-no" title="statement not covered" >[</span>
+export const tabs = [
   {
     link: "/",
     name: "Home",
@@ -339,9 +339,9 @@ export const tabs = <span class="cstat-no" title="statement not covered" >[</spa
   },
 ];
 &nbsp;
-export default <span class="cstat-no" title="statement not covered" >{</span>
-<span class="fstat-no" title="function not covered" >  data(</span>) {
-<span class="cstat-no" title="statement not covered" >    return {</span>
+export default {
+  data() {
+    return {
       isShowing: false,
       isOpen: false,
       tabs,
@@ -350,13 +350,13 @@ export default <span class="cstat-no" title="statement not covered" >{</span>
   watch: {
     isOpen: {
       immediate: true,
-<span class="fstat-no" title="function not covered" >      async h</span>andler(isOpen) {
-<span class="cstat-no" title="statement not covered" >        if (!isOpen) {</span>
-<span class="cstat-no" title="statement not covered" >          setTimeout(<span class="fstat-no" title="function not covered" ></span>() =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >            this.i</span>sShowing = false;
+      async handler(isOpen) {
+        if (!isOpen) {
+          setTimeout(() =&gt; {
+            this.isShowing = false;
           }, 150);
         } else {
-<span class="cstat-no" title="statement not covered" >          this.i</span>sShowing = true;
+          this.isShowing = true;
         }
       },
     },
@@ -370,7 +370,7 @@ export default <span class="cstat-no" title="statement not covered" >{</span>
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2022-08-29T14:42:21.472Z
+                at 2022-12-08T01:57:47.545Z
             </div>
         <script src="../prettify.js"></script>
         <script>

@@ -4,8 +4,9 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        "desaturated-purple": "#7D6FA6",
+        "desaturated-purple": "#4E4254",
         "desaturated-purple-200": "#BCA7FA",
+        "desaturated-blue": "#A6BBED",
       },
     },
   },

@@ -52,8 +52,8 @@ describe("PostTag", () => {
   it("should set the text and bg colour to light blue/dark gray if the tag is not in the filter", () => {
     store.commit("REMOVE_TAG", "Godot");
     wrapper = getWrapper();
-    expect(wrapper.find(".tag").classes()).toContain("bg-blue-200");
-    expect(wrapper.find(".tag").classes()).toContain("text-gray-700");
+    expect(wrapper.find(".tag").classes()).toContain("bg-violet-400");
+    expect(wrapper.find(".tag").classes()).toContain("text-gray-800");
   });
 
   it("should add/remove a tag on click", async () => {
