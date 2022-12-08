@@ -1,6 +1,6 @@
 <template>
   <h1
-    class="text-lg ml-5 whitespace-pre-wrap sm:ml-0 sm:text-5xl text-gray-200 pt-5 pb-2 text-center w-screen bg-purple-800"
+    class="text-lg ml-5 whitespace-pre-wrap sm:ml-0 sm:text-5xl text-gray-900 pt-5 pb-2 text-center w-screen bg-desaturated-purple shadow-md shadow-zinc-800"
   >
     {{ text }}:
   </h1>

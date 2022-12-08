@@ -2,7 +2,7 @@
   <div class="flex px-0 pt-1 sm:pt-4 sm:pr-1">
     <button
       data-tooltip-target="tooltip-default"
-      class="tag text-xs sm:text-sm px-3 rounded-2xl active:bg-blue-300 py-1 w-36 sm:w-fit group relative inline-block"
+      class="tag text-xs sm:text-sm px-3 rounded-2xl active:bg-violet-300 py-1 w-36 sm:w-fit group relative inline-block"
       :class="tagClass"
       @click="handleClick"
     >
@@ -33,13 +33,13 @@ export default {
 
       tagClass += this.isCurrentTagInFilter
         ? "bg-gray-700 hover:bg-gray-600 "
-        : "bg-blue-200 hover:bg-blue-100 ";
+        : "bg-violet-400 hover:bg-sky-200 ";
       tagClass +=
         this.tag === "★"
           ? "text-yellow-500"
           : this.isCurrentTagInFilter
           ? "text-gray-200"
-          : "text-gray-700";
+          : "text-gray-800";
 
       return tagClass;
     },
