@@ -45,7 +45,7 @@ export default {
           pic: "experience.jpg",
           picAlt:
             "Me Standing on a cliff in Algonquin Park with my former dog Katie (RIP) (2021)",
-          colour: "bg-violet-300",
+          colour: "bg-violet-200",
         },
         {
           title: "Values",
@@ -59,7 +59,7 @@ export default {
           ],
           pic: "values.jpg",
           picAlt: "Me Standing in front of a mural (2021)",
-          colour: "bg-purple-400",
+          colour: "bg-purple-300",
         },
         {
           title: "Hobbies",
@@ -71,7 +71,7 @@ export default {
           ],
           pic: "hobby.jpg",
           picAlt: "Me playing Valorant at the CNE (2022)",
-          colour: "bg-purple-500",
+          colour: "bg-purple-400",
         },
       ],
     };
