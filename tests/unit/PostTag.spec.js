@@ -38,7 +38,7 @@ describe("PostTag", () => {
   it("should set the text colour to yellow if the test is a star", () => {
     propsData.tag = "★";
     wrapper = getWrapper();
-    expect(wrapper.find(".tag").classes()).toContain("text-yellow-500");
+    expect(wrapper.find(".tag").classes()).toContain("text-amber-300");
     propsData.tag = "Godot";
   });
 
@@ -52,7 +52,7 @@ describe("PostTag", () => {
   it("should set the text and bg colour to light blue/dark gray if the tag is not in the filter", () => {
     store.commit("REMOVE_TAG", "Godot");
     wrapper = getWrapper();
-    expect(wrapper.find(".tag").classes()).toContain("bg-violet-400");
+    expect(wrapper.find(".tag").classes()).toContain("bg-desaturated-blue");
     expect(wrapper.find(".tag").classes()).toContain("text-gray-800");
   });
 
