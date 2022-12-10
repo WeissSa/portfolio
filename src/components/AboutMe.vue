@@ -3,17 +3,17 @@
     <div
       v-for="category in categories"
       :key="category.title"
-      class="flex flex-col h-[220] sm:h-auto text-gray-700 pt-2 sm:pt-3 pb-10 sm:pb-20 w-4/5 mx-auto text-center rounded-md my-5"
+      class="flex flex-col h-[220] sm:h-auto ml-12 text-gray-700 pt-2 sm:pt-3 pb-10 sm:pb-20 w-4/5 sm:mx-auto text-center rounded-md my-5"
       :class="category.colour"
     >
-      <h2 class="text-4xl sm:mb-auto whitespace-pre-wrap pl-10 sm:pl-0">
+      <h2 class="text-4xl sm:mb-auto whitespace-pre-wrap pl-2">
         My {{ category.title }}
       </h2>
       <div class="flex flex-col align-top text-left">
         <p
           v-for="entry in category.entries"
           :key="entry.split(' ').join('-')"
-          class="flex text-base sm:text-2xl sm:ml-20 pl-10 pr-1 sm:pl-2 sm:pr-2 pb-[3.5rem]"
+          class="flex text-base sm:text-2xl pr-1 pl-2 sm:pr-2 pb-[3.5rem]"
         >
           · {{ entry }}
         </p>
@@ -24,7 +24,9 @@
         />
       </div>
     </div>
-    <footer class="text-gray-100 bg-desaturated-purple w-full text-center">
+    <footer
+      class="text-gray-100 bg-desaturated-purple w-full text-center px-20 md:px-0"
+    >
       Shoutout to
       <a href="https://www.linkedin.com/in/kaylee-chan/" class="text-blue-500">
         Kaylee Chan
