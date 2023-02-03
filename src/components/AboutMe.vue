@@ -46,11 +46,11 @@ export default {
         {
           title: "Experiences",
           entries: [
-            "Have gone to camp since from ages 8-16 in Algonquin Park which has made me feel connection and safety with the outdoors",
             "Went to high school at the University of Toronto Schools and developed a love of Classical History",
-            "Developed a love for Computer Science in grade 10 and began working on a game development project for a year in grade 12",
-            "Went to University of Toronto for Computer Science with a minor in Math",
+            "Developed a passion for Computer Science in grade 10 and began working on a game development project for a year in grade 12",
+            "Going to University of Toronto for Specialist in Computer Science and a minor in Math",
             "Currently I am exploring fields of Computer Science but am particularly interested in software development and AI",
+            "I have gone to camp from ages 8-16 in Algonquin Park which has made me feel a strong connection the outdoors",
           ],
           pic: "experience.jpg",
           picAlt:
@@ -60,11 +60,11 @@ export default {
         {
           title: "Values",
           entries: [
-            "Trying to always be honest, but not brutally so",
+            "Taking ownership over my work",
             "Having integrity in mind when taking any action",
-            "Being responsible and taking culpability when I have done something wrong",
-            "Maintaining loyalty to my friends and family, especially in times of crisis",
+            "Expanding my set of skills, tools, and frameworks at every opportunity",
             "Having compassion for those around me, particularly for those who are struggling",
+            "Maintaining loyalty to my friends and family, especially in times of crisis",
             "Taking failure as a chance for growth instead of collapsing in the face of it",
           ],
           pic: "values.jpg",
