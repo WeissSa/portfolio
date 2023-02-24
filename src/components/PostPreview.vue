@@ -36,8 +36,7 @@
         </router-link>
       </div>
       <div
-        class="flex pt-12 md:pt-0 flex-col sm:mr-10 md:mr-0 sm:flex-row-reverse md:w-[34rem] flex-wrap"
-        :class="isExpanded ? '-mt-12 md:-mt-1 pb-2' : '-mt-12'"
+        class="flex pt-12 md:pt-0 flex-col sm:mr-10 md:mr-0 sm:flex-row-reverse md:w-[34rem] flex-wrap -mt-12"
       >
         <PostTag
           v-for="tag in tags"
