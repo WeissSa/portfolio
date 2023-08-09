@@ -54,7 +54,7 @@
       <img
         :alt="`Screenshot or picture of ${title}`"
         :src="`${publicPath}${thumbnail}`"
-        class="mx-auto w-32 h-32 md:w-60 md:h-60 object-cover"
+        class="mx-auto w-32 h-32 md:w-60 md:h-60 object-scale-down"
       />
     </div>
   </div>

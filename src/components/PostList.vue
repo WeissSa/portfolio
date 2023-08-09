@@ -10,16 +10,23 @@
       :thumbnail="post.image"
     />
   </div>
+  <div>
+    <aside class="hidden lg:flex absolute top-24 right-20">
+      <TagLister :posts="posts" />
+    </aside>
+  </div>
 </template>
 
 <script>
 import posts from "../assets/posts.json";
 
 import PostPreview from "./PostPreview.vue";
+import TagLister from "./TagLister.vue";
 
 export default {
   components: {
     PostPreview,
+    TagLister,
   },
   data() {
     return { posts };
