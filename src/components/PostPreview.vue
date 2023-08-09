@@ -13,7 +13,7 @@
         </p>
         <div class="sm:w-[29rem] md:w-[32rem]">
           <h2
-            class="text-gray-800 text-sm sm:text-xl text-left md:text-center whitespace-pre-wrap md:pb-12 mr-3 sm:mr-0"
+            class="text-gray-800 text-sm sm:text-xl text-left md:text-center whitespace-pre-wrap md:pb-12 mr-4 sm:mr-0"
           >
             {{ title }}
           </h2>
