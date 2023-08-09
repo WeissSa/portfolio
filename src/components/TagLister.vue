@@ -30,7 +30,6 @@ export default {
         TagCount[tag] = TagCount[tag] + 1;
       }
     }
-    console.log(TagCount);
     const OrganizedTags = Object.keys(TagCount);
     OrganizedTags.sort((tag1, tag2) => {
       if (tag1 === "★") {
