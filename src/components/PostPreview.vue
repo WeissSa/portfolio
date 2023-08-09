@@ -3,7 +3,7 @@
     class="w-44 ml-[3.1rem] sm:w-[34rem] md:w-full md:mx-auto rounded-lg border hover:bg-desaturated-purple-200 bg-violet-300 border-gray-500 drop-shadow shadow p-5"
   >
     <button
-      class="flex flex-col mx-auto w-44 sm:w-[34rem] md:w-[36rem]"
+      class="flex flex-col mx-auto w-40 sm:w-[34rem] md:w-[36rem]"
       @click="handleExpansion"
     >
       <div class="flex flex-col sm:flex-row justify-around">
