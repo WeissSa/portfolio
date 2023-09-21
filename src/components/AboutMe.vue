@@ -48,9 +48,9 @@ export default {
           entries: [
             "Went to high school at the University of Toronto Schools and developed a love of Classical History",
             "Developed a passion for Computer Science in grade 10 and began working on a game development project for a year in grade 12",
-            "Going to University of Toronto for Specialist in Computer Science and a minor in Math",
-            "Currently I am exploring fields of Computer Science but am particularly interested in software development and AI",
-            "I have gone to camp from ages 8-16 in Algonquin Park which has made me feel a strong connection the outdoors",
+            "Going to University of Toronto for specialist in Computer Science and a minor in Math",
+            "Currently I am exploring fields of Computer Science but am particularly interested in software engineering and AI",
+            "Went to camp from ages 8-16 in Algonquin Park which has made me feel a strong connection the outdoors",
           ],
           pic: "experience.jpg",
           picAlt:
