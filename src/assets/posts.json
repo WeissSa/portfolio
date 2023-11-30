@@ -136,7 +136,7 @@
   {
     "title": "Savi Finance - Industry Partnership",
     "repo": "/private",
-    "description": "<p>During the beginning of my third year of university, I took a software engineering course where I partnered with Savi Finance. For this partnership, I worked on web, mobile, and backend and learned React Native, GraphQL, and how to work in a mono repo. My greatest achievement for this company was to speed up their currency conversion API from 161 seconds to 3 seconds - making it 53x faster.</p>",
+    "description": "<p>During the beginning of my third year of university, I took a software engineering course where I partnered with Savi Finance. For this partnership, I worked on web, mobile, and backend and learned React Native, GraphQL, and how to work in a monorepo. My greatest achievement for this company was to speed up their currency conversion API from 161 seconds to 3 seconds - making it 53x faster.</p>",
     "tags": [
       "React",
       "React Native",
