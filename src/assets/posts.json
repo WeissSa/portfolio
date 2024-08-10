@@ -159,9 +159,9 @@
   {
     "title": "Gusto - Software Engineering Intern",
     "repo": "/private",
-    "description": "<p>During my third year of university I had interviewed with a small Toronto startup named Thriver during the month of December. During exam season in spring, I get a call from their CTO saying they had gotten acquired by Gusto. Luckily, I was given the chance to re-interview for my internship and joined Gusto's internship program. During my summer at Gusto, I had a fantastic full-stack experience where I worked on their time tracking team. On that team, I worked on a project which improved user experience and performance of an existing feature, as well as adding multiple new features.</p>",
+    "description": "<p>During my third year of university I had interviewed with a small Toronto startup named Thriver during the month of December. During exam season in spring, I got a call from their CTO saying they had gotten acquired by Gusto. Luckily, I was given the chance to re-interview for my internship and joined Gusto's internship program. During my summer at Gusto, I had a fantastic full-stack experience where I worked on their time tracking team. On that team, I worked on a project which improved user experience and performance of an existing feature, as well as adding multiple new features. The functionality I added increased usage of the endpoint for the feature by up to 400% and decreased latency by ~40%. After I was done working on that project I had some time remaining in my contract and was moved to prototype a feature with a larger team. I helped make significant progress on the feature. I was told due to my work the release date moved forward by as much as 2 weeks.</p>",
     "tags": [
-      "*",
+      "★",
       "React",
       "Ruby/Rails",
       "JavaScript/TypeScript",
