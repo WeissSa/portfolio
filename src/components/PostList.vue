@@ -1,7 +1,7 @@
 <template>
-  <div class="flex flex-col-reverse justify-center mx-auto gap-y-4">
+  <div class="flex flex-col justify-center mx-auto gap-y-4">
     <PostPreview
-      v-for="post in filteredPosts"
+      v-for="post in filteredPosts.toReversed()"
       :key="post.title"
       :title="post.title"
       :description="post.description"
