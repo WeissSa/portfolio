@@ -1,7 +1,18 @@
-import { Card, Text, Badge, Group, Button, ActionIcon } from '@mantine/core';
+import {
+  Card,
+  Text,
+  Group,
+  ActionIcon,
+  Image,
+  Box,
+  Center,
+} from '@mantine/core';
+import { PostTag } from './PostTag';
 import { useDisclosure } from '@mantine/hooks';
 import { IconChevronDown, IconChevronUp } from '@tabler/icons-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import classes from './PostCard.module.css';
+import { AnimatePresence, motion } from 'framer-motion';
+import React from 'react';
 
 interface PostCardProps {
   post: {
@@ -16,64 +27,99 @@ interface PostCardProps {
 export function PostCard({ post }: PostCardProps) {
   const [opened, { toggle }] = useDisclosure(false);
 
-  return (
-    <Card shadow="sm" p="lg" radius="md" withBorder>
-      <Group position="apart" mt="md" mb="xs">
-        <Text weight={500}>{post.title}</Text>
-        <ActionIcon onClick={toggle}>
-          {opened ? (
-            <IconChevronUp size="1rem" />
-          ) : (
-            <IconChevronDown size="1rem" />
-          )}
-        </ActionIcon>
-      </Group>
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      if ((event.target as HTMLElement).tagName === 'A') {
+        return;
+      }
+      event.preventDefault(); // Prevent default scroll behavior for spacebar
+      toggle();
+    }
+  };
 
+  const handleClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    if ((event.target as HTMLElement).tagName === 'A') {
+      return;
+    }
+    toggle();
+  };
+
+  return (
+    <Card
+      shadow="sm"
+      p="lg"
+      radius="md"
+      withBorder
+      role="button"
+      tabIndex={0} // Make the card focusable
+      onClick={handleClick}
+      onKeyDown={handleKeyDown}
+      aria-expanded={opened}
+      className={classes.card}
+    >
+      <Group position="apart" mt="md" mb="xs" justify="space-between">
+        <Group>
+          <ActionIcon
+            onClick={toggle}
+            aria-label={opened ? 'Collapse post' : 'Expand post'}
+            tabIndex={-1} // Prevent double tabbing on the icon itself
+          >
+            {opened ? (
+              <IconChevronUp size="1rem" />
+            ) : (
+              <IconChevronDown size="1rem" />
+            )}
+          </ActionIcon>
+          <Text weight={500} style={{ flexGrow: 1, textAlign: 'center' }}>
+            {post.title}
+          </Text>
+        </Group>
+        {post.repo !== '/private' && (
+          <a href={post.repo} target="_blank" rel="noopener noreferrer">
+            {' '}
+            <Image src="/GitHub.png" alt="GitHub Logo" width={24} height={24} />
+          </a>
+        )}
+      </Group>
       {!opened && (
         <Group position="left" mt="md">
           {post.tags.slice(0, 3).map((tag) => (
-            <Badge key={tag} color="pink" variant="light">
-              {tag}
-            </Badge>
+            <PostTag key={tag} tag={tag} />
           ))}
         </Group>
       )}
 
-      <AnimatePresence initial={false}>
-        {opened && (
-          <motion.div
-            key="content"
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.3, ease: 'easeInOut' }}
-          >
-            <Card.Section>
-              <img
-                src={`/${post.image}`}
-                alt={`Screenshot or picture of ${post.title}`}
-                height={160}
-              />
-            </Card.Section>
+      <Box pt={opened ? 'md' : 0}>
+        <AnimatePresence initial={false}>
+          {opened && (
+            <motion.div
+              key="content"
+              initial={{ opacity: 0, height: 0, y: -20, scaleY: 0.95 }}
+              animate={{ opacity: 1, height: 'auto', y: 0, scaleY: 1 }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+            >
+              <div dangerouslySetInnerHTML={{ __html: post.description }} />
 
-            <div dangerouslySetInnerHTML={{ __html: post.description }} />
+              <Card.Section>
+                <Center>
+                  <img
+                    src={`/${post.image}`}
+                    alt={`Screenshot or picture of ${post.title}`}
+                    height={160}
+                  />
+                </Center>
+              </Card.Section>
 
-            <Group position="left" mt="md">
-              {post.tags.map((tag) => (
-                <Badge key={tag} color="pink" variant="light">
-                  {tag}
-                </Badge>
-              ))}
-            </Group>
-
-            <a href={post.repo} target="_blank" rel="noopener noreferrer">
-              <Button variant="light" color="blue" mt="md" radius="md">
-                View on GitHub
-              </Button>
-            </a>
-          </motion.div>
-        )}
-      </AnimatePresence>
+              <Group position="left" mt="md">
+                {post.tags.map((tag) => (
+                  <PostTag key={tag} tag={tag} />
+                ))}
+              </Group>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </Box>
     </Card>
   );
 }
