@@ -24,7 +24,7 @@ interface PostCardProps {
   };
 }
 
-export function PostCard({ post }: PostCardProps) {
+export const PostCard = React.memo(({ post }: PostCardProps) => {
   const [opened, { toggle }] = useDisclosure(false);
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
@@ -99,7 +99,10 @@ export function PostCard({ post }: PostCardProps) {
               exit={{ opacity: 0, height: 0 }}
               transition={{ type: 'spring', stiffness: 300, damping: 25 }}
             >
-              <div dangerouslySetInnerHTML={{ __html: post.description }} />
+              <div
+                data-testid="post-description"
+                dangerouslySetInnerHTML={{ __html: post.description }}
+              />
 
               <Card.Section>
                 <Center>
@@ -122,4 +125,6 @@ export function PostCard({ post }: PostCardProps) {
       </Box>
     </Card>
   );
-}
+});
+
+PostCard.displayName = 'PostCard'; // For better debugging in React DevTools

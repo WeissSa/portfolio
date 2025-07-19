@@ -15,21 +15,33 @@ export const HomePage: NextPage<HomePageProps> = ({ allPostsData }) => {
   const experienceSectionRef = useRef<HTMLDivElement>(null);
   const postsScrollRef = useRef<HTMLDivElement>(null);
 
-  const { handleWheel } = useScrollNavigation({
-    welcomeSectionRef,
-    experienceSectionRef,
-    postsScrollRef,
-  });
+  const { handleWheel, handleTouchStart, handleTouchMove } =
+    useScrollNavigation({
+      welcomeSectionRef,
+      experienceSectionRef,
+      postsScrollRef,
+    });
 
   return (
     <div
       onWheel={handleWheel}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
       style={{
         height: '100vh',
         overflow: 'hidden', // Hide main scrollbar
       }}
     >
-      <div ref={welcomeSectionRef} style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+      <div
+        ref={welcomeSectionRef}
+        style={{
+          minHeight: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}
+      >
         <WelcomeSection />
       </div>
       <Container

@@ -1,16 +1,10 @@
 import type { AppProps } from 'next/app';
-import {
-  MantineProvider,
-  createTheme,
-  ActionIcon,
-  useMantineColorScheme,
-  ColorScheme,
-} from '@mantine/core';
+import { MantineProvider, createTheme, ColorScheme } from '@mantine/core';
 import { useLocalStorage } from '@mantine/hooks';
-import { IconSun, IconMoonStars } from '@tabler/icons-react';
 import '@mantine/core/styles.css';
 import '../styles/global.css';
 import React from 'react';
+import { ColorSchemeToggle } from '../components/ColourSchemeToggle';
 
 const theme = createTheme({
   colors: {
@@ -47,31 +41,3 @@ export default function App({ Component, pageProps }: AppProps) {
     </MantineProvider>
   );
 }
-
-const ColorSchemeToggle = () => {
-  const { colorScheme, toggleColorScheme } = useMantineColorScheme();
-  const [mounted, setMounted] = React.useState(false);
-
-  React.useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) {
-    return null;
-  }
-
-  return (
-    <ActionIcon
-      onClick={() => toggleColorScheme()}
-      variant="default"
-      size="xl"
-      style={{ position: 'fixed', bottom: 20, right: 20 }}
-    >
-      {colorScheme === 'dark' ? (
-        <IconSun size="1.2rem" />
-      ) : (
-        <IconMoonStars size="1.2rem" />
-      )}
-    </ActionIcon>
-  );
-};

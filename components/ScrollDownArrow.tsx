@@ -29,7 +29,7 @@ export function ScrollDownArrow() {
         initial={{ y: 0, opacity: 0.8 }} // Initial state for the animation
         animate="animate"
       >
-        <IconChevronDown size="3rem" />
+        <IconChevronDown size="3rem" data-testid="scroll-down-icon" />
       </motion.div>
     </Box>
   );
