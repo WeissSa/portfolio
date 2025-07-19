@@ -1,6 +1,6 @@
 import type { NextPage } from 'next';
 import { getSortedPostsData, Post } from '../lib/posts';
-import HomePage from '../components/HomePage';
+import { HomePage } from '../components/HomePage';
 
 export async function getStaticProps() {
   const allPostsData = getSortedPostsData();

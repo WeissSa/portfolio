@@ -1,5 +1,5 @@
-import { Grid } from '@mantine/core';
 import { PostCard } from './PostCard';
+import React from 'react';
 
 interface PostsProps {
   posts: {
@@ -9,16 +9,35 @@ interface PostsProps {
     tags: string[];
     image: string;
   }[];
+  postsRef: React.RefObject<HTMLDivElement>;
 }
 
-export function Posts({ posts }: PostsProps) {
+export function Posts({ posts, postsRef }: PostsProps) {
   return (
-    <Grid>
+    <div
+      ref={postsRef}
+      style={{
+        display: 'flex',
+        overflowX: 'auto',
+        scrollSnapType: 'x mandatory',
+        paddingBottom: '1rem',
+        width: '100%',
+      }}
+      className="hide-scrollbar"
+    >
       {posts.map((post) => (
-        <Grid.Col key={post.title} span={12}>
+        <div
+          key={post.title}
+          style={{
+            flex: '0 0 100%',
+            scrollSnapAlign: 'center',
+            padding: '0 1rem', // Add horizontal padding here
+            boxSizing: 'border-box',
+          }}
+        >
           <PostCard post={post} />
-        </Grid.Col>
+        </div>
       ))}
-    </Grid>
+    </div>
   );
 }
