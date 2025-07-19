@@ -1,22 +1,22 @@
-import { shallowMount } from "@vue/test-utils";
-import AboutMe from "../../src/components/AboutMe.vue";
+import { shallowMount } from '@vue/test-utils';
+import AboutMe from '../../src/components/AboutMe.vue';
 
 const mockData = [
   {
-    title: "Mock",
-    entries: ["Data 1", "Data 2"],
-    pic: "pic",
-    picAlt: "picalt",
-    colour: "bg-violet-300",
+    title: 'Mock',
+    entries: ['Data 1', 'Data 2'],
+    pic: 'pic',
+    picAlt: 'picalt',
+    colour: 'bg-violet-300',
   },
   {
-    title: "mock 2",
+    title: 'mock 2',
   },
 ];
 
-const publicPath = "path";
+const publicPath = 'path';
 
-describe("About Me", () => {
+describe('About Me', () => {
   let wrapper;
 
   const getWrapper = () => {
@@ -30,7 +30,7 @@ describe("About Me", () => {
     });
   };
 
-  it("should display each category", () => {
+  it('should display each category', () => {
     expect.assertions(2);
     wrapper = getWrapper();
     mockData.forEach((data) => {
@@ -38,7 +38,7 @@ describe("About Me", () => {
     });
   });
 
-  it("should an entry for each entry", () => {
+  it('should an entry for each entry', () => {
     expect.assertions(2);
     wrapper = getWrapper();
     mockData[0].entries.forEach((entry) => {
@@ -46,7 +46,7 @@ describe("About Me", () => {
     });
   });
 
-  it("should display the picture", () => {
+  it('should display the picture', () => {
     wrapper = getWrapper();
     expect(wrapper.find("img[alt='picalt']").exists()).toBe(true);
     expect(wrapper.find("img[src='pathpic']").exists()).toBe(true);

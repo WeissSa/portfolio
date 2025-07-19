@@ -1,0 +1,177 @@
+[
+  {
+    "title": "DreamZzz - Game Development Project",
+    "repo": "https://github.com/WeissSa/DreamZzz",
+    "description": "<p>DreamZzz is a game development project I started during my last year in highschool built with Godot and GDScript. I designed it to be a blending of two game genres I really enjoy: platformers and stealth games. During this project I learned a lot about UI design, pixel art, and game logic. I decided to finish work on it once I was satisfied with the demo, although the game is currently unfinished. To try out the game, you will have to download the Godot launcher, clone the repo, and run the game from within the engine.</p>",
+    "tags": [
+      "Godot",
+      "GDScript",
+      "Game Development",
+      "Object Oriented Programming"
+    ],
+    "image": "Dream.png"
+  },
+  {
+    "title": "Interactive Cipher Encoder/Decoder",
+    "repo": "https://github.com/WeissSa/Cipher",
+    "description": "<p>This is a Cipher translater/decoder I made using the Godot engine and GDScript. Currently it is set to use any key (up to 26) for the Caesar Cipher and translate in and out of the Monoalphabetic Cipher given a key of 27 letters.</p>",
+    "tags": ["Godot", "GDScript"],
+    "image": "cipher.png"
+  },
+  {
+    "title": "Code-it Hacks - Python Instruction",
+    "repo": "https://github.com/WeissSa/CodingCampGames",
+    "description": "<p>During the summer before I started university I was given the amazing opportunity to instruct Python to students ages 8-16 (although most fell within the range of 10-12). During this summer I also did some basic Micro:bit and Scratch instruction, but my focus was Python. The repo attached to this post is a collection of games I made using pygame to help teach coding to my students. They are all designed to be completed within a week and vary in complexity since as the summer went on I had some students who repeatedly kept taking my class and thus needed an extra optional challenge. This experience was extremely useful for strengthening my fundamental understanding of both Python, and how pygame renders visual data, which helped build the foundation for the Cryptocurrency graphing software I made for school and some of the work I did at Paper.</p>",
+    "tags": ["Python", "Game Development", "Education"],
+    "image": "CodeItHacks.jpeg"
+  },
+  {
+    "title": "University of Toronto - Cryptographer",
+    "repo": "https://github.com/WeissSa/CryptoGrapher",
+    "description": "<p>This is a project I made for CSC110 (Introduction to Computer Science) along with my peer Madeline Ahn. For this project we were tasked with analyzing the change in a trend due to COVID and displaying it creatively. I wanted to create a larger challenge for myself so I decided to stretch my pygame knowledge gained the previous summer and create a custom graphing framework using pygame. Upon running main.py, the project lets you choose 2 cryptocurrencies to compare + a metric and shows you how the two currencies developed in that metric over time. The repo's README has some recommended comparisons. I learned a lot about UI development, object oriented programming, and how to nicely work with Excel from this project.</p>",
+    "tags": [
+      "Python",
+      "Education",
+      "Data Science",
+      "Object Oriented Programming"
+    ],
+    "image": "Crypto.PNG"
+  },
+  {
+    "title": "The Mabin School - Help Ticket Website",
+    "repo": "/private",
+    "description": "<p>I was given the opportunity to design a help-ticket website for <a class='text-blue-700 font-bold' href='https://mabin.com/'> The Mabin School </a> by their IT expert. He was dyslexic, so this website had a focus on being accessible and using visual information. This was my first experience with web development and I explored using a variety of frameworks but I ended up using Flask (although I did some early experimentation with React as a frontend). I did this project as volunteer work on top of school so it happened over the course of a few months, but in the end it was positively received by my supervisor. The website handled help tickets and could filter through them by a variety of fields. Furthermore, it had a robust authentication system and a unique admin role which could manage other users. It was meant for both the submission and the management of tickets.</p>",
+    "tags": [
+      "Education",
+      "Accessibility",
+      "Python",
+      "React",
+      "Web Development",
+      "Backend",
+      "Frontend"
+    ],
+    "image": "Mabin.jpg"
+  },
+  {
+    "title": "University of Toronto - Markus Developer",
+    "repo": "https://github.com/MarkUsProject/Markus",
+    "description": "<p>I applied and was accepted to work with Professor David Liu on Markus, a project submission and grading software, used by thousands of students each year. This was a part-time volunteer position during the summer of 2022. I had the opportunity to work as part of his SDS team to improve Markus. During this time I made a few large contributions on both the frontend and backend. Firstly, I added the ability to create, update, destroy, edit and add/remove a tag from a group with an API call. Secondly, I changed the UI so that markdown/latex text could be previewed in a separate tab (using React + MathJax). Finally, I added the ability for an instructor to distribute markers for an assignment in a random but non-uniform fashion. I also significantly improved the test coverage on the frontend with Jest. </p>",
+    "tags": [
+      "★",
+      "JavaScript/TypeScript",
+      "Education",
+      "Ruby/Rails",
+      "React",
+      "Web Development",
+      "Frontend",
+      "Backend",
+      "Testing"
+    ],
+    "image": "SDS.svg"
+  },
+  {
+    "title": "Paper - Frontend Engineering Intern",
+    "repo": "/private",
+    "description": "<p>During the summer of 2022 I had the pleasure of working as a frontend engineering intern at <a href='https://paper.co/' class='text-blue-700 font-bold'> Paper.co</a>. During this time I learned so much about web development and good coding standards. I mainly worked with Vue.js and Jest, but I also did some work with PDF.js. I worked on optimizing the user experience for thousands of Tutors and Students. My most impactful contributions include (but are not limited to, partially due to an NDA): an automatic essay word counter for PDFs, essay comment saving for tutors on reload and helping an admin user detect inappropriate essay comments. In total, I wrote over 4.5k lines of code over my 15 week internship. I also built skills in code-reviewing my colleagues and working in an agile environment. </p>",
+    "tags": [
+      "★",
+      "JavaScript/TypeScript",
+      "Education",
+      "Accessibility",
+      "Vue",
+      "Web Development",
+      "Frontend",
+      "Testing"
+    ],
+    "image": "paper.jpg"
+  },
+  {
+    "title": "Technology Leadership Initiative - BestFlow",
+    "repo": "https://github.com/BestFloww/BestFlow",
+    "description": "<p>After my first year of university, I was accepted into the Technology and Leadership Initiative at UofT. In fall 2022, I began working on <a href='https://bestflow.netlify.app/' class='text-blue-700 font-bold'> BestFlow</a> in collaboration with Voiceflow and my 4 TLI groupmates (Kaylee Chan, Helia Sajjadian, William Yao, Emily Wan). For this project, we were tasked with developing a minimum viable product to help convert transcripts into chatbots. We decided to approach this idea by making a tool as accessible as possible that can be used during any stage of the development process. While I did work on both frontend (React/Redux/Tailwind), backend (Node/Express/Mongoose) and testing (Jest), I am most proud of my work on the infrastructure of our codebase. I was the main force behind our automated PR testing and CI/CD pipeline to Netlify and Google Cloud Run/Build. This was a very new challenge for me, but I learned a lot about deployment and code infrastructure. After we finished BestFlow, we tested it on a variety of friends/family (since we targeted a general audience) and found that on average, people could find issues in ~10% of the questions and find things they liked in around ~40% of the questions in 4:03 (n=18). We presented BestFlow to a panel of industry guests on December 8th 2022.</p>",
+    "tags": [
+      "★",
+      "Accessibility",
+      "React",
+      "Web Development",
+      "Frontend",
+      "JavaScript/TypeScript",
+      "Backend",
+      "Testing",
+      "Infrastructure",
+      "Node",
+      "MongoDB"
+    ],
+    "image": "BestFlow.png"
+  },
+  {
+    "title": "Valorant Agent Guesser",
+    "repo": "https://github.com/WeissSa/Agent-Guesser",
+    "description": "<p>Over reading week I wanted to make a project that showed off my versatility while also learning some new technologies. I decided to make a web-app which guesses which Valorant agent someone plays based off 6 key stats. More can be read about the process on the github, but I am particularly proud of the success rate for my ML model. When guessing agents, the model has ~48% accuracy (which is much better than the 1/20 chance a random categorizer would have), which is pretty great considering some agents are very similar. Furthermore, when categorizing to roles, the model has a ~70% success rate. This project taught me a lot about Spring Boot, scikit-learn, and was a fun full-stack experience. I particularly enjoyed scraping the data from <a href='https://vlr.gg' class='text-blue-700 font-bold'> vlr.gg</a>. <a href='https://main--agent-guesser.netlify.app/' class='text-blue-700 font-bold'> The website is linked here. </a></p>",
+    "tags": [
+      "React",
+      "JavaScript/TypeScript",
+      "Web Development",
+      "Frontend",
+      "Backend",
+      "Spring Boot",
+      "Machine Learning",
+      "Data Science"
+    ],
+    "image": "val.png"
+  },
+  {
+    "title": "Cidel - Software Developer Intern",
+    "repo": "/private",
+    "description": "<p>After my second year of university, I was able to secure an internship at <a href='https://cidel.com/' class='text-blue-700 font-bold'>Cidel </a>. Since Cidel is a boutique bank, the culture was very different from my past experiences. During my time at Cidel, I built strong SQL skills and got plentiful experience doing full-stack development. My greatest accomplishment was spearheading the process of transferring internal tools to C#.net using the Blazor framework. Initially, I was just building new apps in this framework, but since it made sense to update the technology of certain internal apps, we began migrating apps as well. During my time there I focused on creating well-designed apps with a focus on SOLID principles and helping other developers learn/understand Blazor development principles.</p>",
+    "tags": [
+      "★",
+      "Blazor",
+      "C#",
+      "JavaScript/TypeScript",
+      "Web Development",
+      "Frontend",
+      "Backend",
+      "SQL",
+      "Finance",
+      ".NET"
+    ],
+    "image": "cidel.png"
+  },
+  {
+    "title": "Savi Finance - Industry Partnership",
+    "repo": "/private",
+    "description": "<p>During the beginning of my third year of university, I took a software engineering course where I partnered with Savi Finance. For this partnership, I worked on web, mobile, and backend and learned React Native, GraphQL, and how to work in a monorepo. My greatest achievement for this company was to speed up their currency conversion API from 161 seconds to 3 seconds - making it 53x faster.</p>",
+    "tags": [
+      "React",
+      "React Native",
+      "JavaScript/TypeScript",
+      "Web Development",
+      "Frontend",
+      "Backend",
+      "Mobile",
+      "GraphQL",
+      "Finance",
+      "MongoDB"
+    ],
+    "image": "savi_logo.jpeg"
+  },
+  {
+    "title": "Gusto - Software Engineering Intern",
+    "repo": "/private",
+    "description": "<p>During my third year of university I had interviewed with a small Toronto startup named Thriver during the month of December. During exam season in spring, I got a call from their CTO saying they had gotten acquired by Gusto. Luckily, I was given the chance to re-interview for my internship and joined Gusto's internship program. During my summer at Gusto, I had a fantastic full-stack experience where I worked on their time tracking team. On that team, I worked on a project which improved user experience and performance of an existing feature, as well as adding multiple new features. The functionality I added increased usage of the endpoint for the feature by up to 400% and decreased latency by ~40%. After I was done working on that project I had some time remaining in my contract and was moved to prototype a feature with a larger team. I helped make significant progress on the feature. I was told due to my work the release date moved forward by as much as 2 weeks.</p>",
+    "tags": [
+      "★",
+      "React",
+      "Ruby/Rails",
+      "JavaScript/TypeScript",
+      "Web Development",
+      "Frontend",
+      "Backend",
+      "GraphQL",
+      "Finance",
+      "SQL"
+    ],
+    "image": "gusto.jpg"
+  }
+]
