@@ -11,17 +11,17 @@
   
   /* Track */
   ::-webkit-scrollbar-track {
-    background: rgb(78, 66, 84);
+    background: #2A0047; /* Darker purple for the track */
     border-radius: 5px;
   }
   
   /* Handle */
   ::-webkit-scrollbar-thumb {
-    background: rgb(188, 167, 250);
+    background: #8A2BE2; /* A vibrant purple for the thumb */
     border-radius: 5px;
   }
   
   /* Handle on hover */
   ::-webkit-scrollbar-thumb:hover {
-    background: rgb(78, 66, 84);
+    background: #4B0082; /* A slightly darker purple on hover */
   }
