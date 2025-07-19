@@ -9,6 +9,8 @@ import {
 import { useLocalStorage } from '@mantine/hooks';
 import { IconSun, IconMoonStars } from '@tabler/icons-react';
 import '@mantine/core/styles.css';
+import '../styles/global.css';
+import React from 'react';
 
 const theme = createTheme({
   colors: {
@@ -48,6 +50,16 @@ export default function App({ Component, pageProps }: AppProps) {
 
 const ColorSchemeToggle = () => {
   const { colorScheme, toggleColorScheme } = useMantineColorScheme();
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return null;
+  }
+
   return (
     <ActionIcon
       onClick={() => toggleColorScheme()}
