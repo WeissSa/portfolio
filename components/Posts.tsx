@@ -29,9 +29,9 @@ export function Posts({ posts, postsRef }: PostsProps) {
         <div
           key={post.title}
           style={{
-            flex: '0 0 100%',
+            flex: '0 0 90%',
             scrollSnapAlign: 'center',
-            padding: '0 1rem', // Add horizontal padding here
+            padding: '0 0.5rem', // Adjust padding to show hint
             boxSizing: 'border-box',
           }}
         >
