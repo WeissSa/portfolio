@@ -21,6 +21,7 @@ export default [
       globals: {
         ...globals.browser,
         ...globals.node,
+        jest: true,
       },
     },
     plugins: {
@@ -35,10 +36,33 @@ export default [
       ...configPrettier.rules,
       'react/react-in-jsx-scope': 'off',
       'react/prop-types': 'off',
+      '@typescript-eslint/no-unused-vars': [
+        'warn',
+        {
+          argsIgnorePattern: '_',
+          varsIgnorePattern: '_',
+          caughtErrorsIgnorePattern: '_',
+        },
+      ],
+      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-require-imports': 'error',
     },
     settings: {
       react: {
         version: 'detect',
+      },
+    },
+  },
+  {
+    files: ['**/*.test.ts', '**/*.test.tsx', '**/*.spec.ts', '**/*.spec.tsx'],
+    languageOptions: {
+      globals: {
+        jest: true,
+        describe: true,
+        it: true,
+        expect: true,
+        beforeEach: true,
+        afterEach: true,
       },
     },
   },
