@@ -1,0 +1,26 @@
+.tagFilterContainer {
+  position: absolute;
+  top: 20vh;
+  right: 2rem;
+  width: 200px;
+  height: 60vh;
+  overflow-y: auto;
+  border-radius: 8px;
+  z-index: 100;
+  overscroll-behavior: contain;
+}
+
+.tagFilterCard {
+  height: 100%;
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+.chipLabel {
+  width: 150px;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0.5rem 1rem;
+}
