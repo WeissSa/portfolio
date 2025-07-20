@@ -28,3 +28,10 @@
   outline: 2px solid var(--mantine-color-purple-primary-6); /* Stronger purple outline on focus */
   outline-offset: 2px;
 }
+
+.expandedContent {
+  max-height: 500px; /* Adjust as needed */
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 10px; /* To prevent content from being hidden by scrollbar */
+}
