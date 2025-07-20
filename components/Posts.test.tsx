@@ -13,7 +13,7 @@ jest.mock('./PostCard', () => ({
 
 // Mock TagFilter component
 jest.mock('./TagFilter', () => ({
-  TagFilter: ({ posts }: { posts: any[] }) => (
+  TagFilter: ({ posts }: { posts: { title: string; description: string; repo: string; tags: string[]; image: string; }[] }) => (
     <div data-testid="tag-filter">TagFilter for {posts.length} posts</div>
   ),
 }));

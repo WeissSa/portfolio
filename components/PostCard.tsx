@@ -77,7 +77,7 @@ export const PostCard = React.memo(({ post }: PostCardProps) => {
       aria-expanded={opened}
       className={classes.card}
     >
-      <Group position="apart" mt="md" mb="xs" justify="space-between">
+      <Group mt="md" mb="xs" justify="space-between">
         <Group>
           <ActionIcon
             onClick={toggle}
@@ -90,19 +90,24 @@ export const PostCard = React.memo(({ post }: PostCardProps) => {
               <IconChevronDown size="1rem" />
             )}
           </ActionIcon>
-          <Text weight={500} style={{ flexGrow: 1, textAlign: 'center' }}>
+          <Text fw={500} style={{ flexGrow: 1, textAlign: 'center' }}>
             {post.title}
           </Text>
         </Group>
         {post.repo !== '/private' && (
           <a href={post.repo} target="_blank" rel="noopener noreferrer">
             {' '}
-            <Image src="/GitHub.png" alt="GitHub Logo" width={24} height={24} />
+            <Image
+              src="portfolio/GitHub.png"
+              alt="GitHub Logo"
+              width={24}
+              height={24}
+            />
           </a>
         )}
       </Group>
       {!opened && (
-        <Group position="left" mt="md">
+        <Group justify="flex-start" mt="md">
           {post.tags.slice(0, 3).map((tag) => (
             <PostTag key={tag} tag={tag} />
           ))}
@@ -134,7 +139,7 @@ export const PostCard = React.memo(({ post }: PostCardProps) => {
                 </Center>
               </Card.Section>
 
-              <Group position="left" mt="md">
+              <Group justify="flex-start" mt="md">
                 {post.tags.map((tag) => (
                   <PostTag key={tag} tag={tag} />
                 ))}

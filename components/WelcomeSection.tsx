@@ -7,13 +7,13 @@ export function WelcomeSection() {
   return (
     <Container className={classes.welcomeContainer}>
       <Card>
-        <Title order={1} align="center" style={{ fontSize: '4rem' }}>
+        <Title order={1} ta="center" style={{ fontSize: '4rem' }}>
           Welcome to my Website!
         </Title>
       </Card>
 
       <Card shadow="sm" p="lg" radius="md">
-        <Text size="xl" align="center" style={{ maxWidth: '800px' }}>
+        <Text size="xl" ta="center" style={{ maxWidth: '800px' }}>
           I&apos;m Sam, a Software Engineer with a Computer Science specialist
           and Math minor from the University of Toronto. I am passionate about
           software engineering and AI. My journey in tech began with game

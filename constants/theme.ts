@@ -1,4 +1,4 @@
-export const PURPLE_PRIMARY_COLORS = [
+export const PURPLE_PRIMARY_COLORS: readonly [string, string, string, string, string, string, string, string, string, string] = [
   '#F3E5F5',
   '#E1BEE7',
   '#CE93D8',

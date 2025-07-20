@@ -1,5 +1,5 @@
 import type { AppProps } from 'next/app';
-import { MantineProvider, createTheme, ColorScheme } from '@mantine/core';
+import { MantineProvider, createTheme, MantineColorScheme } from '@mantine/core';
 import { useLocalStorage } from '@mantine/hooks';
 import '@mantine/core/styles.css';
 import '../styles/global.css';
@@ -20,7 +20,7 @@ const theme = createTheme({
 });
 
 export default function App({ Component, pageProps }: AppProps) {
-  const [colorScheme] = useLocalStorage<ColorScheme>({
+  const [colorScheme] = useLocalStorage<MantineColorScheme>({
     key: 'mantine-color-scheme',
     defaultValue: 'dark',
     getInitialValueInEffect: true,

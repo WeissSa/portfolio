@@ -10,7 +10,9 @@ npm run build
 
 # nav to build
 
-cd dist
+cd out
+touch .nojekyll
+cp ../404.html .
 
 git init
 

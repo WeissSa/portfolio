@@ -88,7 +88,7 @@ export const TagFilter = ({ posts, currentSection }: TagFilterProps) => {
             onWheel={(e) => e.stopPropagation()}
             onTouchMove={(e) => e.stopPropagation()}
           >
-            <Title order={4} align="center" my="sm">
+            <Title order={4} ta="center" my="sm">
               Filter by Tag
             </Title>
             <Stack align="center" gap="0">

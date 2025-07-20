@@ -15,8 +15,10 @@ npm install
 ### Compiles and hot-reloads for development
 
 ```
-npm run serve
+npm run dev
 ```
+
+(note go to http://localhost:3000/portfolio)
 
 ### Compiles and minifies for production
 

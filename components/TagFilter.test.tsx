@@ -1,5 +1,5 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { MantineProvider, useMantineTheme } from '@mantine/core';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { MantineProvider } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
 import { TagFilter } from './TagFilter';
 import { TagProvider, useTags } from '../contexts/TagContext';
@@ -90,7 +90,9 @@ describe('TagContext', () => {
   });
 
   it('throws error when useTags is not used within TagProvider', () => {
-    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const consoleErrorSpy = jest
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
     expect(() => render(<TestComponent />)).toThrow(
       'useTags must be used within a TagProvider',
     );
@@ -152,7 +154,9 @@ describe('TagFilter', () => {
 
     const typescriptChip = screen.getByText('typescript');
     fireEvent.click(typescriptChip);
-    expect(screen.getByTestId('selected-tags')).toHaveTextContent('react,typescript');
+    expect(screen.getByTestId('selected-tags')).toHaveTextContent(
+      'react,typescript',
+    );
     expect(typescriptChip).toBeChecked();
 
     // Deselect
