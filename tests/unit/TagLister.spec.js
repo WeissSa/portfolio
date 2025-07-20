@@ -1,10 +1,10 @@
-import { shallowMount } from "@vue/test-utils";
-import TagLister from "../../src/components/TagLister.vue";
-import posts from "../../src/assets/posts.json";
-import Vuex from "vuex";
+import { shallowMount } from '@vue/test-utils';
+import TagLister from '../../src/components/TagLister.vue';
+import posts from '../../src/assets/posts.json';
+import Vuex from 'vuex';
 
 const baseProps = posts;
-describe("TagLister", () => {
+describe('TagLister', () => {
   let wrapper;
   let store = Vuex.createStore({
     state: {
@@ -27,7 +27,7 @@ describe("TagLister", () => {
       props,
     });
 
-  it("should display a tag for every tag", async () => {
+  it('should display a tag for every tag', async () => {
     wrapper = getWrapper({ posts: baseProps });
     baseProps.forEach((post) => {
       post.tags.forEach((tag) => {
@@ -36,23 +36,23 @@ describe("TagLister", () => {
     });
   });
 
-  it("should have star as the first tag", async () => {
+  it('should have star as the first tag', async () => {
     wrapper = getWrapper({ posts: baseProps });
-    expect(wrapper.vm.OrganizedTags[0]).toBe("★");
+    expect(wrapper.vm.OrganizedTags[0]).toBe('★');
   });
 
-  it("should sort the tags correctly by count", async () => {
-    wrapper = getWrapper({ posts: [{ tags: ["a"] }, { tags: ["a", "b"] }] });
-    expect(wrapper.vm.OrganizedTags[0]).toBe("a");
-    expect(wrapper.vm.OrganizedTags[1]).toBe("b");
+  it('should sort the tags correctly by count', async () => {
+    wrapper = getWrapper({ posts: [{ tags: ['a'] }, { tags: ['a', 'b'] }] });
+    expect(wrapper.vm.OrganizedTags[0]).toBe('a');
+    expect(wrapper.vm.OrganizedTags[1]).toBe('b');
   });
 
-  it("should sort the tags correctly by count and alway7s place star first", async () => {
+  it('should sort the tags correctly by count and alway7s place star first', async () => {
     wrapper = getWrapper({
-      posts: [{ tags: ["a"] }, { tags: ["a", "b", "★"] }],
+      posts: [{ tags: ['a'] }, { tags: ['a', 'b', '★'] }],
     });
-    expect(wrapper.vm.OrganizedTags[0]).toBe("★");
-    expect(wrapper.vm.OrganizedTags[1]).toBe("a");
-    expect(wrapper.vm.OrganizedTags[2]).toBe("b");
+    expect(wrapper.vm.OrganizedTags[0]).toBe('★');
+    expect(wrapper.vm.OrganizedTags[1]).toBe('a');
+    expect(wrapper.vm.OrganizedTags[2]).toBe('b');
   });
 });
