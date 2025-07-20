@@ -10,7 +10,6 @@ export function ScrollDownArrow() {
       opacity: [0.8, 1, 0.8], // Pulse at lowest point
       transition: {
         duration: 1.2, // Shorter duration for a snappier bounce
-        ease: 'easeOut',
         repeat: Infinity,
         repeatDelay: 0.3,
       },

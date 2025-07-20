@@ -1,7 +1,7 @@
 [
   {
     "title": "DreamZzz - Game Development Project",
-    "repo": "https://github.com/WeissSa/DreamZzz",
+    "repo": "portfolio/https://github.com/WeissSa/DreamZzz",
     "description": "<p>DreamZzz is a game development project I started during my last year in highschool built with Godot and GDScript. I designed it to be a blending of two game genres I really enjoy: platformers and stealth games. During this project I learned a lot about UI design, pixel art, and game logic. I decided to finish work on it once I was satisfied with the demo, although the game is currently unfinished. To try out the game, you will have to download the Godot launcher, clone the repo, and run the game from within the engine.</p>",
     "tags": [
       "Godot",
@@ -9,25 +9,25 @@
       "Game Development",
       "Object Oriented Programming"
     ],
-    "image": "Dream.png"
+    "image": "portfolio/Dream.png"
   },
   {
     "title": "Interactive Cipher Encoder/Decoder",
-    "repo": "https://github.com/WeissSa/Cipher",
+    "repo": "portfolio/https://github.com/WeissSa/Cipher",
     "description": "<p>This is a Cipher translater/decoder I made using the Godot engine and GDScript. Currently it is set to use any key (up to 26) for the Caesar Cipher and translate in and out of the Monoalphabetic Cipher given a key of 27 letters.</p>",
     "tags": ["Godot", "GDScript"],
-    "image": "cipher.png"
+    "image": "portfolio/cipher.png"
   },
   {
     "title": "Code-it Hacks - Python Instruction",
-    "repo": "https://github.com/WeissSa/CodingCampGames",
+    "repo": "portfolio/https://github.com/WeissSa/CodingCampGames",
     "description": "<p>During the summer before I started university I was given the amazing opportunity to instruct Python to students ages 8-16 (although most fell within the range of 10-12). During this summer I also did some basic Micro:bit and Scratch instruction, but my focus was Python. The repo attached to this post is a collection of games I made using pygame to help teach coding to my students. They are all designed to be completed within a week and vary in complexity since as the summer went on I had some students who repeatedly kept taking my class and thus needed an extra optional challenge. This experience was extremely useful for strengthening my fundamental understanding of both Python, and how pygame renders visual data, which helped build the foundation for the Cryptocurrency graphing software I made for school and some of the work I did at Paper.</p>",
     "tags": ["Python", "Game Development", "Education"],
-    "image": "CodeItHacks.jpeg"
+    "image": "portfolio/CodeItHacks.jpeg"
   },
   {
     "title": "University of Toronto - Cryptographer",
-    "repo": "https://github.com/WeissSa/CryptoGrapher",
+    "repo": "portfolio/https://github.com/WeissSa/CryptoGrapher",
     "description": "<p>This is a project I made for CSC110 (Introduction to Computer Science) along with my peer Madeline Ahn. For this project we were tasked with analyzing the change in a trend due to COVID and displaying it creatively. I wanted to create a larger challenge for myself so I decided to stretch my pygame knowledge gained the previous summer and create a custom graphing framework using pygame. Upon running main.py, the project lets you choose 2 cryptocurrencies to compare + a metric and shows you how the two currencies developed in that metric over time. The repo's README has some recommended comparisons. I learned a lot about UI development, object oriented programming, and how to nicely work with Excel from this project.</p>",
     "tags": [
       "Python",
@@ -35,7 +35,7 @@
       "Data Science",
       "Object Oriented Programming"
     ],
-    "image": "Crypto.PNG"
+    "image": "portfolio/Crypto.PNG"
   },
   {
     "title": "The Mabin School - Help Ticket Website",
@@ -50,11 +50,11 @@
       "Backend",
       "Frontend"
     ],
-    "image": "Mabin.jpg"
+    "image": "portfolio/Mabin.jpg"
   },
   {
     "title": "University of Toronto - Markus Developer",
-    "repo": "https://github.com/MarkUsProject/Markus",
+    "repo": "portfolio/https://github.com/MarkUsProject/Markus",
     "description": "<p>I applied and was accepted to work with Professor David Liu on Markus, a project submission and grading software, used by thousands of students each year. This was a part-time volunteer position during the summer of 2022. I had the opportunity to work as part of his SDS team to improve Markus. During this time I made a few large contributions on both the frontend and backend. Firstly, I added the ability to create, update, destroy, edit and add/remove a tag from a group with an API call. Secondly, I changed the UI so that markdown/latex text could be previewed in a separate tab (using React + MathJax). Finally, I added the ability for an instructor to distribute markers for an assignment in a random but non-uniform fashion. I also significantly improved the test coverage on the frontend with Jest. </p>",
     "tags": [
       "★",
@@ -67,7 +67,7 @@
       "Backend",
       "Testing"
     ],
-    "image": "SDS.svg"
+    "image": "portfolio/SDS.svg"
   },
   {
     "title": "Paper - Frontend Engineering Intern",
@@ -83,11 +83,11 @@
       "Frontend",
       "Testing"
     ],
-    "image": "paper.jpg"
+    "image": "portfolio/paper.jpg"
   },
   {
     "title": "Technology Leadership Initiative - BestFlow",
-    "repo": "https://github.com/BestFloww/BestFlow",
+    "repo": "portfolio/https://github.com/BestFloww/BestFlow",
     "description": "<p>After my first year of university, I was accepted into the Technology and Leadership Initiative at UofT. In fall 2022, I began working on <a href='https://bestflow.netlify.app/' class='text-blue-700 font-bold'> BestFlow</a> in collaboration with Voiceflow and my 4 TLI groupmates (Kaylee Chan, Helia Sajjadian, William Yao, Emily Wan). For this project, we were tasked with developing a minimum viable product to help convert transcripts into chatbots. We decided to approach this idea by making a tool as accessible as possible that can be used during any stage of the development process. While I did work on both frontend (React/Redux/Tailwind), backend (Node/Express/Mongoose) and testing (Jest), I am most proud of my work on the infrastructure of our codebase. I was the main force behind our automated PR testing and CI/CD pipeline to Netlify and Google Cloud Run/Build. This was a very new challenge for me, but I learned a lot about deployment and code infrastructure. After we finished BestFlow, we tested it on a variety of friends/family (since we targeted a general audience) and found that on average, people could find issues in ~10% of the questions and find things they liked in around ~40% of the questions in 4:03 (n=18). We presented BestFlow to a panel of industry guests on December 8th 2022.</p>",
     "tags": [
       "★",
@@ -102,11 +102,11 @@
       "Node",
       "MongoDB"
     ],
-    "image": "BestFlow.png"
+    "image": "portfolio/BestFlow.png"
   },
   {
     "title": "Valorant Agent Guesser",
-    "repo": "https://github.com/WeissSa/Agent-Guesser",
+    "repo": "portfolio/https://github.com/WeissSa/Agent-Guesser",
     "description": "<p>Over reading week I wanted to make a project that showed off my versatility while also learning some new technologies. I decided to make a web-app which guesses which Valorant agent someone plays based off 6 key stats. More can be read about the process on the github, but I am particularly proud of the success rate for my ML model. When guessing agents, the model has ~48% accuracy (which is much better than the 1/20 chance a random categorizer would have), which is pretty great considering some agents are very similar. Furthermore, when categorizing to roles, the model has a ~70% success rate. This project taught me a lot about Spring Boot, scikit-learn, and was a fun full-stack experience. I particularly enjoyed scraping the data from <a href='https://vlr.gg' class='text-blue-700 font-bold'> vlr.gg</a>. The website was deployed for a few years but is now taken down due to the data being stale and not wanting to maintain security vulnerabilities on my end.</p>",
     "tags": [
       "React",
@@ -118,7 +118,7 @@
       "Machine Learning",
       "Data Science"
     ],
-    "image": "val.png"
+    "image": "portfolio/val.png"
   },
   {
     "title": "Cidel - Software Developer Intern",
@@ -136,7 +136,7 @@
       "Finance",
       ".NET"
     ],
-    "image": "cidel.png"
+    "image": "portfolio/cidel.png"
   },
   {
     "title": "Savi Finance - Industry Partnership",
@@ -154,7 +154,7 @@
       "Finance",
       "MongoDB"
     ],
-    "image": "savi_logo.jpeg"
+    "image": "portfolio/savi_logo.jpeg"
   },
   {
     "title": "Gusto - Software Engineering Intern",
@@ -172,7 +172,7 @@
       "Finance",
       "SQL"
     ],
-    "image": "gusto.jpg"
+    "image": "portfolio/gusto.jpg"
   },
   {
     "title": "Gusto - Software Engineer",
@@ -188,6 +188,6 @@
       "Frontend",
       "Backend"
     ],
-    "image": "gusto.jpg"
+    "image": "portfolio/gusto.jpg"
   }
 ]

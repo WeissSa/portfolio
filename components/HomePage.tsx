@@ -14,9 +14,9 @@ interface HomePageProps {
 }
 
 export const HomePage: NextPage<HomePageProps> = ({ allPostsData }) => {
-  const welcomeSectionRef = useRef<HTMLDivElement>(null);
-  const experienceSectionRef = useRef<HTMLDivElement>(null);
-  const postsScrollRef = useRef<HTMLDivElement>(null);
+  const welcomeSectionRef = useRef<HTMLDivElement>(null!);
+  const experienceSectionRef = useRef<HTMLDivElement>(null!);
+  const postsScrollRef = useRef<HTMLDivElement>(null!);
 
   const { handleWheel, handleTouchStart, handleTouchMove, currentSection } =
     useScrollNavigation({
@@ -47,7 +47,7 @@ export const HomePage: NextPage<HomePageProps> = ({ allPostsData }) => {
         ref={experienceSectionRef} // Apply ref here
         className={styles.experienceSection}
       >
-        <Title order={1} align="center" my="lg">
+        <Title order={1} ta="center" my="lg">
           Experience & Projects
         </Title>
         <Posts posts={allPostsData} postsRef={postsScrollRef} />
