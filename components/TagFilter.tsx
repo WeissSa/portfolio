@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTags } from '../contexts/TagContext';
 import { Post } from '../lib/posts';
@@ -40,6 +40,7 @@ export const TagFilter = ({ posts, currentSection }: TagFilterProps) => {
   const isAtTop = !currentSection;
 
   const tagCount: { [key: string]: number } = {};
+
   posts.forEach((post) => {
     post.tags.forEach((tag) => {
       tagCount[tag] = (tagCount[tag] || 0) + 1;
@@ -56,12 +57,15 @@ export const TagFilter = ({ posts, currentSection }: TagFilterProps) => {
     [tagCount],
   );
 
-  const handleTagChange = (tag: string) => {
-    const newSelectedTags = selectedTags.includes(tag)
-      ? selectedTags.filter((t) => t !== tag)
-      : [...selectedTags, tag];
-    setSelectedTags(newSelectedTags);
-  };
+  const handleTagChange = useCallback(
+    (tag: string) => {
+      const newSelectedTags = selectedTags.includes(tag)
+        ? selectedTags.filter((t) => t !== tag)
+        : [...selectedTags, tag];
+      setSelectedTags(newSelectedTags);
+    },
+    [selectedTags, setSelectedTags],
+  );
 
   if (isMobile) {
     return null;

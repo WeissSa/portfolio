@@ -1,6 +1,6 @@
 import { PostCard } from './PostCard';
 import { TagFilter } from './TagFilter';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useTags } from '../contexts/TagContext';
 import styles from './Posts.module.css';
 
@@ -18,12 +18,16 @@ interface PostsProps {
 export function Posts({ posts, postsRef }: PostsProps) {
   const { selectedTags } = useTags();
 
-  const filteredPosts = posts.filter((post) => {
-    if (selectedTags.length === 0) {
-      return true;
-    }
-    return selectedTags.every((tag) => post.tags.includes(tag));
-  });
+  const filteredPosts = useMemo(
+    () =>
+      posts.filter((post) => {
+        if (selectedTags.length === 0) {
+          return true;
+        }
+        return selectedTags.every((tag) => post.tags.includes(tag));
+      }),
+    [posts, selectedTags],
+  );
 
   return (
     <>
