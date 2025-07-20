@@ -13,26 +13,6 @@ import { IconChevronDown, IconChevronUp } from '@tabler/icons-react';
 import classes from './PostCard.module.css';
 import { AnimatePresence, motion } from 'framer-motion';
 import React from 'react';
-import {
-  ICON_SIZE,
-  TEXT_WEIGHT,
-  GITHUB_LOGO_SIZE,
-  PRIVATE_REPO_VALUE,
-  TAG_SLICE_START,
-  TAG_SLICE_END,
-  ANIMATION_INITIAL_OPACITY,
-  ANIMATION_INITIAL_HEIGHT,
-  ANIMATION_INITIAL_Y,
-  ANIMATION_INITIAL_SCALE_Y,
-  ANIMATION_ANIMATE_OPACITY,
-  ANIMATION_ANIMATE_Y,
-  ANIMATION_ANIMATE_SCALE_Y,
-  ANIMATION_EXIT_OPACITY,
-  ANIMATION_EXIT_HEIGHT,
-  ANIMATION_SPRING_STIFFNESS,
-  ANIMATION_SPRING_DAMPING,
-  IMAGE_HEIGHT,
-} from '../constants/PostCard';
 
 interface PostCardProps {
   post: {
@@ -98,7 +78,7 @@ export const PostCard = React.memo(({ post }: PostCardProps) => {
           <a href={post.repo} target="_blank" rel="noopener noreferrer">
             {' '}
             <Image
-              src="portfolio/GitHub.png"
+              src="/portfolio/GitHub.png"
               alt="GitHub Logo"
               width={24}
               height={24}
