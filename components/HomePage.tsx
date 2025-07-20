@@ -6,6 +6,8 @@ import { WelcomeSection } from './WelcomeSection';
 import React, { useRef } from 'react';
 import { useScrollNavigation } from '../lib/useScrollNavigation';
 import { TagFilter } from './TagFilter';
+import styles from './HomePage.module.css';
+import { OVERLAY_OPACITY } from '../constants/styles';
 
 interface HomePageProps {
   allPostsData: Post[];
@@ -28,49 +30,22 @@ export const HomePage: NextPage<HomePageProps> = ({ allPostsData }) => {
       onWheel={handleWheel}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
-      style={{
-        height: '100vh',
-        overflow: 'hidden', // Hide main scrollbar
-      }}
+      className={styles.mainContainer}
     >
-      <Box
-        ref={welcomeSectionRef}
-        style={{
-          minHeight: '100vh',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center',
-          backgroundImage: 'url(/banner.jpg)',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          position: 'relative',
-        }}
-      >
+      <Box ref={welcomeSectionRef} className={styles.welcomeSection}>
         <div
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.4)',
-            zIndex: 1,
-          }}
+          className={styles.overlay}
+          style={
+            { '--overlay-opacity': OVERLAY_OPACITY } as React.CSSProperties
+          }
         />
-        <div style={{ zIndex: 2 }}>
+        <div className={styles.contentZIndex}>
           <WelcomeSection />
         </div>
       </Box>
       <Container
         ref={experienceSectionRef} // Apply ref here
-        style={{
-          minHeight: '100vh',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center',
-        }}
+        className={styles.experienceSection}
       >
         <Title order={1} align="center" my="lg">
           Experience & Projects

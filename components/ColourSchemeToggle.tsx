@@ -1,6 +1,7 @@
 import { ActionIcon, useMantineColorScheme } from '@mantine/core';
 import { IconMoonStars, IconSun } from '@tabler/icons-react';
 import React from 'react';
+import classes from './ColourSchemeToggle.module.css';
 
 export const ColorSchemeToggle = () => {
   const { colorScheme, toggleColorScheme } = useMantineColorScheme();
@@ -20,7 +21,7 @@ export const ColorSchemeToggle = () => {
       variant="default"
       size="xl"
       aria-label="Toggle color scheme"
-      style={{ position: 'fixed', bottom: 20, right: 20, zIndex: 1000 }}
+      className={classes.colorSchemeToggle}
     >
       {colorScheme === 'dark' ? (
         <IconSun size="1.2rem" />

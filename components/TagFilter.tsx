@@ -4,6 +4,29 @@ import { useTags } from '../contexts/TagContext';
 import { Post } from '../lib/posts';
 import { Chip, Stack, Title, Card, useMantineTheme } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
+import classes from './TagFilter.module.css';
+import {
+  ANIMATION_INITIAL_OPACITY,
+  ANIMATION_INITIAL_X,
+  ANIMATION_ANIMATE_OPACITY,
+  ANIMATION_ANIMATE_X,
+  ANIMATION_EXIT_OPACITY,
+  ANIMATION_EXIT_X,
+  ANIMATION_DURATION,
+  TAG_FILTER_TOP,
+  TAG_FILTER_RIGHT,
+  TAG_FILTER_WIDTH,
+  TAG_FILTER_HEIGHT,
+  TAG_FILTER_BORDER_RADIUS,
+  TAG_FILTER_Z_INDEX,
+  CARD_PADDING,
+  TITLE_ORDER,
+  TITLE_MARGIN_Y,
+  STACK_GAP,
+  CHIP_MARGIN_Y,
+  CHIP_LABEL_WIDTH,
+  CHIP_LABEL_PADDING,
+} from '../constants/TagFilter';
 
 interface TagFilterProps {
   posts: Post[];
@@ -48,31 +71,22 @@ export const TagFilter = ({ posts, currentSection }: TagFilterProps) => {
     <AnimatePresence>
       {!isAtTop && (
         <motion.div
-          initial={{ opacity: 0, x: 100 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: 100 }}
-          transition={{ duration: 0.5 }}
-          style={{
-            position: 'absolute',
-            top: '20vh',
-            right: '2rem',
-            width: '200px',
-            height: '60vh',
-            overflowY: 'auto',
-            borderRadius: '8px',
-            zIndex: 100, // Ensure it's above other content
+          initial={{
+            opacity: ANIMATION_INITIAL_OPACITY,
+            x: ANIMATION_INITIAL_X,
           }}
+          animate={{
+            opacity: ANIMATION_ANIMATE_OPACITY,
+            x: ANIMATION_ANIMATE_X,
+          }}
+          exit={{ opacity: ANIMATION_EXIT_OPACITY, x: ANIMATION_EXIT_X }}
+          transition={{ duration: ANIMATION_DURATION }}
+          className={classes.tagFilterContainer}
         >
           <Card
-            style={{
-              height: '100%', // Make card fill the motion.div
-              padding: '1rem',
-              overflowY: 'auto',
-            }}
-            withBorder
-            shadow="lg"
-            className="hide-scrollbar"
+            className={classes.tagFilterCard}
             onWheel={(e) => e.stopPropagation()}
+            onTouchMove={(e) => e.stopPropagation()}
           >
             <Title order={4} align="center" my="sm">
               Filter by Tag

@@ -1,21 +1,11 @@
 import { Container, Title, Text, Card } from '@mantine/core';
 import React from 'react';
 import { ScrollDownArrow } from './ScrollDownArrow';
+import classes from './WelcomeSection.module.css';
 
 export function WelcomeSection() {
   return (
-    <Container
-      style={{
-        minHeight: '100vh',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        scrollSnapAlign: 'start',
-        position: 'relative', // Added for positioning the arrow
-        gap: '2rem',
-      }}
-    >
+    <Container className={classes.welcomeContainer}>
       <Card>
         <Title order={1} align="center" style={{ fontSize: '4rem' }}>
           Welcome to my Website!

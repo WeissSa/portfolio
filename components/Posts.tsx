@@ -2,6 +2,7 @@ import { PostCard } from './PostCard';
 import { TagFilter } from './TagFilter';
 import React from 'react';
 import { useTags } from '../contexts/TagContext';
+import styles from './Posts.module.css';
 
 interface PostsProps {
   posts: {
@@ -27,27 +28,9 @@ export function Posts({ posts, postsRef }: PostsProps) {
   return (
     <>
       <TagFilter posts={posts} />
-      <div
-        ref={postsRef}
-        style={{
-          display: 'flex',
-          overflowX: 'auto',
-          scrollSnapType: 'x mandatory',
-          paddingBottom: '1rem',
-          width: '100%',
-        }}
-        className="hide-scrollbar"
-      >
+      <div ref={postsRef} className={`${styles.postsContainer} hide-scrollbar`}>
         {filteredPosts.map((post) => (
-          <div
-            key={post.title}
-            style={{
-              flex: '0 0 90%',
-              scrollSnapAlign: 'center',
-              padding: '0 0.5rem', // Adjust padding to show hint
-              boxSizing: 'border-box',
-            }}
-          >
+          <div key={post.title} className={styles.postCardWrapper}>
             <PostCard post={post} />
           </div>
         ))}
