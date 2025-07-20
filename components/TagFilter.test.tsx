@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MantineProvider, useMantineTheme } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
 import { TagFilter } from './TagFilter';
@@ -109,7 +109,7 @@ describe('TagFilter', () => {
     render(
       <MantineProvider>
         <TagProvider>
-          <TagFilter posts={mockPosts} />
+          <TagFilter posts={mockPosts} currentSection={1} />
         </TagProvider>
       </MantineProvider>,
     );
@@ -120,7 +120,7 @@ describe('TagFilter', () => {
     render(
       <MantineProvider>
         <TagProvider>
-          <TagFilter posts={mockPosts} />
+          <TagFilter posts={mockPosts} currentSection={1} />
         </TagProvider>
       </MantineProvider>,
     );
@@ -139,7 +139,7 @@ describe('TagFilter', () => {
     render(
       <MantineProvider>
         <TagProvider>
-          <TagFilter posts={mockPosts} />
+          <TagFilter posts={mockPosts} currentSection={1} />
           <TestComponent /> {/* To observe selectedTags */}
         </TagProvider>
       </MantineProvider>,

@@ -16,7 +16,7 @@ export const HomePage: NextPage<HomePageProps> = ({ allPostsData }) => {
   const experienceSectionRef = useRef<HTMLDivElement>(null);
   const postsScrollRef = useRef<HTMLDivElement>(null);
 
-  const { handleWheel, handleTouchStart, handleTouchMove } =
+  const { handleWheel, handleTouchStart, handleTouchMove, currentSection } =
     useScrollNavigation({
       welcomeSectionRef,
       experienceSectionRef,
@@ -76,7 +76,7 @@ export const HomePage: NextPage<HomePageProps> = ({ allPostsData }) => {
           Experience & Projects
         </Title>
         <Posts posts={allPostsData} postsRef={postsScrollRef} />
-        <TagFilter posts={allPostsData} />
+        <TagFilter posts={allPostsData} currentSection={currentSection} />
       </Container>
     </div>
   );
