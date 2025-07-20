@@ -5,6 +5,7 @@ import { Post } from '../lib/posts';
 import { WelcomeSection } from './WelcomeSection';
 import React, { useRef } from 'react';
 import { useScrollNavigation } from '../lib/useScrollNavigation';
+import { TagFilter } from './TagFilter';
 
 interface HomePageProps {
   allPostsData: Post[];
@@ -75,6 +76,7 @@ export const HomePage: NextPage<HomePageProps> = ({ allPostsData }) => {
           Experience & Projects
         </Title>
         <Posts posts={allPostsData} postsRef={postsScrollRef} />
+        <TagFilter posts={allPostsData} />
       </Container>
     </div>
   );

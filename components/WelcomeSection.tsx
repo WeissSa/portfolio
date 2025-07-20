@@ -13,21 +13,15 @@ export function WelcomeSection() {
         alignItems: 'center',
         scrollSnapAlign: 'start',
         position: 'relative', // Added for positioning the arrow
+        gap: '2rem',
       }}
     >
-      <Title
-        order={1}
-        align="center"
-        style={{
-          fontSize: '4rem',
-          marginBottom: '2rem',
-          backgroundColor: 'rgba(36,36,36,0.3)', // transparent white background
-          borderRadius: '8px',
-          padding: '0.5rem 1rem',
-        }}
-      >
-        Welcome to my Website!
-      </Title>
+      <Card>
+        <Title order={1} align="center" style={{ fontSize: '4rem' }}>
+          Welcome to my Website!
+        </Title>
+      </Card>
+
       <Card shadow="sm" p="lg" radius="md">
         <Text size="xl" align="center" style={{ maxWidth: '800px' }}>
           I&apos;m Sam, a Software Engineer with a Computer Science specialist
