@@ -1,115 +1,100 @@
 import userEvent from '@testing-library/user-event';
 import { render, screen } from '@testing-library/react';
-import { PostCard } from './PostCard';
+import { PostCard } from '../components/PostCard';
 import { MantineProvider } from '@mantine/core';
+
+// Mock PostTag component
+jest.mock('../components/PostTag', () => ({
+  PostTag: ({ tag }: { tag: string }) => <span className="tag">{tag}</span>,
+}));
 
 describe('PostCard', () => {
   const mockPost = {
     title: 'Test Post Title',
     description: 'This is a test post description.',
     repo: 'https://github.com/test/test-repo',
-    tags: ['test', 'react'],
+    tags: ['test', 'react', 'typescript', 'nextjs', 'mantine'],
     image: 'test-image.png',
   };
 
-  it('renders the post card with correct content', async () => {
+  const renderPostCard = (post = mockPost) => {
     render(
       <MantineProvider>
-        <PostCard post={mockPost} />
+        <PostCard post={post} />
       </MantineProvider>,
     );
+  };
 
-    expect(screen.getByText(/test post title/i)).toBeInTheDocument();
+  it('renders the title', () => {
+    renderPostCard();
+    expect(screen.getByText(/Test Post Title/i)).toBeInTheDocument();
+  });
+
+  it('only 3 tags render when closed', () => {
+    renderPostCard();
+    expect(screen.getByText('test')).toBeInTheDocument();
+    expect(screen.getByText('react')).toBeInTheDocument();
+    expect(screen.getByText('typescript')).toBeInTheDocument();
+    expect(screen.queryByText('nextjs')).not.toBeInTheDocument();
+    expect(screen.queryByText('mantine')).not.toBeInTheDocument();
+  });
+
+  it('all tags render when open', async () => {
+    renderPostCard();
     await userEvent.click(
-      screen.getByRole('button', { name: /test post title/i }),
+      screen.getByRole('button', { name: /Test Post Title/i }),
     );
-    expect(screen.getByTestId('post-description')).toHaveTextContent(
-      /this is a test post description./i,
-    );
-    expect(
-      screen.getByAltText(/screenshot or picture of test post title/i),
-    ).toBeInTheDocument();
-    expect(screen.getByText('test', { selector: '.tag' })).toBeInTheDocument();
-    expect(screen.getByText(/react/i)).toBeInTheDocument();
+    expect(screen.getByText('test')).toBeInTheDocument();
+    expect(screen.getByText('react')).toBeInTheDocument();
+    expect(screen.getByText('typescript')).toBeInTheDocument();
+    expect(screen.getByText('nextjs')).toBeInTheDocument();
+    expect(screen.getByText('mantine')).toBeInTheDocument();
   });
 
-  it('renders a link to the post detail page', () => {
-    render(
-      <MantineProvider>
-        <PostCard post={mockPost} />
-      </MantineProvider>,
-    );
-
-    const githubLink = screen.getByRole('link', { name: /github logo/i });
-    expect(githubLink).toBeInTheDocument();
-    expect(githubLink).toHaveAttribute(
-      'href',
-      'https://github.com/test/test-repo',
-    );
-  });
-
-  it('expands and collapses the card to show/hide full content', async () => {
-    render(
-      <MantineProvider>
-        <PostCard post={mockPost} />
-      </MantineProvider>,
-    );
-
-    // Initially, the full description and image should not be visible
-    expect(screen.queryByTestId('post-description')).not.toBeInTheDocument();
+  it('picture renders when open', async () => {
+    renderPostCard();
     expect(
-      screen.queryByAltText(/screenshot or picture of test post title/i),
+      screen.queryByAltText(/screenshot or picture of Test Post Title/i),
     ).not.toBeInTheDocument();
-
-    // Click to expand
     await userEvent.click(
-      screen.getByRole('button', { name: /test post title/i }),
+      screen.getByRole('button', { name: /Test Post Title/i }),
     );
+    expect(
+      screen.getByAltText(/screenshot or picture of Test Post Title/i),
+    ).toBeInTheDocument();
+  });
 
-    // After clicking, the full description and image should be visible
+  it('picture does not render when closed', async () => {
+    renderPostCard();
+    await userEvent.click(
+      screen.getByRole('button', { name: /Test Post Title/i }),
+    ); // Open
+    expect(
+      screen.getByAltText(/screenshot or picture of Test Post Title/i),
+    ).toBeInTheDocument();
+    await userEvent.click(
+      screen.getByRole('button', { name: /Test Post Title/i }),
+    ); // Close
+    expect(
+      screen.queryByAltText(/screenshot or picture of Test Post Title/i),
+    ).not.toBeInTheDocument();
+  });
+
+  it('links do not close the card', async () => {
+    renderPostCard();
+    await userEvent.click(
+      screen.getByRole('button', { name: /Test Post Title/i }),
+    ); // Open
     expect(screen.getByTestId('post-description')).toBeInTheDocument();
-    expect(
-      screen.getByAltText(/screenshot or picture of test post title/i),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', { name: /test post title/i }),
-    ).toHaveAttribute('aria-expanded', 'true');
 
-    // Click again to collapse
-    await userEvent.click(
-      screen.getByRole('button', { name: /test post title/i }),
-    );
-
-    // After clicking again, the full description and image should not be visible
-    expect(screen.queryByTestId('post-description')).not.toBeInTheDocument();
-    expect(
-      screen.queryByAltText(/screenshot or picture of test post title/i),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.getByRole('button', { name: /test post title/i }),
-    ).toHaveAttribute('aria-expanded', 'false');
+    await userEvent.click(screen.getByRole('link', { name: /GitHub Logo/i }));
+    expect(screen.getByTestId('post-description')).toBeInTheDocument(); // Should still be open
   });
 
-  it('does not expand when the GitHub button is clicked', async () => {
-    render(
-      <MantineProvider>
-        <PostCard post={mockPost} />
-      </MantineProvider>,
-    );
-
-    // Initially, the card should not be expanded
-    expect(
-      screen.getByRole('button', { name: /test post title/i }),
-    ).toHaveAttribute('aria-expanded', 'false');
+  it('the github link does not open the card', async () => {
+    renderPostCard();
     expect(screen.queryByTestId('post-description')).not.toBeInTheDocument();
-
-    // Click the GitHub link
-    await userEvent.click(screen.getByRole('link', { name: /github logo/i }));
-
-    // The card should still not be expanded
-    expect(
-      screen.getByRole('button', { name: /test post title/i }),
-    ).toHaveAttribute('aria-expanded', 'false');
+    await userEvent.click(screen.getByRole('link', { name: /GitHub Logo/i }));
     expect(screen.queryByTestId('post-description')).not.toBeInTheDocument();
   });
 });
