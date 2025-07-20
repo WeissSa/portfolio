@@ -1,6 +1,6 @@
 import type { NextPage } from 'next';
 import { Posts } from '../components/Posts';
-import { Container, Title } from '@mantine/core';
+import { Box, Container, Title } from '@mantine/core';
 import { Post } from '../lib/posts';
 import { WelcomeSection } from './WelcomeSection';
 import React, { useRef } from 'react';
@@ -32,7 +32,7 @@ export const HomePage: NextPage<HomePageProps> = ({ allPostsData }) => {
         overflow: 'hidden', // Hide main scrollbar
       }}
     >
-      <div
+      <Box
         ref={welcomeSectionRef}
         style={{
           minHeight: '100vh',
@@ -40,10 +40,27 @@ export const HomePage: NextPage<HomePageProps> = ({ allPostsData }) => {
           flexDirection: 'column',
           justifyContent: 'center',
           alignItems: 'center',
+          backgroundImage: 'url(/banner.jpg)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          position: 'relative',
         }}
       >
-        <WelcomeSection />
-      </div>
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.4)',
+            zIndex: 1,
+          }}
+        />
+        <div style={{ zIndex: 2 }}>
+          <WelcomeSection />
+        </div>
+      </Box>
       <Container
         ref={experienceSectionRef} // Apply ref here
         style={{

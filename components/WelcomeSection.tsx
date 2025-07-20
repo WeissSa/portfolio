@@ -18,7 +18,13 @@ export function WelcomeSection() {
       <Title
         order={1}
         align="center"
-        style={{ fontSize: '4rem', marginBottom: '2rem' }}
+        style={{
+          fontSize: '4rem',
+          marginBottom: '2rem',
+          backgroundColor: 'rgba(36,36,36,0.3)', // transparent white background
+          borderRadius: '8px',
+          padding: '0.5rem 1rem',
+        }}
       >
         Welcome to my Website!
       </Title>
