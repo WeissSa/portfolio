@@ -103,10 +103,14 @@ export const PostCard = React.memo(({ post }: PostCardProps) => {
               animate={{ opacity: 1, height: 'auto', y: 0, scaleY: 1 }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+              onWheel={(e) => e.stopPropagation()}
+              onTouchMove={(e) => e.stopPropagation()}
+              className={classes.expandedContent}
             >
               <div
                 data-testid="post-description"
                 dangerouslySetInnerHTML={{ __html: post.description }}
+                style={{ overflow: 'auto' }}
               />
 
               <Card.Section>
