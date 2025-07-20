@@ -5,6 +5,7 @@ import '@mantine/core/styles.css';
 import '../styles/global.css';
 import React from 'react';
 import { ColorSchemeToggle } from '../components/ColourSchemeToggle';
+import { TagProvider } from '../contexts/TagContext';
 
 const theme = createTheme({
   colors: {
@@ -35,9 +36,11 @@ export default function App({ Component, pageProps }: AppProps) {
   });
 
   return (
-    <MantineProvider theme={theme} defaultColorScheme={colorScheme}>
-      <Component {...pageProps} />
-      <ColorSchemeToggle />
-    </MantineProvider>
+    <TagProvider>
+      <MantineProvider theme={theme} defaultColorScheme={colorScheme}>
+        <Component {...pageProps} />
+        <ColorSchemeToggle />
+      </MantineProvider>
+    </TagProvider>
   );
 }

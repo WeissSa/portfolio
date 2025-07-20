@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react';
 import { MantineProvider } from '@mantine/core';
 import { HomePage } from './HomePage';
 import React from 'react';
+import { TagProvider } from '../contexts/TagContext';
 
 // Mock the child components to simplify testing HomePage
 jest.mock('./Posts', () => ({
@@ -36,7 +37,9 @@ describe('HomePage', () => {
 
     render(
       <MantineProvider>
-        <HomePage allPostsData={mockPosts} />
+        <TagProvider>
+          <HomePage allPostsData={mockPosts} />
+        </TagProvider>
       </MantineProvider>,
     );
 

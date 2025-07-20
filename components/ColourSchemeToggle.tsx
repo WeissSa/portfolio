@@ -20,7 +20,7 @@ export const ColorSchemeToggle = () => {
       variant="default"
       size="xl"
       aria-label="Toggle color scheme"
-      style={{ position: 'fixed', bottom: 20, right: 20 }}
+      style={{ position: 'fixed', bottom: 20, right: 20, zIndex: 1000 }}
     >
       {colorScheme === 'dark' ? (
         <IconSun size="1.2rem" />
