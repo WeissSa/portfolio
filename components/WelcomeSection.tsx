@@ -2,13 +2,15 @@ import { Container, Title, Text, Card } from '@mantine/core';
 import React from 'react';
 import { ScrollDownArrow } from './ScrollDownArrow';
 import classes from './WelcomeSection.module.css';
+import { useIsMobile } from '../lib/helpers';
 
 export function WelcomeSection() {
+  const { isMobile } = useIsMobile();
   return (
     <Container className={classes.welcomeContainer}>
       <Card>
         <Title order={1} ta="center" style={{ fontSize: '4rem' }}>
-          Welcome to my Website!
+          Welcome {!isMobile() && 'to my Website!'}
         </Title>
       </Card>
 
