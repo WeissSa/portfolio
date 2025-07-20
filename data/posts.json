@@ -173,5 +173,21 @@
       "SQL"
     ],
     "image": "gusto.jpg"
+  },
+  {
+    "title": "Gusto - Software Engineer",
+    "repo": "/private",
+    "description": "<p>After graduating I happily took a return offer to Gusto. There I was (am as of writing) on their Time Off team. So far I do not have much to report outside of my NDA. However, I can say that I have been exploring a variety of exciting AI tools.</p>",
+    "tags": [
+      "★",
+      "Web Development",
+      "JavaScript/TypeScript",
+      "React",
+      "Ruby/Rails",
+      "GraphQL",
+      "Frontend",
+      "Backend"
+    ],
+    "image": "gusto.jpg"
   }
 ]
