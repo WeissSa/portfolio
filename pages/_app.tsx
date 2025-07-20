@@ -7,25 +7,16 @@ import React from 'react';
 import { ColorSchemeToggle } from '../components/ColourSchemeToggle';
 import { TagProvider } from '../contexts/TagContext';
 
+import { PURPLE_PRIMARY_COLORS, WHITE_COLOR, BLACK_COLOR } from '../constants/theme';
+
 const theme = createTheme({
   colors: {
-    'purple-primary': [
-      '#F3E5F5',
-      '#E1BEE7',
-      '#CE93D8',
-      '#BA68C8',
-      '#9C27B0',
-      '#8E24AA',
-      '#7B1FA2',
-      '#6A1B9A',
-      '#4A148C',
-      '#311B92',
-    ],
+    'purple-primary': PURPLE_PRIMARY_COLORS,
   },
   primaryColor: 'purple-primary',
   autoContrast: true,
-  white: '#f3e5ffff',
-  black: '#090225ff',
+  white: WHITE_COLOR,
+  black: BLACK_COLOR,
 });
 
 export default function App({ Component, pageProps }: AppProps) {
