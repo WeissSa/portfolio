@@ -15,7 +15,17 @@ export function WelcomeSection() {
       </Card>
 
       <Card shadow="sm" p="lg" radius="md">
-        <Text size="xl" ta="center" style={{ maxWidth: '800px' }}>
+        <Text
+          size="xl"
+          ta="center"
+          style={{
+            maxWidth: '800px',
+            maxHeight: '400px',
+            overflowY: 'auto',
+          }}
+          onWheel={(e) => e.stopPropagation()}
+          onTouchMove={(e) => e.stopPropagation()}
+        >
           I&apos;m Sam, a Software Engineer with a Computer Science specialist
           and Math minor from the University of Toronto. I am passionate about
           software engineering and AI. My journey in tech began with game
