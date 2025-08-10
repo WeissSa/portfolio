@@ -5,12 +5,12 @@ import React from 'react';
 import { TagProvider } from '../contexts/TagContext';
 
 // Mock the child components to simplify testing HomePage
-jest.mock('./Posts', () => ({
+jest.mock('./HomePage/Posts', () => ({
   Posts: ({ postsRef }: { postsRef: unknown }) => (
     <div ref={postsRef}>Mocked Posts Component</div>
   ),
 }));
-jest.mock('./WelcomeSection', () => ({
+jest.mock('./HomePage/WelcomeSection', () => ({
   WelcomeSection: () => <div>Mocked Welcome Section</div>,
 }));
 

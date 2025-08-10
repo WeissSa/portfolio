@@ -37,6 +37,12 @@ export const PostCard = React.memo(({ post }: PostCardProps) => {
     }
   };
 
+  const handleGithubClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation(); // Prevent the card from toggling when clicking the GitHub icon
+    const link = post.repo.slice(post.repo.indexOf('http'));
+    window.open(link, '_blank');
+  };
+
   const handleClick = (event: React.MouseEvent<HTMLDivElement>) => {
     if ((event.target as HTMLElement).tagName === 'A') {
       return;
@@ -75,15 +81,21 @@ export const PostCard = React.memo(({ post }: PostCardProps) => {
           </Text>
         </Group>
         {post.repo !== '/private' && (
-          <a href={post.repo} target="_blank" rel="noopener noreferrer">
-            {' '}
+          <ActionIcon
+            onClick={(event) => {
+              handleGithubClick(event);
+            }}
+            aria-label="Open GitHub repository"
+            role="link"
+            className={classes.githubIcon}
+          >
             <Image
               src="/portfolio/GitHub.png"
               alt="GitHub Logo"
               width={24}
               height={24}
             />
-          </a>
+          </ActionIcon>
         )}
       </Group>
       {!opened && (
@@ -119,6 +131,7 @@ export const PostCard = React.memo(({ post }: PostCardProps) => {
                     src={`/${post.image}`}
                     alt={`Screenshot or picture of ${post.title}`}
                     height={160}
+                    data-testid="postcard-image"
                   />
                 </Center>
               </Card.Section>

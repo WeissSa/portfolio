@@ -1,7 +1,7 @@
 import { PostCard } from './PostCard';
 import { TagFilter } from './TagFilter';
 import React, { useMemo } from 'react';
-import { useTags } from '../contexts/TagContext';
+import { useTags } from '../../contexts/TagContext';
 import styles from './Posts.module.css';
 
 interface PostsProps {
