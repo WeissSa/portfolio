@@ -2,7 +2,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { MantineProvider } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
 import { TagFilter } from './TagFilter';
-import { TagProvider, useTags } from '../contexts/TagContext';
+import { TagProvider, useTags } from '../../contexts/TagContext';
 import React from 'react';
 
 // Mock useMediaQuery and useMantineTheme to control their return values

@@ -131,6 +131,7 @@ export const PostCard = React.memo(({ post }: PostCardProps) => {
                     src={`/${post.image}`}
                     alt={`Screenshot or picture of ${post.title}`}
                     height={160}
+                    data-testid="postcard-image"
                   />
                 </Center>
               </Card.Section>

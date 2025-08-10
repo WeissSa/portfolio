@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react';
 import { MantineProvider } from '@mantine/core';
 import { Posts } from './Posts';
 import React from 'react';
-import { TagProvider, useTags } from '../contexts/TagContext';
+import { TagProvider, useTags } from '../../contexts/TagContext';
 
 // Mock PostCard component
 jest.mock('./PostCard', () => ({

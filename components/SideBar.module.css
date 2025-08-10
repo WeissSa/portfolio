@@ -1,0 +1,77 @@
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background-color: var(--mantine-color-body);
+  color: var(--mantine-color-white);
+  transition: width 0.3s ease-in-out;
+  z-index: 100;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 1rem;
+
+  a {
+    text-align: center;
+    span {
+      color: var(--mantine-color-text);
+      font-size: 1.5rem;
+    }
+  }
+
+  @media (min-width: 990px) {
+    display: flex;
+  }
+}
+
+.sidebarContent {
+  flex-grow: 1;
+  padding-top: 10rem;
+}
+
+.mobileSidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  background-color: var(--mantine-color-body);
+  color: var(--mantine-color-white);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1rem;
+
+  a {
+    text-align: center;
+    span {
+      color: var(--mantine-color-text);
+      font-size: 1.5rem;
+    }
+  }
+
+  @media (min-width: 990px) {
+    display: none;
+  }
+}
+
+.burger {
+  align-self: center;
+  justify-content: center;
+  margin-right: 1rem;
+}
+
+.profileImage {
+  border-radius: 50%;
+  margin: 2rem auto;
+  width: 100px;
+  height: 100px;
+}
+
+.socialLinks {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 2rem;
+}

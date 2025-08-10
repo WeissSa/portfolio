@@ -1,7 +1,7 @@
 import { useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useTags } from '../contexts/TagContext';
-import { Post } from '../lib/posts';
+import { useTags } from '../../contexts/TagContext';
+import { Post } from '../../lib/posts';
 import { Chip, Stack, Title, Card, useMantineTheme } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
 import classes from './TagFilter.module.css';
@@ -13,20 +13,7 @@ import {
   ANIMATION_EXIT_OPACITY,
   ANIMATION_EXIT_X,
   ANIMATION_DURATION,
-  TAG_FILTER_TOP,
-  TAG_FILTER_RIGHT,
-  TAG_FILTER_WIDTH,
-  TAG_FILTER_HEIGHT,
-  TAG_FILTER_BORDER_RADIUS,
-  TAG_FILTER_Z_INDEX,
-  CARD_PADDING,
-  TITLE_ORDER,
-  TITLE_MARGIN_Y,
-  STACK_GAP,
-  CHIP_MARGIN_Y,
-  CHIP_LABEL_WIDTH,
-  CHIP_LABEL_PADDING,
-} from '../constants/TagFilter';
+} from '../../constants/TagFilter';
 
 interface TagFilterProps {
   posts: Post[];

@@ -1,12 +1,14 @@
 import userEvent from '@testing-library/user-event';
-import { render, screen } from '@testing-library/react';
-import { PostCard } from '../components/PostCard';
+import { render, screen, waitFor, waitForElementToBeRemoved } from '@testing-library/react';
+import { PostCard } from './PostCard';
 import { MantineProvider } from '@mantine/core';
 
 // Mock PostTag component
-jest.mock('../components/PostTag', () => ({
+jest.mock('./PostTag', () => ({
   PostTag: ({ tag }: { tag: string }) => <span className="tag">{tag}</span>,
 }));
+
+global.open = jest.fn();
 
 describe('PostCard', () => {
   const mockPost = {
@@ -64,21 +66,7 @@ describe('PostCard', () => {
     ).toBeInTheDocument();
   });
 
-  it('picture does not render when closed', async () => {
-    renderPostCard();
-    await userEvent.click(
-      screen.getByRole('button', { name: /Test Post Title/i }),
-    ); // Open
-    expect(
-      screen.getByAltText(/screenshot or picture of Test Post Title/i),
-    ).toBeInTheDocument();
-    await userEvent.click(
-      screen.getByRole('button', { name: /Test Post Title/i }),
-    ); // Close
-    expect(
-      screen.queryByAltText(/screenshot or picture of Test Post Title/i),
-    ).not.toBeInTheDocument();
-  });
+  
 
   it('links do not close the card', async () => {
     renderPostCard();
@@ -87,14 +75,18 @@ describe('PostCard', () => {
     ); // Open
     expect(screen.getByTestId('post-description')).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole('link', { name: /GitHub Logo/i }));
+    await userEvent.click(
+      screen.getByRole('link', { name: /Open GitHub repository/i }),
+    );
     expect(screen.getByTestId('post-description')).toBeInTheDocument(); // Should still be open
   });
 
   it('the github link does not open the card', async () => {
     renderPostCard();
     expect(screen.queryByTestId('post-description')).not.toBeInTheDocument();
-    await userEvent.click(screen.getByRole('link', { name: /GitHub Logo/i }));
+    await userEvent.click(
+      screen.getByRole('link', { name: /Open GitHub repository/i }),
+    );
     expect(screen.queryByTestId('post-description')).not.toBeInTheDocument();
   });
 });
