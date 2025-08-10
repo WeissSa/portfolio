@@ -1,11 +1,11 @@
 import type { NextPage } from 'next';
-import { Posts } from '../components/Posts';
+import { Posts } from './HomePage/Posts';
 import { Box, Container, Title } from '@mantine/core';
 import { Post } from '../lib/posts';
-import { WelcomeSection } from './WelcomeSection';
+import { WelcomeSection } from './HomePage/WelcomeSection';
 import React, { useRef } from 'react';
 import { useScrollNavigation } from '../lib/useScrollNavigation';
-import { TagFilter } from './TagFilter';
+import { TagFilter } from './HomePage/TagFilter';
 import styles from './HomePage.module.css';
 import { OVERLAY_OPACITY } from '../constants/styles';
 

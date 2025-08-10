@@ -35,3 +35,20 @@
   overflow-x: hidden;
   padding-right: 10px; /* To prevent content from being hidden by scrollbar */
 }
+
+.githubIcon {
+  background: transparent !important;
+  transition: color 0.2s ease;
+}
+
+.githubIcon:hover {
+  background: var(
+    --mantine-color-purple-primary-6
+  ) !important; /* Change color on hover */
+}
+
+.githubIcon:focus {
+  background: var(
+    --mantine-color-purple-primary-6
+  ) !important; /* Change color on hover */
+}

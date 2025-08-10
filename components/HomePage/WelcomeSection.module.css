@@ -7,4 +7,10 @@
   scroll-snap-align: start;
   position: relative;
   gap: 2rem;
+
+  p {
+    @media screen and (max-width: var(--mantine-breakpoint-sm)) {
+      max-width: 100px;
+    }
+  }
 }
