@@ -1,5 +1,9 @@
 import type { AppProps } from 'next/app';
-import { MantineProvider, createTheme, MantineColorScheme } from '@mantine/core';
+import {
+  MantineProvider,
+  createTheme,
+  MantineColorScheme,
+} from '@mantine/core';
 import { useLocalStorage } from '@mantine/hooks';
 import '@mantine/core/styles.css';
 import '../styles/global.css';
@@ -7,7 +11,12 @@ import React from 'react';
 import { ColorSchemeToggle } from '../components/ColourSchemeToggle';
 import { TagProvider } from '../contexts/TagContext';
 
-import { PURPLE_PRIMARY_COLORS, WHITE_COLOR, BLACK_COLOR } from '../constants/theme';
+import {
+  PURPLE_PRIMARY_COLORS,
+  WHITE_COLOR,
+  BLACK_COLOR,
+} from '../constants/theme';
+import SideBar from '../components/SideBar';
 
 const theme = createTheme({
   colors: {
@@ -29,7 +38,10 @@ export default function App({ Component, pageProps }: AppProps) {
   return (
     <TagProvider>
       <MantineProvider theme={theme} defaultColorScheme={colorScheme}>
-        <Component {...pageProps} />
+        <SideBar />
+        <main>
+          <Component {...pageProps} />
+        </main>
         <ColorSchemeToggle />
       </MantineProvider>
     </TagProvider>
