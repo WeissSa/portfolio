@@ -5,14 +5,13 @@ export default function Document() {
   return (
     <Html lang="en" {...mantineHtmlProps}>
       <Head>
-        <title>Sam Weiss{"'"}s Software Engineering Portfolio</title>
         <meta
           name="description"
           content="Sam Weiss is a software engineer. Explore Sam's portfolio, featuring projects and insights on climate change, weather patterns, and environmental data visualization."
         />
         <meta
           name="keywords"
-          content="Sam Weiss, Samuel Weiss, software engineer, portfolio, climate change, weather, data visualization, environmental, Toronto, historical weather"
+          content="Sam Weiss, Samuel Weiss, Sam Weiss Software, Sam Weiss Portfolio, Sam Weiss Projects, Sam Weiss Blog, Sam Weiss Developer, Sam Weiss Engineer, software engineer, portfolio, climate change, weather, data visualization, environmental, Toronto, historical weather"
         />
         <meta name="author" content="Sam Weiss" />
         <meta

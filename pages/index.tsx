@@ -12,7 +12,11 @@ export async function getStaticProps() {
 }
 
 const Index: NextPage<{ allPostsData: Post[] }> = ({ allPostsData }) => {
-  return <HomePage allPostsData={allPostsData} />;
+  return (
+    <>
+      <HomePage allPostsData={allPostsData} />
+    </>
+  );
 };
 
 export default Index;
