@@ -65,14 +65,12 @@ const WeatherCheck: React.FC = () => {
           Our Climate, Our Future
         </Title>
         <Text size="lg" mb="xl" style={{ textAlign: 'left' }}>
-          I am very passionate about addressing climate change to the point
-          where I have modified my diet to be climate-friendly for the last 10
-          years. While its effects are global, I{"'"}ve started noticing its
-          impacts more and more in my home city of Toronto. Understanding these
-          shifts, even on a daily basis, is the first step towards meaningful
-          action. This tool aims to highlight how our local weather patterns
-          might be changing, offering a small glimpse into the larger climate
-          narrative.
+          For almost 10 years I have reduced my consumption of fossil fuels and
+          other carbon-intensive activities. I do this because I believe that
+          individual actions can collectively make a significant impact on our
+          planet&apos;s health. By understanding local weather patterns and
+          their changes, we can better advocate for policies and practices that
+          support sustainability and resilience in our communities.
         </Text>
 
         <Title order={3} mb="md">
