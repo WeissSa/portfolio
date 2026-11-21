@@ -1,9 +1,10 @@
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
+import { staticMirrorPlugin } from './scripts/static-mirror';
 
 export default defineConfig({
   base: '/portfolio/',
-  plugins: [react()],
+  plugins: [react(), staticMirrorPlugin()],
   build: {
     target: 'es2020',
     outDir: 'dist',
