@@ -17,6 +17,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Guard against "~" artifact resurrection
+        run: |
+          test -z "$(git ls-files -- '~')"
+          git check-ignore -q '~'
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:

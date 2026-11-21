@@ -3,9 +3,9 @@ node_modules
 /dist
 coverage
 
-# stray literal "~" artifact directory (untracked; physical removal pending
-# owner confirmation)
-/~/
+# stray literal "~" artifact (formerly tracked; purged from history and now
+# untracked; root-anchored so it matches a file or a directory at the root)
+/~
 
 
 # local env files
