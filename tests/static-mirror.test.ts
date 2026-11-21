@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
+  collectCss,
   escapeHtml,
+  fontPreloadFromCss,
+  injectCriticalCss,
+  injectFontPreload,
   injectMirror,
   renderRobots,
   renderSitemap,
@@ -67,7 +71,9 @@ describe('injectMirror', () => {
     const html =
       '<!doctype html><html><body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body></html>';
     const result = injectMirror(html, '<p>MIRROR</p>');
-    expect(result).toContain('<div id="root"><p>MIRROR</p></div>');
+    expect(result).toContain(
+      '<div id="root"><div class="static-mirror"><p>MIRROR</p></div></div>',
+    );
     expect(result).not.toContain('<div id="root"></div>');
   });
 
@@ -93,5 +99,75 @@ describe('renderRobots', () => {
     expect(robots).toContain('User-agent: *');
     expect(robots).toContain('Allow: /');
     expect(robots).toContain(`Sitemap: ${SEO.siteUrl}sitemap.xml`);
+  });
+});
+
+describe('collectCss', () => {
+  it('returns the source of emitted .css assets only', () => {
+    expect(
+      collectCss({
+        'assets/index-hash.css': {
+          type: 'asset',
+          fileName: 'assets/index-hash.css',
+          source: 'body{color:red}',
+        },
+        'assets/index-hash.js': {
+          type: 'chunk',
+          fileName: 'assets/index-hash.js',
+        },
+      }),
+    ).toBe('body{color:red}');
+  });
+
+  it('returns an empty string when there is no bundle (dev server)', () => {
+    expect(collectCss(undefined)).toBe('');
+    expect(collectCss({})).toBe('');
+  });
+});
+
+describe('injectCriticalCss', () => {
+  const html =
+    '<html><head><link rel="icon" href="/portfolio/favicon.ico"><link rel="stylesheet" crossorigin href="/portfolio/assets/index-hash.css"></head><body></body></html>';
+
+  it('inlines CSS in head and removes the render-blocking stylesheet link', () => {
+    const result = injectCriticalCss(html, 'body{color:#fff}');
+    expect(result).toContain('<style>body{color:#fff}</style></head>');
+    expect(result).not.toContain('rel="stylesheet"');
+    expect(result).not.toContain('index-hash.css');
+  });
+
+  it('keeps non-stylesheet links (e.g. favicon) intact', () => {
+    const result = injectCriticalCss(html, 'a{}');
+    expect(result).toContain('<link rel="icon" href="/portfolio/favicon.ico">');
+  });
+
+  it('escapes literal </style sequences in the CSS', () => {
+    const result = injectCriticalCss(html, 'a::after{content:"</style>"}');
+    expect(result).toContain('<style>a::after{content:"<\\/style>"}</style>');
+  });
+
+  it('leaves html with no head marker untouched', () => {
+    expect(injectCriticalCss('<html><body></body></html>', 'a{}')).toBe(
+      '<html><body></body></html>',
+    );
+  });
+});
+
+describe('fontPreloadFromCss / injectFontPreload', () => {
+  it('builds a crossorigin font preload from the hashed woff2 URL', () => {
+    const css =
+      '@font-face{src:url(/portfolio/assets/anton-hash.woff2) format("woff2")}';
+    const preload = fontPreloadFromCss(css);
+    expect(preload).toBe(
+      '<link rel="preload" as="font" type="font/woff2" crossorigin href="/portfolio/assets/anton-hash.woff2">',
+    );
+    expect(injectFontPreload('<head></head>', preload)).toContain(
+      '<head>' + preload + '</head>',
+    );
+  });
+
+  it('does nothing when there is no font or no preload markup', () => {
+    expect(fontPreloadFromCss('body{}')).toBe('');
+    expect(injectFontPreload('<head></head>', '')).toBe('<head></head>');
   });
 });

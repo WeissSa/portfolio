@@ -36,6 +36,80 @@ export function escapeHtml(value: string): string {
     .replace(/'/g, '&#39;');
 }
 
+/** Minimal structural view of a Rollup/Vite emitted asset used below. */
+type EmittedAsset = {
+  type: string;
+  fileName: string;
+  source?: string | Uint8Array;
+};
+
+/**
+ * Concatenate the source of every emitted `.css` asset from the build bundle.
+ * `bundle` is undefined outside a build (dev server), in which case we return
+ * '' and skip inlining — there is no static mirror FOUC in dev.
+ */
+export function collectCss(
+  bundle: Record<string, EmittedAsset> | undefined,
+): string {
+  if (!bundle) return '';
+  return Object.values(bundle)
+    .filter(
+      (item) =>
+        item.type === 'asset' &&
+        typeof item.source === 'string' &&
+        item.fileName.endsWith('.css'),
+    )
+    .map((item) => item.source as string)
+    .join('\n');
+}
+
+/**
+ * Remove Vite's render-blocking `<link rel="stylesheet" ... .css>` and put the
+ * built CSS in an inline `<style>` in <head>, so the build-time static mirror
+ * is styled on the very first paint with zero network round trips. The emitted
+ * CSS file is left in place (harmless: no page references it) so other HTML
+ * entry points keep working and size-limit accounting is unchanged.
+ */
+export function injectCriticalCss(html: string, css: string): string {
+  const withoutCssLink = html.replace(/<link\b[^>]*>/gi, (tag) => {
+    const isStylesheet =
+      /\brel\s*=\s*(?:"stylesheet"|'stylesheet'|stylesheet(?:\s|>|$))/i.test(
+        tag,
+      );
+    const isCssHref =
+      /\bhref\s*=\s*(?:"[^"]*\.css(?:\?[^"]*)?"|'[^']*\.css(?:\?[^']*)?')/i.test(
+        tag,
+      );
+    return isStylesheet && isCssHref ? '' : tag;
+  });
+  if (!/<\/head>/i.test(withoutCssLink)) return withoutCssLink;
+  // Escape any literal `</style` in the CSS so it cannot close the block early
+  // (`\/` is a valid CSS escape for `/`, so the declaration stays intact).
+  const safeCss = css.replace(/<\/style/gi, '<\\/style');
+  return withoutCssLink.replace(
+    /<\/head>/i,
+    `<style>${safeCss}</style></head>`,
+  );
+}
+
+/**
+ * Build a font preload tag from the first hashed `.woff2` URL in the built CSS.
+ * The Anton subset already declares `font-display: swap`; this only makes the
+ * (secondary) font swap start a little earlier — it is unrelated to the raw
+ * HTML flash, which the inline CSS eliminates.
+ */
+export function fontPreloadFromCss(css: string): string {
+  const match = /url\(([^)]+\.woff2)\)/i.exec(css);
+  return match
+    ? `<link rel="preload" as="font" type="font/woff2" crossorigin href="${match[1]}">`
+    : '';
+}
+
+export function injectFontPreload(html: string, preload: string): string {
+  if (!preload || !/<head\b[^>]*>/i.test(html)) return html;
+  return html.replace(/(<head\b[^>]*>)/i, `$1${preload}`);
+}
+
 function renderPost(post: (typeof POSTS)[number]): string {
   const tags = displayTags(post)
     .map((tag) => `<li>${escapeHtml(tag)}</li>`)
@@ -73,9 +147,12 @@ export function injectMirror(
   html: string,
   mirror = renderStaticMirror(),
 ): string {
+  // The wrapper is scoped styling for the mirror only. React's createRoot
+  // replaces all of #root's children on boot, so these styles vanish with the
+  // mirror and never touch the interactive UI.
   return html.replace(
     /<div id="root"><\/div>/,
-    `<div id="root">${mirror}</div>`,
+    `<div id="root"><div class="static-mirror">${mirror}</div></div>`,
   );
 }
 
@@ -107,8 +184,17 @@ export function staticMirrorPlugin(): Plugin {
     name: 'static-content-mirror',
     transformIndexHtml: {
       order: 'post',
-      handler(html) {
-        return injectMirror(html);
+      handler(html, ctx) {
+        const mirrored = injectMirror(html);
+        // In Vite 5 the post hook receives the build bundle with the emitted
+        // CSS asset already present, so this runs after Vite injects its
+        // render-blocking <link> and we can safely replace it with inline CSS.
+        const css = collectCss(ctx?.bundle);
+        if (!css) return mirrored;
+        return injectFontPreload(
+          injectCriticalCss(mirrored, css),
+          fontPreloadFromCss(css),
+        );
       },
     },
     generateBundle() {

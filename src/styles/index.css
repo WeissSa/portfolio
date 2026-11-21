@@ -1,5 +1,6 @@
 @import './fonts.css';
 @import './p5.css';
+@import './static-mirror.css';
 
 @tailwind base;
 @tailwind components;

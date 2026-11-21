@@ -1,0 +1,102 @@
+/*
+ * Styles for the build-time static content mirror only (REWORK_PLAN §4.5).
+ * Scoped to `.static-mirror`, the wrapper injectMirror() adds inside #root.
+ * React's createRoot() replaces all of #root's children on boot, so every rule
+ * here disappears together with the mirror and never styles the live UI.
+ * These rules ship inside the inlined critical CSS, so the mirror is already
+ * on-brand on the very first paint (no flash of raw HTML).
+ */
+
+.static-mirror {
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: 1rem 1.25rem 3rem;
+  color: var(--p5-white, #fff);
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+  line-height: 1.55;
+}
+
+.static-mirror h1,
+.static-mirror h2,
+.static-mirror h3 {
+  font-family: 'Anton', 'Arial Narrow', 'Haettenschweiler', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  line-height: 1.05;
+  color: var(--p5-white, #fff);
+}
+
+.static-mirror h1 {
+  margin: 0.25rem 0 0.5rem;
+  font-size: clamp(2rem, 7vw, 3.5rem);
+  color: var(--p5-red, #ff2a1a);
+  transform: skewX(-6deg);
+}
+
+.static-mirror h2 {
+  margin: 2rem 0 0.75rem;
+  padding-left: 0.6rem;
+  font-size: clamp(1.5rem, 4vw, 2.25rem);
+  border-left: 6px solid var(--p5-red, #ff2a1a);
+}
+
+.static-mirror h3 {
+  margin: 1.25rem 0 0.4rem;
+  font-size: 1.15rem;
+  color: var(--p5-yellow, #ffd400);
+}
+
+.static-mirror p,
+.static-mirror ul {
+  margin: 0.4rem 0 0.8rem;
+}
+
+.static-mirror ul {
+  padding-left: 1.25rem;
+}
+
+.static-mirror li {
+  margin: 0.15rem 0;
+}
+
+.static-mirror a {
+  color: #93c5fd;
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.static-mirror a:visited {
+  color: #c4b5fd;
+}
+
+.static-mirror header {
+  padding-bottom: 0.5rem;
+  border-bottom: 4px solid var(--p5-red, #ff2a1a);
+}
+
+.static-mirror nav ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  margin: 0.75rem 0 1rem;
+  padding: 0;
+  list-style: none;
+}
+
+.static-mirror article {
+  margin: 1rem 0;
+  padding: 0.35rem 0.9rem;
+  background: var(--p5-ink, #16161a);
+  border-top: 3px solid var(--p5-red, #ff2a1a);
+}
+
+.static-mirror footer {
+  margin-top: 2rem;
+  padding-top: 0.5rem;
+  border-top: 4px solid var(--p5-red, #ff2a1a);
+}
