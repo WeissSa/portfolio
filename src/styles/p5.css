@@ -1,0 +1,177 @@
+/*
+ * P5 design system (REWORK_PLAN §3.5): red/black/white, jagged slashed
+ * panels, bold skewed display type, star/halftone accents. Kinetic but
+ * reduced-motion-safe: every animation is a single ≤300ms cut-in — never
+ * a repeating flash (photosensitivity: <3 flashes/sec guaranteed).
+ */
+
+:root {
+  --p5-black: #0a0a0a;
+  --p5-ink: #16161a;
+  --p5-red: #ff2a1a;
+  --p5-red-deep: #c81e10;
+  --p5-white: #ffffff;
+  --p5-yellow: #ffd400;
+  --p5-cut: 10px;
+}
+
+/* Visible P5-styled focus ring everywhere. */
+:focus-visible {
+  outline: 3px solid var(--p5-yellow);
+  outline-offset: 2px;
+}
+
+.p5-display {
+  font-family: 'Anton', 'Arial Narrow', 'Haettenschweiler', sans-serif;
+  text-transform: uppercase;
+  transform: skewX(-6deg);
+  letter-spacing: 0.02em;
+  line-height: 1.05;
+}
+
+/* Jagged slashed panel via clip-path. */
+.p5-panel {
+  position: relative;
+  background: var(--p5-ink);
+  color: var(--p5-white);
+  clip-path: polygon(
+    0 var(--p5-cut),
+    var(--p5-cut) 0,
+    calc(100% - 2 * var(--p5-cut)) 0,
+    100% calc(2 * var(--p5-cut)),
+    100% calc(100% - var(--p5-cut)),
+    calc(100% - var(--p5-cut)) 100%,
+    calc(2 * var(--p5-cut)) 100%,
+    0 calc(100% - 2 * var(--p5-cut))
+  );
+  padding: 1.25rem 1.5rem;
+}
+
+.p5-panel--red {
+  background: var(--p5-red);
+  color: var(--p5-black);
+}
+
+.p5-panel--white {
+  background: var(--p5-white);
+  color: var(--p5-black);
+}
+
+/* Red slash accent strip along the top of panels. */
+.p5-panel--slashed::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: 100%;
+  height: 6px;
+  background: var(--p5-red);
+  transform: skewX(-30deg);
+}
+
+/* Halftone dot accent. */
+.p5-halftone {
+  background-image: radial-gradient(currentColor 1px, transparent 1.4px);
+  background-size: 7px 7px;
+  opacity: 0.25;
+}
+
+.p5-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0.5rem 1.25rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  transform: skewX(-6deg);
+  background: var(--p5-white);
+  color: var(--p5-black);
+  border: 2px solid var(--p5-black);
+  cursor: pointer;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease;
+}
+
+.p5-btn > * {
+  transform: skewX(6deg);
+}
+
+.p5-btn:hover {
+  background: var(--p5-red);
+  color: var(--p5-black);
+}
+
+.p5-btn--red {
+  background: var(--p5-red);
+  color: var(--p5-black);
+  border-color: var(--p5-black);
+}
+
+.p5-btn--red:hover {
+  background: var(--p5-black);
+  color: var(--p5-white);
+}
+
+.p5-btn[aria-current='page'],
+.p5-btn--active {
+  background: var(--p5-red);
+  color: var(--p5-black);
+}
+
+.p5-tag {
+  display: inline-block;
+  padding: 0.15rem 0.6rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  background: var(--p5-white);
+  color: var(--p5-black);
+  clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%);
+}
+
+.p5-star {
+  color: var(--p5-red);
+  font-size: 1.1em;
+}
+
+/* Links inside verbatim ported post descriptions (AA contrast on ink). */
+.p5-prose a {
+  color: #93c5fd;
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.p5-prose a:visited {
+  color: #c4b5fd;
+}
+
+/* Single cut-in transition, softened and reduced-motion-safe. */
+.p5-cut-in {
+  animation: p5-cut-in 260ms ease-out both;
+}
+
+@keyframes p5-cut-in {
+  from {
+    opacity: 0;
+    transform: translateX(-24px) skewX(-4deg);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) skewX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

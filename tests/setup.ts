@@ -36,3 +36,10 @@ if (typeof window.ResizeObserver !== 'function') {
     value: ResizeObserverStub,
   });
 }
+
+// jsdom has no canvas backend; HeatmapCanvas guards on a null context.
+// Stub getContext so jsdom does not spam "not implemented" on stderr.
+if (typeof HTMLCanvasElement !== 'undefined') {
+  HTMLCanvasElement.prototype.getContext = (() =>
+    null) as typeof HTMLCanvasElement.prototype.getContext;
+}

@@ -1,0 +1,13 @@
+/*
+ * Anton — bold condensed display face for the Persona-5-styled UI.
+ * Latin 400 subset vendored from @fontsource/anton (SIL Open Font License
+ * 1.1; Copyright 2020 The Anton Project Authors). See ANTON-OFL.txt next
+ * to the font file. System fallback stack keeps text rendering instant.
+ */
+@font-face {
+  font-family: 'Anton';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url('../assets/fonts/anton-latin-400-normal.woff2') format('woff2');
+}

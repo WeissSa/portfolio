@@ -60,3 +60,8 @@ const PROJECT_TITLES: readonly string[] = [
 export const PROJECTS: readonly Post[] = POSTS.filter((post) =>
   PROJECT_TITLES.includes(post.title),
 );
+
+/** Skills for the About desktop — derived from post tags (plan §3.2.2). */
+export const SKILLS: readonly string[] = Array.from(
+  new Set(POSTS.flatMap((post) => displayTags(post))),
+);
