@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="robots" content="noindex" />
+    <title>Redirecting… — Sam Weiss's Software Engineering Portfolio</title>
+    <script>
+      // Legacy Next.js path → hash-route mapping for GitHub Pages 404s.
+      (function () {
+        var path = window.location.pathname;
+        var target = '/portfolio/';
+        if (/^\/portfolio\/climate-change(\.html)?\/?$/i.test(path)) {
+          target = '/portfolio/#/climate';
+        }
+        window.location.replace(target);
+      })();
+    </script>
+  </head>
+  <body>
+    <p>
+      If you are not redirected automatically, follow this
+      <a href="/portfolio/">link</a>.
+    </p>
+  </body>
+</html>

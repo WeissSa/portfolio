@@ -1,6 +1,11 @@
 .DS_Store
 node_modules
 /dist
+coverage
+
+# stray literal "~" artifact directory (untracked; physical removal pending
+# owner confirmation)
+/~/
 
 
 # local env files

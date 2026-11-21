@@ -8,6 +8,30 @@ import configPrettier from 'eslint-config-prettier';
 
 export default [
   {
+    // Legacy Next.js/Vue-era sources stay unreferenced until the cleanup
+    // commit (see REWORK_PLAN ladder #11); they are outside the new
+    // typecheck/lint/build scope on purpose.
+    ignores: [
+      'dist/**',
+      'coverage/**',
+      'node_modules/**',
+      'pages/**',
+      'components/**',
+      'lib/**',
+      'contexts/**',
+      'constants/**',
+      'data/**',
+      'styles/**',
+      'tests/unit/**',
+      'public/**',
+      '~/**',
+      'next.config.mjs',
+      'next-env.d.ts',
+      'jest.setup.js',
+      '404.html',
+    ],
+  },
+  {
     files: ['**/*.{js,mjs,cjs,ts,tsx}'],
     languageOptions: {
       parser: parserTypeScript,
@@ -21,7 +45,6 @@ export default [
       globals: {
         ...globals.browser,
         ...globals.node,
-        jest: true,
       },
     },
     plugins: {
@@ -57,11 +80,14 @@ export default [
     files: ['**/*.test.ts', '**/*.test.tsx', '**/*.spec.ts', '**/*.spec.tsx'],
     languageOptions: {
       globals: {
-        jest: true,
         describe: true,
         it: true,
+        test: true,
         expect: true,
+        vi: true,
+        beforeAll: true,
         beforeEach: true,
+        afterAll: true,
         afterEach: true,
       },
     },
