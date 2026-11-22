@@ -909,14 +909,20 @@ export function createGameCases(
   const caseW = 0.15;
   const caseH = 0.028;
   const caseD = 0.2;
+  // Commit 8: spread the cases into a row on the desk shelf so each one is a
+  // distinct pick target (commit 7 stacked them at the origin). Spacing is
+  // deterministic — the seeded jitter stays small enough to keep the order.
+  const spacing = caseW + 0.03;
   const parts: RoomPart[] = [];
   for (let i = 0; i < count; i += 1) {
     const yaw = rng.range(-0.5, 0.5);
+    const centerX = (i - (count - 1) / 2) * spacing + rng.range(-0.005, 0.005);
+    const centerZ = rng.range(-0.01, 0.01);
     const body = part(
       `case-body-${i}`,
       box(caseW, caseH, caseD),
       'metalDark',
-      [rng.range(-0.01, 0.01), caseH / 2, rng.range(-0.01, 0.01)],
+      [centerX, caseH / 2, centerZ],
       [0, yaw, 0],
     );
     const lid = new THREE.PlaneGeometry(caseW - 0.012, caseD - 0.012);
@@ -931,7 +937,15 @@ export function createGameCases(
     lid.rotateX(-Math.PI / 2);
     lid.rotateY(yaw);
     parts.push(body);
-    parts.push(part(`case-lid-${i}`, lid, 'caseLabel', [0, caseH + 0.001, 0]));
+    // Lid shares the body's centre; the zone animates this mesh's group for
+    // the open/flip interaction without touching the baked geometry.
+    parts.push(
+      part(`case-lid-${i}`, lid, 'caseLabel', [
+        centerX,
+        caseH + 0.001,
+        centerZ,
+      ]),
+    );
   }
   return parts;
 }

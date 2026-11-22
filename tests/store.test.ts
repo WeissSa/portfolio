@@ -10,6 +10,8 @@ describe('portfolio store', () => {
       selectedPostId: null,
       hoveredPostId: null,
       desktopOpen: false,
+      selectedProjectId: null,
+      hoveredProjectId: null,
     });
   });
 
@@ -70,21 +72,68 @@ describe('portfolio store', () => {
   });
 
   it('clears 3D-only UI state when leaving 3D mode (A3/B3)', () => {
-    const { setMode, selectPost, setHoveredPost, openDesktop } =
-      usePortfolioStore.getState();
+    const { setMode, openDesktop } = usePortfolioStore.getState();
     setMode('3d');
-    selectPost('gusto-software-engineer');
-    setHoveredPost('gusto-software-engineer');
+    // Set both ids directly: the setters intentionally keep only one modal
+    // dialog open at a time (tested separately), but a stale pair must still
+    // be fully cleared by clear3dSelection / a 3d → 2d transition.
+    usePortfolioStore.setState({
+      selectedPostId: 'gusto-software-engineer',
+      hoveredPostId: 'gusto-software-engineer',
+      selectedProjectId: 'dreamzzz-game-development-project',
+      hoveredProjectId: 'dreamzzz-game-development-project',
+    });
     openDesktop();
     expect(usePortfolioStore.getState().desktopOpen).toBe(true);
     expect(usePortfolioStore.getState().selectedPostId).not.toBeNull();
+    expect(usePortfolioStore.getState().selectedProjectId).not.toBeNull();
 
     setMode('2d');
     const state = usePortfolioStore.getState();
     expect(state.mode).toBe('2d');
     expect(state.selectedPostId).toBeNull();
     expect(state.hoveredPostId).toBeNull();
+    expect(state.selectedProjectId).toBeNull();
+    expect(state.hoveredProjectId).toBeNull();
     expect(state.desktopOpen).toBe(false);
+  });
+
+  it('tracks case selection/hover and keeps book/case dialogs mutually exclusive (commit 8)', () => {
+    const { selectPost, selectProject, setHoveredProject } =
+      usePortfolioStore.getState();
+    selectProject('dreamzzz-game-development-project');
+    setHoveredProject('dreamzzz-game-development-project');
+    expect(usePortfolioStore.getState().selectedProjectId).toBe(
+      'dreamzzz-game-development-project',
+    );
+    expect(usePortfolioStore.getState().hoveredProjectId).toBe(
+      'dreamzzz-game-development-project',
+    );
+
+    // Picking a book closes the case dialog; closing (null) never re-opens it.
+    selectPost('gusto-software-engineer');
+    expect(usePortfolioStore.getState().selectedPostId).toBe(
+      'gusto-software-engineer',
+    );
+    expect(usePortfolioStore.getState().selectedProjectId).toBeNull();
+    selectPost(null);
+    expect(usePortfolioStore.getState().selectedProjectId).toBeNull();
+
+    selectProject(null);
+    setHoveredProject(null);
+    expect(usePortfolioStore.getState().selectedProjectId).toBeNull();
+    expect(usePortfolioStore.getState().hoveredProjectId).toBeNull();
+  });
+
+  it('does not clear a case selection on the initial 2D gate', () => {
+    usePortfolioStore.setState({
+      mode: '2d',
+      selectedProjectId: 'dreamzzz-game-development-project',
+    });
+    usePortfolioStore.getState().setMode('2d');
+    expect(usePortfolioStore.getState().selectedProjectId).toBe(
+      'dreamzzz-game-development-project',
+    );
   });
 
   it('does not clear 2D-opened detail panels on the initial 2D gate', () => {

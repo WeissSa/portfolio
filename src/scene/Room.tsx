@@ -61,6 +61,7 @@ import {
 } from './art/materials';
 import { LibraryZone } from './zones/Library';
 import { DeskZone } from './zones/Desk';
+import { ProjectCases } from './zones/ProjectCases';
 import {
   createPlanTexture,
   createTexturePlans,
@@ -300,8 +301,10 @@ export function RoomScene({
         <group position={MONITOR_DESK_OFFSET}>
           <DeskZone monitor={furniture.monitor} materials={materials} />
         </group>
+        {/* Pickable game cases (commit 8): the same RoomParts, now wrapped as
+            five individually clickable groups with an open/flip lid animation. */}
         <group position={[-0.15, DESK_TOP_HEIGHT + 0.035, 0.18]}>
-          <Parts parts={furniture.cases} materials={materials} />
+          <ProjectCases cases={furniture.cases} materials={materials} />
         </group>
       </group>
 

@@ -9,8 +9,9 @@ const NDA_NOTE = 'Repository is private — details under NDA.';
  * Experience list, the Projects shelf and (commit 6) the 3D book detail
  * overlay. Keyboard: the inline toggle is a real <button> (Enter/Space work
  * natively); the overlay passes `expanded` to force the detail open and owns
- * its own close control. `data-post-id` + `highlighted` bridge 3D hover/
- * selection back to the matching DOM card. Description HTML is verbatim.
+ * its own close control. `data-post-id` (+ `data-project-id` on case cards)
+ * and `highlighted` bridge 3D hover/selection back to the matching DOM card.
+ * Description HTML is verbatim; repo is an external link with noopener.
  */
 export function PostCard({
   post,
@@ -34,6 +35,10 @@ export function PostCard({
     <P5Panel
       slashed
       data-post-id={postId(post)}
+      // Commit 8: case cards expose the project id as the 3D→DOM picking
+      // bridge (parity with hover/selection highlight); library cards keep
+      // the original data-post-id hook only.
+      data-project-id={variant === 'case' ? postId(post) : undefined}
       className={`p5-cut-in${highlighted ? ' p5-card--highlight' : ''}`}
     >
       <div className="flex flex-wrap items-center justify-between gap-2">

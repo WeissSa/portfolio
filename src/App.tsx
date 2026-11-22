@@ -16,6 +16,7 @@ import { AboutDesktop } from './ui/AboutDesktop';
 import { DesktopZoom } from './ui/DesktopZoom';
 import { ExperienceView } from './ui/ExperienceView';
 import { PostDetailOverlay } from './ui/PostDetailOverlay';
+import { ProjectDetailOverlay } from './ui/ProjectDetailOverlay';
 import { ProjectsView } from './ui/ProjectsView';
 import { ClimateView } from './ui/ClimateView';
 
@@ -129,6 +130,11 @@ export default function App() {
       {/* Shared DOM detail overlay for a picked 3D book (renders null when no
           book is selected). Content lives here, never inside the canvas. */}
       <PostDetailOverlay />
+
+      {/* Shared DOM detail dialog for a picked 3D game case (renders null when
+          no case is selected). Like the book overlay it sits outside the shell
+          so 3D pointer gating never disables its links/buttons. */}
+      <ProjectDetailOverlay />
 
       {/* Monitor zoom: full-screen DOM About desktop, shared with 2D mode.
           Only in 3D — a stale flag can never double-render the 2D About zone. */}

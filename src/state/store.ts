@@ -26,8 +26,8 @@ export interface PortfolioStore {
   /** Rendering mode. Starts in 2D; capability detection may opt into 3D. */
   mode: Mode;
   /**
-   * Set the rendering mode. Leaving 3D clears all 3D-only UI state (book
-   * highlight/selection and the monitor's desktop zoom) so DOM cards never
+   * Set the rendering mode. Leaving 3D clears all 3D-only UI state (book/case
+   * highlight + selection and the monitor's desktop zoom) so DOM cards never
    * stay highlighted and a stale desktop overlay cannot leak into 2D (A3/B3).
    * Only a real 3d → 2d transition clears: the initial 2d gate must not wipe
    * a detail panel opened directly from the 2D DOM.
@@ -92,6 +92,17 @@ export interface PortfolioStore {
   desktopOpen: boolean;
   openDesktop: () => void;
   closeDesktop: () => void;
+
+  /* Game cases / Projects (commit 8): a picked 3D case writes its id here;
+   * the SAME PostCard used by the 2D Projects list renders in a DOM dialog.
+   * Keys are post ids (PROJECTS is a subset of POSTS), so content lookup and
+   * data-project-id parity need no second id scheme. */
+  /** Selected game case → opens the shared DOM project detail dialog. */
+  selectedProjectId: string | null;
+  selectProject: (id: string | null) => void;
+  /** Hovered case → highlights the matching 2D project card (visual parity). */
+  hoveredProjectId: string | null;
+  setHoveredProject: (id: string | null) => void;
 }
 
 const IDLE_CLIMATE: ClimateState = {
@@ -110,6 +121,8 @@ const CLEARED_3D_UI = {
   selectedPostId: null,
   hoveredPostId: null,
   desktopOpen: false,
+  selectedProjectId: null,
+  hoveredProjectId: null,
 };
 
 export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
@@ -191,7 +204,15 @@ export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
   closeAllWindows: () => set({ openWindows: [] }),
 
   selectedPostId: null,
-  selectPost: (selectedPostId) => set({ selectedPostId }),
+  // Picking a book and picking a case are mutually exclusive: only one modal
+  // detail dialog may own the screen. Closing (null) never touches the other
+  // selection, so a close handler cannot resurrect a different detail view.
+  selectPost: (selectedPostId) =>
+    set(
+      selectedPostId
+        ? { selectedPostId, selectedProjectId: null }
+        : { selectedPostId },
+    ),
   hoveredPostId: null,
   setHoveredPost: (hoveredPostId) => set({ hoveredPostId }),
   pointerFine: false,
@@ -200,4 +221,14 @@ export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
   desktopOpen: false,
   openDesktop: () => set({ desktopOpen: true }),
   closeDesktop: () => set({ desktopOpen: false }),
+
+  selectedProjectId: null,
+  selectProject: (selectedProjectId) =>
+    set(
+      selectedProjectId
+        ? { selectedProjectId, selectedPostId: null }
+        : { selectedProjectId },
+    ),
+  hoveredProjectId: null,
+  setHoveredProject: (hoveredProjectId) => set({ hoveredProjectId }),
 }));
