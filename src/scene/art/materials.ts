@@ -28,6 +28,7 @@ export type MaterialKey =
   | 'screenFabric'
   | 'silhouette'
   | 'book'
+  | 'bookHero'
   | 'bookAtlas'
   | 'caseLabel';
 
@@ -169,7 +170,17 @@ export function createRoomMaterials(
     }),
     silhouette: standard({ color: '#20242c', roughness: 1, metalness: 0 }),
     book: standard({ color: '#ffffff', roughness: 0.85, metalness: 0.02 }),
-    // Spine atlas kept ready for commit 6 (instanced per-cell UV books).
+    // The 13 pickable post-bodies: per-INSTANCE color (setColorAt) tints the
+    // diffuse; a faint uniform emissive gives every volume a warm library glow
+    // (featured ones also read larger + brass/red via their instance color).
+    bookHero: standard({
+      color: '#ffffff',
+      emissive: new THREE.Color('#6b3f16'),
+      emissiveIntensity: 0.32,
+      roughness: 0.78,
+      metalness: 0.04,
+    }),
+    // Shared spine atlas: commit 6 remaps each label quad into its own cell.
     bookAtlas: standard({
       map: textures.bookAtlas,
       color: textures.bookAtlas ? '#ffffff' : PALETTE.bookCloth,

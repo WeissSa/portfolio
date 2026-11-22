@@ -58,6 +58,7 @@ import {
   disposeRoomMaterials,
   type RoomMaterials,
 } from './art/materials';
+import { LibraryZone } from './zones/Library';
 import {
   createPlanTexture,
   createTexturePlans,
@@ -310,7 +311,9 @@ export function RoomScene({
         rotation={SHELF_ROTATION}
       >
         <Parts parts={furniture.bookshelf.parts} materials={materials} />
+        {/* Decorative filler volumes behind the 13 pickable post-books. */}
         <Books books={furniture.books} material={materials.book} />
+        <LibraryZone cells={furniture.bookshelf.cells} materials={materials} />
       </group>
 
       <group name="floor-lamp" position={LAMP_POSITION}>

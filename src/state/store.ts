@@ -54,6 +54,19 @@ export interface PortfolioStore {
   closeWindow: (id: AboutWindowId) => void;
   closeTopWindow: () => AboutWindowId | null;
   closeAllWindows: () => void;
+
+  /* Library / Experience (commit 6): a pickable 3D book writes these ids; the
+   * SAME accessible DOM components read them, so content is never canvas-only. */
+
+  /** Selected book → opens the shared DOM detail overlay. Null = closed. */
+  selectedPostId: string | null;
+  selectPost: (id: string | null) => void;
+  /** Hovered book → highlights the matching DOM card (visual parity). */
+  hoveredPostId: string | null;
+  setHoveredPost: (id: string | null) => void;
+  /** Fine pointer present: enables R3F picking; keyboard users use the DOM. */
+  pointerFine: boolean;
+  setPointerFine: (fine: boolean) => void;
 }
 
 const IDLE_CLIMATE: ClimateState = {
@@ -137,4 +150,11 @@ export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
     return top;
   },
   closeAllWindows: () => set({ openWindows: [] }),
+
+  selectedPostId: null,
+  selectPost: (selectedPostId) => set({ selectedPostId }),
+  hoveredPostId: null,
+  setHoveredPost: (hoveredPostId) => set({ hoveredPostId }),
+  pointerFine: false,
+  setPointerFine: (pointerFine) => set({ pointerFine }),
 }));

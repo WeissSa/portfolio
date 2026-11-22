@@ -43,6 +43,26 @@ describe('portfolio store', () => {
     expect(usePortfolioStore.getState().hasNavigated).toBe(true);
   });
 
+  it('tracks book selection, hover and fine-pointer state (commit 6)', () => {
+    const { selectPost, setHoveredPost, setPointerFine } =
+      usePortfolioStore.getState();
+    expect(usePortfolioStore.getState().selectedPostId).toBeNull();
+    expect(usePortfolioStore.getState().hoveredPostId).toBeNull();
+    expect(usePortfolioStore.getState().pointerFine).toBe(false);
+
+    selectPost('gusto-software-engineer');
+    setHoveredPost('gusto-software-engineer');
+    setPointerFine(true);
+    const state = usePortfolioStore.getState();
+    expect(state.selectedPostId).toBe('gusto-software-engineer');
+    expect(state.hoveredPostId).toBe('gusto-software-engineer');
+    expect(state.pointerFine).toBe(true);
+
+    selectPost(null);
+    setHoveredPost(null);
+    setPointerFine(false);
+  });
+
   it('keeps the About window stack ordered and deduplicated', () => {
     const { openWindow, closeWindow, closeTopWindow, closeAllWindows } =
       usePortfolioStore.getState();

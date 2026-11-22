@@ -201,9 +201,38 @@
   height: 100%;
 }
 
+/*
+ * Commit 6: only a fine pointer in 3D mode can pick books. The layer stays
+ * aria-hidden and the canvas has no tabindex, so enabling pointer events never
+ * makes the scene a keyboard/screen-reader requirement.
+ */
+.scene-layer--interactive,
+.scene-layer--interactive .scene-canvas {
+  pointer-events: auto;
+}
+
 .app-3d .app-shell {
   position: relative;
   z-index: 1;
+}
+
+/* A hovered/selected 3D book highlights its accessible DOM twin. */
+.p5-panel.p5-card--highlight {
+  outline: 3px solid #ffd400;
+  outline-offset: 2px;
+}
+
+/* Shared DOM detail panel opened by a 3D book (commit 6). */
+.post-detail-overlay {
+  animation: p5-cut-in 180ms ease-out both;
+}
+.post-detail-backdrop {
+  cursor: pointer;
+}
+.post-detail-card {
+  box-shadow:
+    0 0 0 3px #16161a,
+    8px 10px 0 0 rgba(255, 42, 26, 0.65);
 }
 
 .scene-loading {

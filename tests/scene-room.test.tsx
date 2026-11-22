@@ -27,7 +27,7 @@ const stubTextureFactory: TextureFactory = () => new THREE.Texture();
 describe('room materials', () => {
   it('creates every material key without textures (graceful degradation)', () => {
     const materials = createRoomMaterials({});
-    expect(Object.keys(materials).length).toBe(18);
+    expect(Object.keys(materials).length).toBe(19);
     for (const material of Object.values(materials)) {
       expect(material).toBeInstanceOf(THREE.Material);
     }
@@ -49,7 +49,7 @@ describe('room materials', () => {
     const materials = createRoomMaterials({ wood, plaster });
 
     // Non-enumerable: key count and Object.values() loop stay unchanged.
-    expect(Object.keys(materials)).toHaveLength(18);
+    expect(Object.keys(materials)).toHaveLength(19);
     const clones = materials.textureClones ?? [];
     expect(clones).toHaveLength(2);
     expect((materials.woodDark as THREE.MeshStandardMaterial).map).toBe(
@@ -118,13 +118,19 @@ describe('RoomScene headless render', () => {
     // frames + cases + screen: comfortably more than 40 meshes.
     expect(meshes.length).toBeGreaterThan(40);
 
-    // THREE.InstancedMesh keeps .type === 'Mesh'; detect via the flag.
+    // THREE.InstancedMesh keeps .type === 'Mesh'; detect via the flag. Two:
+    // decorative filler books + the 13 pickable Library post-books (commit 6).
     const instanced = renderer.scene.findAll((node) =>
       Boolean(
         (node.instance as THREE.InstancedMesh | undefined)?.isInstancedMesh,
       ),
     );
-    expect(instanced).toHaveLength(1);
+    expect(instanced).toHaveLength(2);
+    const heroMesh = instanced.find(
+      (node) =>
+        (node.instance as THREE.InstancedMesh | undefined)?.count === 13,
+    );
+    expect(heroMesh).toBeDefined();
     expect(
       (instanced[0]?.instance as THREE.InstancedMesh | undefined)?.count,
     ).toBeGreaterThan(0);
@@ -139,6 +145,7 @@ describe('RoomScene headless render', () => {
       'desk',
       'pc-tower',
       'bookshelf',
+      'library-books',
       'floor-lamp',
       'window',
       'projector',

@@ -438,6 +438,137 @@ function shade(color: string): string {
   return `#${c.getHexString()}`;
 }
 
+/* ------------------------------------------------------- library books -- */
+
+/** Atlas grid used by planBookSpineAtlas — 4 columns, ceil(n/4) rows. */
+export const BOOK_ATLAS_COLUMNS = 4;
+export const bookAtlasRows = (count: number): number =>
+  Math.ceil(count / BOOK_ATLAS_COLUMNS);
+
+export interface LibraryBook {
+  /** postId() from content — the DOM/store bridge. */
+  id: string;
+  /** Index into POSTS == the atlas cell index. */
+  index: number;
+  featured: boolean;
+  /** Shelf-local book-body center. */
+  position: Vec3;
+  /** Shelf-local body dimensions [width, height, depth]. */
+  scale: Vec3;
+  /** Per-instance body color (featured = brass/red accent). */
+  color: string;
+}
+
+/**
+ * One pickable volume per POST (commit 6). Books stand at the FRONT of a shelf
+ * cell so their atlas spine labels face the camera; the 13th book shares the
+ * first cell (12 shelf cells, 13 posts) via a second slot. Pure CPU math — no
+ * three context needed — so placement is unit-testable headlessly.
+ */
+export function createLibraryBooks(
+  cells: readonly ShelfCell[],
+  posts: readonly { id: string; featured: boolean }[],
+): LibraryBook[] {
+  if (cells.length === 0) return [];
+  return posts.map((post, index) => {
+    const cell = cells[index % cells.length]!;
+    const slot = Math.floor(index / cells.length); // 0 for most, 1 for the 13th
+    const bookW = post.featured ? 0.086 : 0.062;
+    const bookH = cell.h * (post.featured ? 0.96 : 0.82);
+    const bookD = Math.min(cell.d * 0.92, 0.24);
+    const x = cell.x + (slot === 0 ? -cell.w * 0.2 : cell.w * 0.2);
+    const y = cell.y + bookH / 2;
+    const z = cell.z + cell.d / 2 - bookD / 2;
+    const color = post.featured
+      ? index % 2 === 0
+        ? PALETTE.p5Red
+        : PALETTE.brassLight
+      : BOOK_SPINE_COLORS[index % BOOK_SPINE_COLORS.length]!;
+    return {
+      id: post.id,
+      index,
+      featured: post.featured,
+      position: [x, y, z],
+      scale: [bookW, bookH, bookD],
+      color,
+    };
+  });
+}
+
+/**
+ * Atlas UV rect for a 0-based cell. Canvas rows run top→bottom while three
+ * texture V runs bottom→top (CanvasTexture flipY), hence the 1 - … mapping.
+ */
+export function atlasCellUV(
+  index: number,
+  columns = BOOK_ATLAS_COLUMNS,
+  rows: number,
+): { u0: number; u1: number; v0: number; v1: number } {
+  const col = index % columns;
+  const row = Math.floor(index / columns);
+  return {
+    u0: col / columns,
+    u1: (col + 1) / columns,
+    v0: 1 - (row + 1) / rows,
+    v1: 1 - row / rows,
+  };
+}
+
+/**
+ * All spine labels in ONE BufferGeometry (one draw call): a quad per book on
+ * the front face, UVs remapped into its atlas cell. Keeps instancing discipline
+ * (§3.8) while still giving each volume a distinct title from the shared atlas.
+ */
+export function createSpineLabelsGeometry(
+  books: readonly LibraryBook[],
+  rows: number,
+): THREE.BufferGeometry {
+  const positions: number[] = [];
+  const normals: number[] = [];
+  const uvs: number[] = [];
+  const indices: number[] = [];
+  books.forEach((book, i) => {
+    const [x, y, z] = book.position;
+    const [w, h, d] = book.scale;
+    const frontZ = z + d / 2 + 0.0015;
+    const halfW = w * 0.46;
+    const halfH = h * 0.47;
+    const corners: [number, number][] = [
+      [x - halfW, y - halfH],
+      [x + halfW, y - halfH],
+      [x + halfW, y + halfH],
+      [x - halfW, y + halfH],
+    ];
+    const { u0, u1, v0, v1 } = atlasCellUV(
+      book.index,
+      BOOK_ATLAS_COLUMNS,
+      rows,
+    );
+    const cellUvs: [number, number][] = [
+      [u0, v0],
+      [u1, v0],
+      [u1, v1],
+      [u0, v1],
+    ];
+    const base = i * 4;
+    corners.forEach(([cornerX, cornerY], corner) => {
+      positions.push(cornerX, cornerY, frontZ);
+      normals.push(0, 0, 1);
+      uvs.push(...cellUvs[corner]!);
+    });
+    indices.push(base, base + 1, base + 2, base, base + 2, base + 3);
+  });
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute(
+    'position',
+    new THREE.Float32BufferAttribute(positions, 3),
+  );
+  geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+  geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+  geometry.setIndex(indices);
+  return geometry;
+}
+
 /* ------------------------------------------------------------------ rug -- */
 
 /** Rounded-corner rug via ExtrudeGeometry (thin, lies flat). */

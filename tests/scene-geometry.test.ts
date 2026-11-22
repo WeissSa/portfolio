@@ -4,10 +4,15 @@
  * assertions run headlessly in node/jsdom.
  */
 import { describe, expect, it } from 'vitest';
+import { POSTS, postId } from '../src/content/posts';
 import {
+  atlasCellUV,
+  bookAtlasRows,
+  BOOK_ATLAS_COLUMNS,
   countVertices,
   createBookInstances,
   createBookshelf,
+  createLibraryBooks,
   createDesk,
   createFramedSilhouette,
   createGameCases,
@@ -18,6 +23,7 @@ import {
   createProjector,
   createRoomShell,
   createRugGeometry,
+  createSpineLabelsGeometry,
   createWindow,
   disposeParts,
   geometryChecksum,
@@ -176,6 +182,85 @@ describe('geometry budgets (§4.3 draw-call/vertex discipline)', () => {
   it('disposeParts is safe to call on fresh geometry', () => {
     const parts = createDesk('dispose-me');
     expect(() => disposeParts(parts)).not.toThrow();
+  });
+});
+
+describe('library books (commit 6)', () => {
+  const cells = createBookshelf('library').cells;
+  const posts = POSTS.map((post) => ({
+    id: postId(post),
+    featured: post.featured,
+  }));
+  const books = createLibraryBooks(cells, posts);
+
+  it('creates exactly one volume per post with a matching featured flag', () => {
+    expect(books).toHaveLength(POSTS.length);
+    expect(books).toHaveLength(13);
+    books.forEach((book, index) => {
+      expect(book.id).toBe(posts[index]!.id);
+      expect(book.featured).toBe(posts[index]!.featured);
+      expect(book.index).toBe(index);
+    });
+    expect(books.filter((book) => book.featured).length).toBe(
+      POSTS.filter((post) => post.featured).length,
+    );
+  });
+
+  it('features are visibly larger and use a P5/brass accent color', () => {
+    const featured = books.filter((book) => book.featured);
+    const plain = books.filter((book) => !book.featured);
+    expect(featured.length).toBeGreaterThan(0);
+    expect(plain.length).toBeGreaterThan(0);
+    expect(Math.min(...featured.map((b) => b.scale[0]))).toBeGreaterThan(
+      Math.max(...plain.map((b) => b.scale[0])),
+    );
+    for (const book of featured) {
+      expect(['#ff2a1a', '#d4b06a']).toContain(book.color);
+    }
+  });
+
+  it('the 13th book shares the first cell via a second slot', () => {
+    // 12 shelf cells, 13 posts: index 12 wraps to cell 0 beside index 0.
+    const cell = cells[0]!;
+    for (const book of [books[0]!, books[12]!]) {
+      expect(book.position[0]).toBeGreaterThanOrEqual(cell.x - cell.w / 2);
+      expect(book.position[0]).toBeLessThanOrEqual(cell.x + cell.w / 2);
+    }
+    expect(books[12]!.position[0]).not.toBe(books[0]!.position[0]);
+  });
+
+  it('maps each atlas cell into its own UV rect', () => {
+    const cols = BOOK_ATLAS_COLUMNS;
+    const rows = bookAtlasRows(POSTS.length);
+    expect(rows).toBe(4);
+    const rect = atlasCellUV(5, cols, rows);
+    expect(rect.u0).toBeCloseTo(1 / cols, 6);
+    expect(rect.u1).toBeCloseTo(2 / cols, 6);
+    expect(rect.v1 - rect.v0).toBeCloseTo(1 / rows, 6);
+    // Adjacent cells never overlap.
+    const next = atlasCellUV(6, cols, rows);
+    expect(rect.u1).toBeCloseTo(next.u0, 6);
+  });
+
+  it('builds one merged label geometry with per-book atlas UVs', () => {
+    const rows = bookAtlasRows(books.length);
+    const geometry = createSpineLabelsGeometry(books, rows);
+    const position = geometry.getAttribute('position');
+    const uv = geometry.getAttribute('uv');
+    expect(position.count).toBe(books.length * 4);
+    expect(uv.count).toBe(books.length * 4);
+    expect(geometry.getIndex()?.count).toBe(books.length * 6);
+    // Each book's four vertices stay inside its own atlas cell column/row.
+    books.forEach((book, index) => {
+      const cell = atlasCellUV(book.index, BOOK_ATLAS_COLUMNS, rows);
+      for (let v = index * 4; v < index * 4 + 4; v += 1) {
+        expect(uv.getX(v)).toBeGreaterThanOrEqual(cell.u0 - 1e-6);
+        expect(uv.getX(v)).toBeLessThanOrEqual(cell.u1 + 1e-6);
+        expect(uv.getY(v)).toBeGreaterThanOrEqual(cell.v0 - 1e-6);
+        expect(uv.getY(v)).toBeLessThanOrEqual(cell.v1 + 1e-6);
+      }
+    });
+    expect(() => geometry.dispose()).not.toThrow();
   });
 });
 

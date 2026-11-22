@@ -1,27 +1,41 @@
 import { useId, useState } from 'react';
-import { displayTags, type Post } from '../content/posts';
+import { displayTags, postId, type Post } from '../content/posts';
 import { assetUrl, P5Panel, StarMark, TagChip, GitHubIcon } from './primitives';
 
 const NDA_NOTE = 'Repository is private — details under NDA.';
 
 /**
- * Expandable P5 panel for one post (shared by the Experience library and
- * the Projects game-case shelf). Keyboard: the toggle is a real <button>;
- * Enter/Space work natively. Description HTML is the verbatim legacy copy.
+ * Expandable P5 panel for one post — the SAME component used by the 2D
+ * Experience list, the Projects shelf and (commit 6) the 3D book detail
+ * overlay. Keyboard: the inline toggle is a real <button> (Enter/Space work
+ * natively); the overlay passes `expanded` to force the detail open and owns
+ * its own close control. `data-post-id` + `highlighted` bridge 3D hover/
+ * selection back to the matching DOM card. Description HTML is verbatim.
  */
 export function PostCard({
   post,
   variant = 'library',
+  expanded: controlledExpanded,
+  highlighted = false,
 }: {
   post: Post;
   variant?: 'library' | 'case';
+  /** Force the detail open (detail overlay); omit for the inline toggle. */
+  expanded?: boolean;
+  /** A hovered/selected 3D book highlights its accessible DOM twin. */
+  highlighted?: boolean;
 }) {
-  const [expanded, setExpanded] = useState(false);
+  const [internalExpanded, setInternalExpanded] = useState(false);
+  const expanded = controlledExpanded ?? internalExpanded;
   const descriptionId = useId();
   const tags = displayTags(post);
 
   return (
-    <P5Panel slashed className="p5-cut-in">
+    <P5Panel
+      slashed
+      data-post-id={postId(post)}
+      className={`p5-cut-in${highlighted ? ' p5-card--highlight' : ''}`}
+    >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="p5-display flex-1 text-lg md:text-xl">
           {post.featured && <StarMark />} {post.title}
@@ -38,15 +52,21 @@ export function PostCard({
               <GitHubIcon />
             </a>
           ) : null}
-          <button
-            type="button"
-            onClick={() => setExpanded((open) => !open)}
-            aria-expanded={expanded}
-            aria-controls={descriptionId}
-            className="p5-btn text-sm"
-          >
-            {expanded ? 'Close' : variant === 'case' ? 'Open case' : 'Details'}
-          </button>
+          {controlledExpanded === undefined && (
+            <button
+              type="button"
+              onClick={() => setInternalExpanded((open) => !open)}
+              aria-expanded={expanded}
+              aria-controls={descriptionId}
+              className="p5-btn text-sm"
+            >
+              {expanded
+                ? 'Close'
+                : variant === 'case'
+                  ? 'Open case'
+                  : 'Details'}
+            </button>
+          )}
         </div>
       </div>
 

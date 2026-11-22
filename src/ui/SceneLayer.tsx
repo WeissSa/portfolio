@@ -8,6 +8,7 @@
  * the lazy chunk has mounted.
  */
 import { lazy, Suspense, useCallback, useState } from 'react';
+import { usePortfolioStore } from '../state/store';
 import type { RoomQuality } from '../scene/Room';
 
 const Room = lazy(() => import('../scene/Room'));
@@ -23,6 +24,10 @@ function LoadingCutIn() {
 export function SceneLayer({ quality }: { quality: RoomQuality }) {
   const [ready, setReady] = useState(false);
   const onReady = useCallback(() => setReady(true), []);
+  // Book picking needs real pointer input. The wrapper stays aria-hidden and
+  // the canvas is never focusable; keyboard/SR users use the DOM list + overlay.
+  const pointerFine = usePortfolioStore((state) => state.pointerFine);
+  const interactive = ready && pointerFine;
 
   return (
     <>
@@ -32,7 +37,9 @@ export function SceneLayer({ quality }: { quality: RoomQuality }) {
         {ready ? '3D room ready' : 'Loading the 3D room'}
       </p>
       <div
-        className={`scene-layer${ready ? ' scene-layer--ready' : ''}`}
+        className={`scene-layer${ready ? ' scene-layer--ready' : ''}${
+          interactive ? ' scene-layer--interactive' : ''
+        }`}
         aria-hidden="true"
       >
         <Suspense fallback={<LoadingCutIn />}>

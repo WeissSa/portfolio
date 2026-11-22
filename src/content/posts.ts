@@ -41,6 +41,21 @@ export function toPost(raw: RawPost): Post {
 /** All posts in display order (matches the legacy reversed JSON order). */
 export const POSTS: readonly Post[] = RAW_POSTS.map(toPost);
 
+/**
+ * Stable, DOM-safe id for a post (titles are unique in the content set). This
+ * is the bridge between a pickable 3D book and its accessible DOM card: the
+ * scene writes the id into the store, and the DOM overlay/list read it back.
+ */
+export const postId = (post: Post): string =>
+  post.title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+/** Resolve a store/DOM post id back to its content record (deep-link safe). */
+export const findPostById = (id: string | null): Post | undefined =>
+  id ? POSTS.find((post) => postId(post) === id) : undefined;
+
 /** Tags without the ★ marker, for display as chips. */
 export const displayTags = (post: Post): string[] =>
   post.tags.filter((tag) => tag !== FEATURED_TAG);
