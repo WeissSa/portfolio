@@ -4,6 +4,7 @@
  * level/mean logic). Deliberately framework-free for unit testing and reuse
  * by the 3D projector zone (REWORK_PLAN §4.4).
  */
+import { CLIMATE_YEARS_OF_HISTORY } from '../content/climate-config.mjs';
 
 /** year → month (0-indexed) → day (1-indexed) → mean temperature (°C). */
 export type HistoricalData = Record<
@@ -32,6 +33,16 @@ export const LEVEL_COLORS = [
   '#ff7f50', // 5 hotter (coral)
   '#ef4444', // 6 hottest on record (red)
 ] as const;
+
+/**
+ * Color for a heatmap legend swatch. `HEATMAP_LEGEND` is ordered hottest →
+ * no-data while `LEVEL_COLORS` is indexed by ascending level (no-data →
+ * hottest), so the two orders are exact reverses of one another. Pairing by
+ * the same index used to show gray for "Hottest" and red for "No Data".
+ */
+export function heatmapLegendColor(legendIndex: number): string {
+  return LEVEL_COLORS[LEVEL_COLORS.length - 1 - legendIndex] ?? LEVEL_COLORS[0];
+}
 
 /**
  * Port of the legacy `initialHistoricalData` → nested-shape transform.
@@ -181,7 +192,7 @@ export function climateMeterEmoji(diff: number | null): string {
 /** Year selector options: last 30 years, newest first (legacy behavior). */
 export function availableYears(currentYear: number): number[] {
   const years: number[] = [];
-  for (let i = 0; i < 30; i++) {
+  for (let i = 0; i < CLIMATE_YEARS_OF_HISTORY; i++) {
     years.push(currentYear - i);
   }
   return years;

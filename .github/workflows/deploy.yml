@@ -31,11 +31,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Refresh climate snapshot (best-effort)
-        # The script keeps the last-good committed snapshot on transient
-        # Open-Meteo failures and always exits 0; never fail deploy on weather.
-        run: npm run climate:snapshot
-
+      # Single refresh via `prebuild` (invoked by `npm run build` below); a
+      # separate climate:snapshot step used to fetch the same file twice. The
+      # script is best-effort and keeps the last-good snapshot on failures.
       - name: Build
         run: npm run build
 

@@ -2,16 +2,22 @@
  * Climate zone copy — ported verbatim from components/WeatherCheck/* and
  * lib/useWeather.ts of the legacy Next.js app.
  */
+import {
+  CLIMATE_LATITUDE,
+  CLIMATE_LOCATION_NAME,
+  CLIMATE_LONGITUDE,
+  CLIMATE_YEARS_OF_HISTORY,
+} from './climate-config.mjs';
 
 /** Toronto coordinates exactly as used by the legacy useWeather hook. */
 export const CLIMATE_LOCATION = {
-  latitude: 43.6532,
-  longitude: -79.3832,
-  name: 'Toronto, Canada',
+  latitude: CLIMATE_LATITUDE,
+  longitude: CLIMATE_LONGITUDE,
+  name: CLIMATE_LOCATION_NAME,
 } as const;
 
 /** Number of years of history the widgets compare against. */
-export const CLIMATE_YEARS_OF_HISTORY = 30;
+export { CLIMATE_YEARS_OF_HISTORY };
 
 export const CLIMATE_TITLE = 'Our Climate, Our Future';
 

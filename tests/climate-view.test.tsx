@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ClimateView } from '../src/ui/ClimateView';
@@ -28,10 +28,6 @@ function todayMonthDays(yearsBack: number[]): {
 beforeEach(() => {
   resetStore();
   window.localStorage.clear();
-});
-
-afterEach(() => {
-  vi.unstubAllGlobals();
 });
 
 describe('ClimateView (2D)', () => {
@@ -209,6 +205,26 @@ describe('ClimateView (2D)', () => {
     expect(screen.getByText(/Data source: local cache/)).toBeInTheDocument();
     expect(screen.getByText(/5 days ago/)).toBeInTheDocument();
     expect(screen.getByText(/stale/)).toBeInTheDocument();
+  });
+
+  it('discloses an unknown age for a snapshot without generatedAt', () => {
+    usePortfolioStore.setState({
+      climate: {
+        status: 'ready',
+        source: 'snapshot',
+        currentTemp: null,
+        locationName: 'Toronto, Canada',
+        historical: {},
+        error: null,
+        fetchedAt: null,
+        isStale: false,
+      },
+    });
+
+    render(<ClimateView />);
+    expect(
+      screen.getByText(/Data source: bundled snapshot \(age unknown\)/),
+    ).toBeInTheDocument();
   });
 
   it('changes the heatmap year via the selector', async () => {

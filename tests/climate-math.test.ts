@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
+import { HEATMAP_LEGEND } from '../src/content/climate';
 import {
   availableYears,
   climateMeterEmoji,
   flatToHistorical,
   heatmapForYear,
+  heatmapLegendColor,
   historicalAverage,
   HOTTEST_ON_RECORD,
   temperatureLevel,
@@ -136,6 +138,28 @@ describe('heatmapForYear', () => {
     const dec31 = cells[364];
     expect(dec31?.level).toBe(0);
     expect(dec31?.temp).toBeNull();
+  });
+});
+
+describe('heatmap legend colors', () => {
+  // HEATMAP_LEGEND is hottest → no-data; LEVEL_COLORS is level 0 (no-data) →
+  // level 6 (hottest). Pin each label to the color of its actual level so the
+  // two orders can never silently drift apart again.
+  const expected: Record<string, string> = {
+    'Hottest day on record': '#ef4444', // level 6
+    '>5°C Hotter': '#ff7f50', // level 5
+    '>2°C Hotter': '#f97316', // level 4
+    Normal: '#22c55e', // level 3
+    '< -2°C Colder': '#22d3ee', // level 2
+    '< -5°C Colder': '#3b82f6', // level 1
+    'No Data': '#6b7280', // level 0
+  };
+
+  it('pairs every legend label with the color of its level', () => {
+    expect(HEATMAP_LEGEND).toHaveLength(Object.keys(expected).length);
+    HEATMAP_LEGEND.forEach((label, index) => {
+      expect(heatmapLegendColor(index), label).toBe(expected[label]);
+    });
   });
 });
 

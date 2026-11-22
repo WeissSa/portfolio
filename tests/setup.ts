@@ -5,12 +5,16 @@ import { cleanup } from '@testing-library/react';
 afterEach(() => {
   cleanup();
   window.location.hash = '';
+  // Undo per-test `vi.stubGlobal` overrides so the shared fixture below is
+  // restored for the next test; individual test files need no afterEach.
+  vi.unstubAllGlobals();
 });
 
 // jsdom has no real network: without this, tests that navigate to the Climate
 // zone would hit the public Open-Meteo API and could settle after the test
 // finished. Tests that need a specific response override this with
-// `vi.stubGlobal('fetch', ...)`; afterEach's unstub restores this fixture.
+// `vi.stubGlobal('fetch', ...)`; the global afterEach above restores this
+// fixture (the value captured before stubbing).
 const FIXTURE_FLAT: Record<string, number> = {
   '2020-01-01': 5,
   '2021-01-01': 7,

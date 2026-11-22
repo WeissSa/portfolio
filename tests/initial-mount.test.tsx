@@ -16,6 +16,7 @@ import { usePortfolioStore } from '../src/state/store';
  */
 describe('initial-mount handoff (no frame-0 jump)', () => {
   beforeEach(() => {
+    window.location.hash = '';
     usePortfolioStore.setState({ activeZone: '/', hasNavigated: false });
   });
 
@@ -46,6 +47,25 @@ describe('initial-mount handoff (no frame-0 jump)', () => {
     });
   });
 
+  it('keeps app-initial on a deep link until a real in-app navigation', async () => {
+    const user = userEvent.setup();
+    // A legacy/deep link lands directly on #/projects while the store still
+    // holds its default '/' zone. Adopting that route on first paint must not
+    // count as navigation (no cut-in on frame 0).
+    window.location.hash = '#/projects';
+
+    render(<App />);
+    expect(appContainer()).toHaveClass('app-initial');
+    expect(usePortfolioStore.getState().hasNavigated).toBe(false);
+
+    await user.click(screen.getByRole('link', { name: 'About' }));
+    expect(window.location.hash).toBe('#/about');
+    await waitFor(() => {
+      expect(appContainer()).not.toHaveClass('app-initial');
+      expect(usePortfolioStore.getState().hasNavigated).toBe(true);
+    });
+  });
+
   it('p5.css suppresses the cut-in animation inside .app-initial', () => {
     // jsdom does not apply real stylesheets; assert on the source rule that
     // the initial mount never plays the animation (reduced-motion block
@@ -63,5 +83,8 @@ describe('initial-mount handoff (no frame-0 jump)', () => {
     const reducedIdx = css.indexOf('@media (prefers-reduced-motion');
     expect(initialIdx).toBeGreaterThan(-1);
     expect(reducedIdx).toBeGreaterThan(-1);
+    // Guard the source ordering: the app-initial rule stays above the
+    // reduced-motion block instead of drifting into/behind it.
+    expect(initialIdx).toBeLessThan(reducedIdx);
   });
 });

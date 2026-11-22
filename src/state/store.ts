@@ -30,6 +30,13 @@ export interface PortfolioStore {
   activeZone: Route;
   setActiveZone: (route: Route) => void;
   /**
+   * Align the store with the landing route on the first mount (deep links,
+   * legacy 404 redirects) WITHOUT counting it as navigation. Calls to this
+   * never flip `hasNavigated`, so the initial paint keeps `app-initial` and
+   * the cut-in only plays for genuine in-app navigation.
+   */
+  syncInitialRoute: (route: Route) => void;
+  /**
    * False until the first real zone change. The initial mount keeps the
    * `app-initial` class so cut-in animations are suppressed and the React UI
    * appears exactly like the styled static mirror it replaces (no frame-0
@@ -69,12 +76,13 @@ export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
   setActiveZone: (activeZone) => {
     if (get().activeZone !== activeZone) {
       // A real zone change: mark that we've navigated so the `app-initial`
-      // class drops and subsequent views play the cut-in animation. The
-      // initial mount sync (App's effect with the landing route) only flips
-      // this when the landing route actually differs from the default.
+      // class drops and subsequent views play the cut-in animation.
       set({ activeZone, hasNavigated: true });
     }
   },
+  // The landing-route sync must not flip `hasNavigated`: arriving at a deep
+  // link (e.g. #/climate from the legacy 404 redirect) is not a navigation.
+  syncInitialRoute: (activeZone) => set({ activeZone }),
 
   climate: IDLE_CLIMATE,
   loadClimate: async () => {

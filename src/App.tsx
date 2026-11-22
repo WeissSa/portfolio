@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useRoute, type Route } from './lib/router';
 import { usePortfolioStore } from './state/store';
 import { MainMenu } from './ui/MainMenu';
@@ -40,11 +40,20 @@ function ZoneContent({ route }: { route: Route }) {
 export default function App() {
   const route = useRoute();
   const setActiveZone = usePortfolioStore((s) => s.setActiveZone);
+  const syncInitialRoute = usePortfolioStore((s) => s.syncInitialRoute);
   const hasNavigated = usePortfolioStore((s) => s.hasNavigated);
+  const initialRouteSynced = useRef(false);
 
   useEffect(() => {
+    if (!initialRouteSynced.current) {
+      // First paint: adopt whatever route we landed on (including legacy
+      // deep-link redirects) without dropping `app-initial` / playing cut-in.
+      initialRouteSynced.current = true;
+      syncInitialRoute(route);
+      return;
+    }
     setActiveZone(route);
-  }, [route, setActiveZone]);
+  }, [route, setActiveZone, syncInitialRoute]);
 
   return (
     <div

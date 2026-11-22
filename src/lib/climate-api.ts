@@ -32,10 +32,28 @@ export interface SnapshotData {
 
 export const CACHE_KEY = 'portfolio.climate.v1';
 export const CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
+/** Same best-effort timeout used by the build-time snapshot script. */
+export const LIVE_FETCH_TIMEOUT_MS = 15_000;
 
 interface CacheEntry {
   fetchedAt: number;
   data: ClimatePayload;
+}
+
+/**
+ * Runtime validation for untrusted localStorage JSON. `currentTemp` flows
+ * into `toFixed(1)` in the view, so a corrupt string must invalidate the
+ * entry instead of reaching the render path (null is valid: snapshots have
+ * no live temperature).
+ */
+function isValidCacheEntry(entry: CacheEntry | null | undefined): boolean {
+  return (
+    typeof entry?.fetchedAt === 'number' &&
+    typeof entry?.data?.flat === 'object' &&
+    entry.data.flat !== null &&
+    (typeof entry.data.currentTemp === 'number' ||
+      entry.data.currentTemp === null)
+  );
 }
 
 const toDateParam = (d: Date): string => d.toISOString().split('T')[0] ?? '';
@@ -62,7 +80,11 @@ export function archiveUrl(start: string, end: string): string {
 }
 
 async function fetchJson(url: string): Promise<Record<string, unknown>> {
-  const res = await fetch(url);
+  // Without a deadline a hung Open-Meteo request would block the whole
+  // fallback pipeline forever (the UI would sit in "loading" indefinitely).
+  const res = await fetch(url, {
+    signal: AbortSignal.timeout(LIVE_FETCH_TIMEOUT_MS),
+  });
   if (!res.ok) {
     throw new Error(`Open-Meteo request failed (HTTP ${res.status})`);
   }
@@ -117,13 +139,7 @@ export function loadCache(nowMs: number = Date.now()): CacheEntry | null {
     const raw = window.localStorage.getItem(CACHE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as CacheEntry;
-    if (
-      typeof parsed?.fetchedAt !== 'number' ||
-      typeof parsed?.data?.flat !== 'object' ||
-      parsed.data.flat === null
-    ) {
-      return null;
-    }
+    if (!isValidCacheEntry(parsed)) return null;
     if (nowMs - parsed.fetchedAt > CACHE_TTL_MS) return null;
     return parsed;
   } catch {
@@ -136,13 +152,7 @@ function loadCacheEntryIgnoringAge(): CacheEntry | null {
     const raw = window.localStorage.getItem(CACHE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as CacheEntry;
-    if (
-      typeof parsed?.fetchedAt !== 'number' ||
-      typeof parsed?.data?.flat !== 'object' ||
-      parsed.data.flat === null
-    ) {
-      return null;
-    }
+    if (!isValidCacheEntry(parsed)) return null;
     return parsed;
   } catch {
     return null;

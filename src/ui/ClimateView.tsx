@@ -15,7 +15,7 @@ import {
   availableYears,
   climateMeterEmoji,
   heatmapForYear,
-  LEVEL_COLORS,
+  heatmapLegendColor,
   todayComparison,
   yearsWithData,
 } from '../lib/climate';
@@ -146,6 +146,9 @@ export function ClimateView() {
                 data-testid="climate-data-source"
               >
                 Data source: {sourceLabel}
+                {climate.source === 'snapshot' &&
+                  climate.fetchedAt === null &&
+                  ' (age unknown)'}
                 {ageLabel && (
                   <>
                     {' '}
@@ -213,7 +216,7 @@ export function ClimateView() {
                   <span
                     aria-hidden="true"
                     className="inline-block h-4 w-4"
-                    style={{ backgroundColor: LEVEL_COLORS[index] }}
+                    style={{ backgroundColor: heatmapLegendColor(index) }}
                   />
                   {label}
                 </li>

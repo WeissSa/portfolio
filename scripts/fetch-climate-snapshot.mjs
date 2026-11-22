@@ -3,19 +3,20 @@
  * Build-time climate snapshot (REWORK_PLAN §4.4).
  *
  * Fetches the Open-Meteo historical archive (daily temperature_2m_mean,
- * last 30 years, Toronto coordinates identical to src/content/climate.ts)
- * and writes public/climate-snapshot.json. The SPA uses this file as the
- * bundled fallback when the live API and the localStorage cache are both
- * unavailable. CI can re-run this at build time to refresh the snapshot:
- *
- *   node scripts/fetch-climate-snapshot.mjs
+ * last 30 years, Toronto coordinates) and writes public/climate-snapshot.json.
+ * The location/window come from the same climate-config.mjs the client uses,
+ * so the bundled snapshot can never drift from the live query. The SPA uses
+ * this file when the live API and the localStorage cache are both
+ * unavailable. It runs once via `prebuild` (npm run build).
  */
 import { readFile, writeFile } from 'node:fs/promises';
+import {
+  CLIMATE_LATITUDE as LATITUDE,
+  CLIMATE_LOCATION_NAME as NAME,
+  CLIMATE_LONGITUDE as LONGITUDE,
+  CLIMATE_YEARS_OF_HISTORY as YEARS_OF_HISTORY,
+} from '../src/content/climate-config.mjs';
 
-const LATITUDE = 43.6532;
-const LONGITUDE = -79.3832;
-const NAME = 'Toronto, Canada';
-const YEARS_OF_HISTORY = 30;
 const OUT_FILE = 'public/climate-snapshot.json';
 
 const endDate = new Date();

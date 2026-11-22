@@ -37,14 +37,16 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Format check
+        run: npm run format:check
+
       - name: Unit & component tests
         run: npm run test
 
-      - name: Refresh climate snapshot (best-effort)
-        # The script keeps the last-good committed snapshot on transient
-        # Open-Meteo failures and always exits 0; never fail CI on weather.
-        run: npm run climate:snapshot
-
+      # The climate snapshot is refreshed exactly once by `prebuild`, which
+      # `npm run build` triggers below. No separate climate:snapshot step:
+      # the script keeps the last-good committed snapshot on transient
+      # Open-Meteo failures and never fails the build on weather.
       - name: Build
         run: npm run build
 

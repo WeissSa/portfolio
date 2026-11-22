@@ -50,6 +50,11 @@ export function useFocusTrap<T extends HTMLElement>(
   restoreFocus = true,
 ): RefObject<T | null> {
   const ref = useRef<T>(null);
+  // Keep the latest value in a ref: putting `restoreFocus` in the effect deps
+  // tears down/re-runs the trap when the caller flips `isOnlyWindow`, and the
+  // teardown would steal focus back to a desktop icon mid-interaction.
+  const restoreFocusRef = useRef(restoreFocus);
+  restoreFocusRef.current = restoreFocus;
 
   useEffect(() => {
     if (!active) return;
@@ -78,7 +83,10 @@ export function useFocusTrap<T extends HTMLElement>(
       const first = focusables[0]!;
       const last = focusables[focusables.length - 1]!;
       const activeEl = document.activeElement;
-      if (event.shiftKey && (activeEl === first || !node.contains(activeEl))) {
+      if (
+        event.shiftKey &&
+        (activeEl === first || activeEl === node || !node.contains(activeEl))
+      ) {
         event.preventDefault();
         last.focus();
       } else if (!event.shiftKey && activeEl === last) {
@@ -101,14 +109,14 @@ export function useFocusTrap<T extends HTMLElement>(
       // When another dialog stays open the caller moves focus to that dialog
       // instead; restoring here would pull focus back to a desktop icon.
       if (
-        restoreFocus &&
+        restoreFocusRef.current &&
         previouslyFocused &&
         typeof previouslyFocused.focus === 'function'
       ) {
         previouslyFocused.focus({ preventScroll: true });
       }
     };
-  }, [active, restoreFocus]);
+  }, [active]);
 
   return ref;
 }

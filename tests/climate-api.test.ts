@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   CACHE_KEY,
   archiveUrl,
@@ -63,10 +63,6 @@ beforeEach(() => {
   window.localStorage.clear();
 });
 
-afterEach(() => {
-  vi.unstubAllGlobals();
-});
-
 describe('URLs (ported from the legacy hook)', () => {
   it('targets the Open-Meteo forecast + archive with Toronto coords', () => {
     expect(currentWeatherUrl()).toContain('latitude=43.6532');
@@ -105,6 +101,24 @@ describe('fetchLiveClimate', () => {
     await expect(fetchLiveClimate()).rejects.toThrow(
       'Could not fetch current temperature.',
     );
+  });
+
+  it('attaches an abort timeout signal to each live request', async () => {
+    const fetchMock = vi.fn(
+      async (input: unknown, _init?: { signal?: AbortSignal }) => {
+        const url = String(input);
+        const body = url.startsWith('https://api.open-meteo.com')
+          ? forecastResponse
+          : archiveResponse;
+        return { ok: true, json: async () => body } as Response;
+      },
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    await fetchLiveClimate(new Date('2026-11-21T12:00:00Z'));
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    for (const call of fetchMock.mock.calls) {
+      expect(call[1]?.signal).toBeInstanceOf(AbortSignal);
+    }
   });
 
   it('throws when the archive is empty', async () => {
@@ -147,6 +161,21 @@ describe('localStorage cache', () => {
     window.localStorage.setItem(CACHE_KEY, '{oops');
     expect(loadCache()).toBeNull();
   });
+
+  it('rejects a cache entry whose currentTemp is not a number or null', () => {
+    window.localStorage.setItem(
+      CACHE_KEY,
+      JSON.stringify({
+        fetchedAt: Date.now(),
+        data: {
+          currentTemp: 'x',
+          locationName: 'Toronto, Canada',
+          flat: FLAT,
+        },
+      }),
+    );
+    expect(loadCache()).toBeNull();
+  });
 });
 
 describe('loadClimateData pipeline', () => {
@@ -174,6 +203,26 @@ describe('loadClimateData pipeline', () => {
     };
     saveCache(data);
     vi.stubGlobal('fetch', mockFetchByUrl({ failUrls: [/open-meteo\.com/] }));
+    const outcome = await loadClimateData();
+    expect(outcome.status).toBe('cache');
+    if (outcome.status === 'cache') {
+      expect(outcome.data).toEqual(data);
+    }
+  });
+
+  it('falls back to the cache when a live request times out', async () => {
+    const data = {
+      currentTemp: 10,
+      locationName: 'Toronto, Canada',
+      flat: FLAT,
+    };
+    saveCache(data);
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        throw new DOMException('request timed out', 'TimeoutError');
+      }),
+    );
     const outcome = await loadClimateData();
     expect(outcome.status).toBe('cache');
     if (outcome.status === 'cache') {
@@ -232,6 +281,49 @@ describe('loadClimateData pipeline', () => {
       expect(outcome.fetchedAt).toBe(Date.parse('2026-11-20T00:00:00.000Z'));
       expect(outcome.stale).toBe(false);
     }
+  });
+
+  it('ignores a corrupt currentTemp in a fresh cache entry', async () => {
+    window.localStorage.setItem(
+      CACHE_KEY,
+      JSON.stringify({
+        fetchedAt: Date.now(),
+        data: {
+          currentTemp: 'x',
+          locationName: 'Toronto, Canada',
+          flat: FLAT,
+        },
+      }),
+    );
+    vi.stubGlobal(
+      'fetch',
+      mockFetchByUrl({
+        failUrls: [/open-meteo\.com/],
+        snapshot: { generatedAt: '2026-11-20T00:00:00.000Z', flat: FLAT },
+      }),
+    );
+    const outcome = await loadClimateData();
+    expect(outcome.status).toBe('snapshot');
+  });
+
+  it('ignores a corrupt currentTemp in an expired cache entry', async () => {
+    window.localStorage.setItem(
+      CACHE_KEY,
+      JSON.stringify({
+        fetchedAt: Date.now() - 30 * 24 * 60 * 60 * 1000,
+        data: {
+          currentTemp: 'x',
+          locationName: 'Toronto, Canada',
+          flat: FLAT,
+        },
+      }),
+    );
+    vi.stubGlobal(
+      'fetch',
+      mockFetchByUrl({ failUrls: [/open-meteo\.com/, /climate-snapshot/] }),
+    );
+    const outcome = await loadClimateData();
+    expect(outcome.status).toBe('error');
   });
 
   it('uses an expired cache only as a last resort, flagged stale with its age', async () => {

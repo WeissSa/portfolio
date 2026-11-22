@@ -1,7 +1,12 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { usePortfolioStore } from '../src/state/store';
 
 describe('portfolio store', () => {
+  beforeEach(() => {
+    window.location.hash = '';
+    usePortfolioStore.setState({ activeZone: '/', hasNavigated: false });
+  });
+
   it('defaults to 2D mode and the home zone', () => {
     const state = usePortfolioStore.getState();
     expect(state.mode).toBe('2d');
@@ -19,8 +24,14 @@ describe('portfolio store', () => {
     setActiveZone('/');
   });
 
+  it('syncs the landing route without counting it as navigation', () => {
+    usePortfolioStore.getState().syncInitialRoute('/climate');
+    const state = usePortfolioStore.getState();
+    expect(state.activeZone).toBe('/climate');
+    expect(state.hasNavigated).toBe(false);
+  });
+
   it('flips hasNavigated only when the zone actually changes', () => {
-    usePortfolioStore.setState({ activeZone: '/', hasNavigated: false });
     const { setActiveZone } = usePortfolioStore.getState();
 
     // Same zone (e.g. App's initial route sync on mount): no navigation.
@@ -30,8 +41,6 @@ describe('portfolio store', () => {
     // A real zone change marks the first navigation.
     setActiveZone('/about');
     expect(usePortfolioStore.getState().hasNavigated).toBe(true);
-
-    usePortfolioStore.setState({ activeZone: '/', hasNavigated: false });
   });
 
   it('keeps the About window stack ordered and deduplicated', () => {
