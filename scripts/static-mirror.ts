@@ -45,8 +45,10 @@ type EmittedAsset = {
 
 /**
  * Concatenate the source of every emitted `.css` asset from the build bundle.
- * `bundle` is undefined outside a build (dev server), in which case we return
- * '' and skip inlining — there is no static mirror FOUC in dev.
+ * `bundle` is undefined outside a build (dev server). In dev, app CSS is
+ * injected from JS (main.tsx), so we skip build-style inlining and rely on the
+ * hand-authored `<style data-critical-mirror>` block shipped in index.html to
+ * style the static mirror on the very first paint (no JS / network needed).
  */
 export function collectCss(
   bundle: Record<string, EmittedAsset> | undefined,
@@ -64,13 +66,38 @@ export function collectCss(
 }
 
 /**
+ * Remove the hand-authored `<style data-critical-mirror>` block from the source
+ * index.html. The built CSS bundle already carries the very same mirror rules
+ * (imported via src/styles/index.css → static-mirror.css), so leaving the dev
+ * block in place would duplicate every mirror rule in the built HTML.
+ *
+ * DEDUPE CHOICE: strip the small static block and inline the FULL built CSS.
+ * The result is exactly one effective inline style in dist/index.html, with
+ * the complete on-brand styling; dev (no bundle) keeps the static block.
+ */
+export function stripStaticCriticalCss(html: string): string {
+  return html.replace(
+    /<style\b[^>]*\bdata-critical-mirror\b[^>]*>[\s\S]*?<\/style\s*>/gi,
+    '',
+  );
+}
+
+/**
  * Remove Vite's render-blocking `<link rel="stylesheet" ... .css>` and put the
  * built CSS in an inline `<style>` in <head>, so the build-time static mirror
  * is styled on the very first paint with zero network round trips. The emitted
  * CSS file is left in place (harmless: no page references it) so other HTML
  * entry points keep working and size-limit accounting is unchanged.
+ *
+ * Also strips the dev-only static critical block so the built page never ends
+ * up with two inline style blocks / duplicate mirror rules.
  */
 export function injectCriticalCss(html: string, css: string): string {
+  // Guard BEFORE touching any markup: without a </head> there is nowhere to
+  // place the inline style, and dropping the stylesheet link would leave the
+  // page completely unstyled.
+  if (!/<\/head>/i.test(html)) return html;
+
   const withoutCssLink = html.replace(/<link\b[^>]*>/gi, (tag) => {
     const isStylesheet =
       /\brel\s*=\s*(?:"stylesheet"|'stylesheet'|stylesheet(?:\s|>|$))/i.test(
@@ -82,14 +109,15 @@ export function injectCriticalCss(html: string, css: string): string {
       );
     return isStylesheet && isCssHref ? '' : tag;
   });
-  if (!/<\/head>/i.test(withoutCssLink)) return withoutCssLink;
+
+  // Dedupe: remove the source `<style data-critical-mirror>` before inlining
+  // the full bundle CSS (see stripStaticCriticalCss for the rationale).
+  const deduped = stripStaticCriticalCss(withoutCssLink);
+
   // Escape any literal `</style` in the CSS so it cannot close the block early
   // (`\/` is a valid CSS escape for `/`, so the declaration stays intact).
   const safeCss = css.replace(/<\/style/gi, '<\\/style');
-  return withoutCssLink.replace(
-    /<\/head>/i,
-    `<style>${safeCss}</style></head>`,
-  );
+  return deduped.replace(/<\/head>/i, `<style>${safeCss}</style></head>`);
 }
 
 /**
@@ -100,9 +128,12 @@ export function injectCriticalCss(html: string, css: string): string {
  */
 export function fontPreloadFromCss(css: string): string {
   const match = /url\(([^)]+\.woff2)\)/i.exec(css);
-  return match
-    ? `<link rel="preload" as="font" type="font/woff2" crossorigin href="${match[1]}">`
-    : '';
+  if (!match) return '';
+  // The URL is interpolated into an HTML attribute: percent-encode it, then
+  // escape HTML-significant characters so a quote in the CSS cannot break out
+  // of the href (e.g. `url("x\").woff2")` must not inject a new attribute).
+  const href = escapeHtml(encodeURI((match[1] ?? '').trim()));
+  return `<link rel="preload" as="font" type="font/woff2" crossorigin href="${href}">`;
 }
 
 export function injectFontPreload(html: string, preload: string): string {
