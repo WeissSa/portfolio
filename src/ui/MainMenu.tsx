@@ -3,6 +3,7 @@ import { LINKS } from '../content/links';
 import { HEADLINE, SITE_OWNER } from '../content/bio';
 import { Route, ROUTES, useRoute } from '../lib/router';
 import { GitHubIcon, LinkedInIcon } from './primitives';
+import { ModeToggle } from './ModeToggle';
 
 const MENU_LABELS: Record<Route, string> = {
   '/': 'Home',
@@ -88,6 +89,7 @@ export function MainMenu() {
         ))}
       </ul>
       <div className="mt-4 flex gap-2 md:mt-6">
+        <ModeToggle />
         <a
           href={LINKS.github.url}
           target="_blank"

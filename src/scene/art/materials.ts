@@ -31,16 +31,27 @@ export type MaterialKey =
   | 'bookAtlas'
   | 'caseLabel';
 
-export type RoomMaterials = Record<MaterialKey, THREE.Material>;
+/**
+ * Non-enumerable `textureClones` keeps the material map indexable by
+ * MaterialKey (and keeps Object.values() clean) while still owning the two
+ * cloned textures created by withRepeat(). They must be disposed alongside the
+ * materials: Room.tsx creates/disposes this object on every mode toggle, and
+ * a clone holds its own GPU texture (commit 5 review fix).
+ */
+export type RoomMaterials = Record<MaterialKey, THREE.Material> & {
+  readonly textureClones?: readonly THREE.Texture[];
+};
 
 function withRepeat(
   texture: THREE.Texture | undefined,
   repeat: [number, number],
+  clones: THREE.Texture[],
 ): THREE.Texture | undefined {
   if (!texture) return undefined;
   const clone = texture.clone();
   clone.repeat.set(repeat[0], repeat[1]);
   clone.needsUpdate = true;
+  clones.push(clone);
   return clone;
 }
 
@@ -68,7 +79,8 @@ function standard(
 export function createRoomMaterials(
   textures: Partial<Record<TextureKey, THREE.Texture>> = {},
 ): RoomMaterials {
-  return {
+  const clones: THREE.Texture[] = [];
+  const materials: RoomMaterials = {
     wood: standard({
       map: textures.wood,
       color: textures.wood ? '#ffffff' : PALETTE.woodMid,
@@ -76,13 +88,13 @@ export function createRoomMaterials(
       metalness: 0.04,
     }),
     woodDark: standard({
-      map: withRepeat(textures.wood, [2, 2]),
+      map: withRepeat(textures.wood, [2, 2], clones),
       color: textures.wood ? '#9c8a76' : PALETTE.woodDark,
       roughness: 0.85,
       metalness: 0.04,
     }),
     plaster: standard({
-      map: withRepeat(textures.plaster, [2.5, 1.5]),
+      map: withRepeat(textures.plaster, [2.5, 1.5], clones),
       color: textures.plaster ? '#ffffff' : PALETTE.plasterTeal,
       roughness: 0.95,
       metalness: 0,
@@ -171,8 +183,22 @@ export function createRoomMaterials(
       metalness: 0.05,
     }),
   };
+  // Non-enumerable: consumers indexing by MaterialKey and Object.values()
+  // loops stay exactly as before, but teardown can reach the clones.
+  Object.defineProperty(materials, 'textureClones', {
+    value: clones,
+    enumerable: false,
+  });
+  return materials;
 }
 
 export function disposeRoomMaterials(materials: RoomMaterials): void {
-  for (const material of Object.values(materials)) material.dispose();
+  // textureClones is non-enumerable, so the runtime values are all materials;
+  // the cast only narrows the optional field away for TypeScript.
+  for (const material of Object.values(materials) as THREE.Material[]) {
+    material.dispose();
+  }
+  // withRepeat() clones share the source image but own a separate GPU texture;
+  // dispose them explicitly so repeated 2D↔3D toggles cannot leak them.
+  for (const clone of materials.textureClones ?? []) clone.dispose();
 }

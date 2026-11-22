@@ -177,6 +177,44 @@
   animation: none;
 }
 
+/*
+ * 3D layer (commit 5): the lazy Canvas sits behind the authoritative 2D DOM.
+ * pointer-events:none keeps every interaction in real DOM until the pickable
+ * zones land in commits 6–9, and the Canvas is aria-hidden (no focus trap).
+ */
+.scene-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 520ms ease-out;
+}
+
+.scene-layer--ready {
+  opacity: 1;
+}
+
+.scene-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.app-3d .app-shell {
+  position: relative;
+  z-index: 1;
+}
+
+.scene-loading {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  min-width: 12rem;
+  text-align: center;
+  transform: translate(-50%, -50%) skewX(-6deg);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

@@ -5,7 +5,7 @@
  * still requires a real browser — deferred to the milestone screenshot review
  * (REWORK_PLAN §6).
  */
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import * as THREE from 'three';
 import ReactThreeTestRenderer from '@react-three/test-renderer';
 import { RoomScene } from '../src/scene/Room';
@@ -42,6 +42,30 @@ describe('room materials', () => {
     disposeRoomMaterials(materials);
     wood.dispose();
   });
+
+  it('tracks and disposes the withRepeat texture clones (review fix B)', () => {
+    const wood = new THREE.Texture();
+    const plaster = new THREE.Texture();
+    const materials = createRoomMaterials({ wood, plaster });
+
+    // Non-enumerable: key count and Object.values() loop stay unchanged.
+    expect(Object.keys(materials)).toHaveLength(18);
+    const clones = materials.textureClones ?? [];
+    expect(clones).toHaveLength(2);
+    expect((materials.woodDark as THREE.MeshStandardMaterial).map).toBe(
+      clones[0],
+    );
+    expect((materials.plaster as THREE.MeshStandardMaterial).map).toBe(
+      clones[1],
+    );
+
+    const disposals = clones.map((clone) => vi.spyOn(clone, 'dispose'));
+    disposeRoomMaterials(materials);
+    for (const spy of disposals) expect(spy).toHaveBeenCalledTimes(1);
+
+    wood.dispose();
+    plaster.dispose();
+  });
 });
 
 describe('painterly post pass (§3.5)', () => {
@@ -61,6 +85,21 @@ describe('painterly post pass (§3.5)', () => {
     expect(PAINTERLY_FRAGMENT_SHADER).toContain('uVignette');
     expect(PAINTERLY_FRAGMENT_SHADER).toContain('uGrain');
     expect(PAINTERLY_FRAGMENT_SHADER).toContain('uGrade');
+  });
+
+  it('encodes the final linear color to output space (review fix A)', () => {
+    // The render target stays linear; the ShaderMaterial must convert once at
+    // the end. three injects linearToOutputTexel() into non-raw ShaderMaterials
+    // via colorspace_pars_fragment, so the include resolves at compile time.
+    expect(PAINTERLY_FRAGMENT_SHADER).toContain(
+      '#include <colorspace_fragment>',
+    );
+    expect(THREE.ShaderChunk.colorspace_fragment).toContain(
+      'linearToOutputTexel',
+    );
+    expect(THREE.ShaderChunk.colorspace_pars_fragment).toContain(
+      'sRGBTransferOETF',
+    );
   });
 });
 

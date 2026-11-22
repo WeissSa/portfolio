@@ -9,6 +9,16 @@
  * own the two-pass loop ourselves (useFrame with priority 1): render the main
  * scene into the target, then blit through the grade shader. ~40 lines, zero
  * extra dependencies in the 260 KB lazy-chunk budget.
+ *
+ * Color space (commit 5 review fix A): the render target stays LINEAR
+ * (NoColorSpace, half-float) because three renders the scene in the working
+ * linear space when drawing to a target. The final ShaderMaterial therefore
+ * ends with `#include <colorspace_fragment>` — three injects
+ * `linearToOutputTexel()` into every non-raw ShaderMaterial — so the graded
+ * linear color is encoded to the renderer's output color space (sRGB) exactly
+ * once. Without it the pass wrote linear values into an sRGB canvas (too dark,
+ * wrong grade) and 8-bit linear storage banded badly in the shadows; the
+ * half-float target removes that banding at negligible desktop cost.
  */
 import { useEffect, useMemo, useRef, type ReactNode } from 'react';
 import * as THREE from 'three';
@@ -58,7 +68,11 @@ void main() {
   float grain = hash21(vUv * uResolution + fract(uTime * 0.7) * 191.0);
   graded += (grain - 0.5) * uGrain;
 
+  // The graded value is linear (the render target is linear). Convert once to
+  // the renderer output color space — three defines linearToOutputTexel() for
+  // ShaderMaterial via colorspace_pars_fragment in the program prefix.
   gl_FragColor = vec4(clamp(graded, 0.0, 1.0), 1.0);
+  #include <colorspace_fragment>
 }
 `;
 
@@ -138,8 +152,10 @@ function PainterlyPassInner({
   }, [grain, vignette, grade, uniforms]);
 
   const rig = useMemo(() => {
+    // Keep the target linear (Texture.colorSpace defaults to NoColorSpace),
+    // half-float to avoid 8-bit linear banding. Desktop tier only.
     const target = new THREE.WebGLRenderTarget(1, 1, {
-      type: THREE.UnsignedByteType,
+      type: THREE.HalfFloatType,
       samples: 4, // WebGL2 MSAA; ignored where unavailable.
     });
     const quadScene = new THREE.Scene();

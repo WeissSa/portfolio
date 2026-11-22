@@ -1,7 +1,13 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import {
+  detectCapabilities,
+  resolveMode,
+  type DeviceTier,
+} from './lib/device-tier';
 import { useRoute, type Route } from './lib/router';
 import { usePortfolioStore } from './state/store';
 import { MainMenu } from './ui/MainMenu';
+import { SceneLayer } from './ui/SceneLayer';
 import { HomeSplash } from './ui/HomeSplash';
 import { AboutDesktop } from './ui/AboutDesktop';
 import { ExperienceView } from './ui/ExperienceView';
@@ -42,7 +48,10 @@ export default function App() {
   const setActiveZone = usePortfolioStore((s) => s.setActiveZone);
   const syncInitialRoute = usePortfolioStore((s) => s.syncInitialRoute);
   const hasNavigated = usePortfolioStore((s) => s.hasNavigated);
+  const mode = usePortfolioStore((s) => s.mode);
+  const setMode = usePortfolioStore((s) => s.setMode);
   const initialRouteSynced = useRef(false);
+  const [tier, setTier] = useState<DeviceTier>('desktop');
 
   useEffect(() => {
     if (!initialRouteSynced.current) {
@@ -55,11 +64,20 @@ export default function App() {
     setActiveZone(route);
   }, [route, setActiveZone, syncInitialRoute]);
 
+  // Device-tier gate runs AFTER the 2D shell has painted (§4.5): the store
+  // starts in 2D, capable devices opt into 3D, conservative devices stay 2D.
+  // Runs once; later toggles are driven only by ModeToggle's manual override.
+  useEffect(() => {
+    const decision = resolveMode(detectCapabilities());
+    setTier(decision.tier);
+    setMode(decision.mode);
+  }, [setMode]);
+
   return (
     <div
       className={`min-h-screen bg-p5-black text-white${
         hasNavigated ? '' : ' app-initial'
-      }`}
+      }${mode === '3d' ? ' app-3d' : ''}`}
     >
       <a
         href="#main"
@@ -73,7 +91,11 @@ export default function App() {
         {ZONE_NAMES[route]} zone selected
       </p>
 
-      <div className="mx-auto flex max-w-7xl flex-col gap-4 p-3 md:flex-row md:p-6">
+      {/* Mounted ONLY in 3D. The lazy import never blocks the 2D shell above,
+          and unmounting here tears down every GPU resource via Room's cleanup. */}
+      {mode === '3d' && <SceneLayer quality={tier} />}
+
+      <div className="app-shell mx-auto flex max-w-7xl flex-col gap-4 p-3 md:flex-row md:p-6">
         <div className="md:w-64 md:shrink-0">
           <MainMenu />
         </div>

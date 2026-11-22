@@ -5,19 +5,33 @@
  * moonlit night window, and (desktop tier only) the grain+vignette+grade post
  * pass. No model or texture downloads.
  *
- * Commit 4 scope: the shell renders and is exportable; camera rig, zone
- * navigation, lazy streaming and the 2D/3D toggle land in commit 5, which
- * will lazy-load this module (keep the default export cheap to suspend on).
+ * Commit 5: this module is the lazy 3D chunk; CameraRig drives zone flights
+ * and the shell lazy-loads the default export behind the device-tier gate.
  *
  * Headless testing: texture creation is dependency-injected (textureFactory)
  * so unit tests can render <RoomScene/> with @react-three/test-renderer
  * without a 2D canvas. Visual verification needs a real browser.
  */
-import { useEffect, useMemo, type JSX } from 'react';
+import { useEffect, useMemo, useState, type JSX } from 'react';
 import * as THREE from 'three';
 import { Canvas } from '@react-three/fiber';
 import { POSTS, PROJECTS } from '../content/index';
+import { usePrefersReducedMotion } from '../lib/a11y';
+import { CameraRig } from './CameraRig';
 import { PainterlyPass } from './effects/PainterlyPass';
+import {
+  DESK_POSITION,
+  FRAME_POSITIONS,
+  LAMP_POSITION,
+  PROJECTOR_POSITION,
+  PROJECTOR_ROTATION,
+  RUG_POSITION,
+  SCREEN_POSITION,
+  SHELF_POSITION,
+  SHELF_ROTATION,
+  WINDOW_POSITION,
+  WINDOW_ROTATION,
+} from './placement';
 import {
   createBookInstances,
   createBookshelf,
@@ -35,7 +49,6 @@ import {
   DESK_TOP_HEIGHT,
   disposeParts,
   LAMP_BULB_LOCAL,
-  ROOM_DIMS,
   type BookInstance,
   type RoomPart,
   type Vec3,
@@ -64,24 +77,8 @@ export interface RoomSceneProps {
   textureFactory?: TextureFactory;
 }
 
-/* ------------------------------------------------------------- placement -- */
-
-const DESK_POSITION: Vec3 = [1.9, 0, -2.55];
-const SHELF_POSITION: Vec3 = [-3.55, 0, -0.4];
-const SHELF_ROTATION: Vec3 = [0, Math.PI / 2, 0];
-const LAMP_POSITION: Vec3 = [3.15, 0, 1.7];
-const RUG_POSITION: Vec3 = [-0.4, 0.012, 0.7];
-const WINDOW_POSITION: Vec3 = [ROOM_DIMS.width / 2 - 0.02, 1.75, -0.5];
-const WINDOW_ROTATION: Vec3 = [0, -Math.PI / 2, 0];
-/** The projector perches on the bookshelf crown and throws at the screen. */
-const PROJECTOR_POSITION: Vec3 = [-3.5, 2.3, -0.4];
-const PROJECTOR_ROTATION: Vec3 = [-0.176, -0.624, 0];
-const SCREEN_POSITION: Vec3 = [-1.35, 1.7, -ROOM_DIMS.depth / 2 + 0.03];
-const FRAME_POSITIONS: [Vec3, number][] = [
-  [[-0.1, 2.0, -ROOM_DIMS.depth / 2 + 0.03], 0],
-  [[0.65, 1.85, -ROOM_DIMS.depth / 2 + 0.03], 1],
-  [[-3.2, 1.9, -ROOM_DIMS.depth / 2 + 0.03], 2],
-];
+/* Placement constants live in ./placement so the camera viewpoints can
+ * derive from the same source without a circular Room ↔ CameraRig import. */
 
 function Parts({
   parts,
@@ -372,29 +369,55 @@ export function RoomScene({
 
 export interface RoomProps extends RoomSceneProps {
   className?: string;
+  /** Called once the lazy chunk has mounted the Canvas (drives the fade-in). */
+  onReady?: () => void;
 }
 
 /**
- * Full <Canvas> wrapper — exported for commit 5 to lazy-load behind the
- * device-tier gate and the 2D/3D toggle. Nothing imports it yet; the 2D shell
- * remains the default and is unaffected by this module.
+ * Full <Canvas> wrapper, lazy-loaded by the shell behind the device-tier gate
+ * and the 2D/3D toggle. The 2D DOM shell remains authoritative and unaffected.
+ *
+ * Demand frameloop: the scene renders only when invalidated (camera flights,
+ * resize, unpause); idle and hidden-tab modes cost zero frames. PainterlyPass
+ * owns the draw at priority 1, CameraRig keeps invalidating until settled.
  */
 export default function Room({
   seed,
   quality = 'desktop',
   textureFactory,
   className,
+  onReady,
 }: RoomProps): JSX.Element {
+  const reducedMotion = usePrefersReducedMotion();
+  const [hidden, setHidden] = useState(() =>
+    typeof document === 'undefined' ? false : document.hidden,
+  );
+
+  useEffect(() => {
+    const onVisibility = () => setHidden(document.hidden);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+  }, []);
+
+  useEffect(() => {
+    onReady?.();
+  }, [onReady]);
+
+  const dpr: number | [number, number] =
+    quality === 'desktop' ? [1, 2] : quality === 'mobile' ? [1, 1.5] : 1;
+
   return (
     <Canvas
       className={className}
       camera={{ position: [0, 1.65, 4.8], fov: 50, near: 0.1, far: 60 }}
-      dpr={quality === 'desktop' ? [1, 2] : [1, 1.5]}
+      dpr={dpr}
       gl={{ antialias: false, powerPreference: 'high-performance' }}
+      frameloop={hidden ? 'never' : 'demand'}
       aria-hidden="true"
     >
       <color attach="background" args={['#0a0c10']} />
       <fog attach="fog" args={['#0a0c10', 8, 16]} />
+      <CameraRig instant={reducedMotion} paused={hidden} />
       <RoomScene
         seed={seed}
         quality={quality}
