@@ -40,13 +40,18 @@ function ZoneContent({ route }: { route: Route }) {
 export default function App() {
   const route = useRoute();
   const setActiveZone = usePortfolioStore((s) => s.setActiveZone);
+  const hasNavigated = usePortfolioStore((s) => s.hasNavigated);
 
   useEffect(() => {
     setActiveZone(route);
   }, [route, setActiveZone]);
 
   return (
-    <div className="min-h-screen bg-p5-black text-white">
+    <div
+      className={`min-h-screen bg-p5-black text-white${
+        hasNavigated ? '' : ' app-initial'
+      }`}
+    >
       <a
         href="#main"
         className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:bg-p5-yellow focus:px-4 focus:py-2 focus:font-bold focus:text-p5-black"

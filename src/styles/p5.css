@@ -165,6 +165,18 @@
   }
 }
 
+/*
+ * Initial mount: suppress the cut-in so the first React paint is fully
+ * visible and hands off seamlessly from the styled static mirror (which the
+ * createRoot render replaces instantly). Playing the animation at frame 0
+ * would show opacity:0 + translateX(-24px) right after the mirror vanished —
+ * a visible jump. The `app-initial` class drops after the first real zone
+ * change (store.hasNavigated), so later views animate normally.
+ */
+.app-initial .p5-cut-in {
+  animation: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

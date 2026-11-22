@@ -6,6 +6,7 @@ describe('portfolio store', () => {
     const state = usePortfolioStore.getState();
     expect(state.mode).toBe('2d');
     expect(state.activeZone).toBe('/');
+    expect(state.hasNavigated).toBe(false);
   });
 
   it('tracks mode and zone changes', () => {
@@ -16,6 +17,21 @@ describe('portfolio store', () => {
     expect(usePortfolioStore.getState().activeZone).toBe('/climate');
     setMode('2d');
     setActiveZone('/');
+  });
+
+  it('flips hasNavigated only when the zone actually changes', () => {
+    usePortfolioStore.setState({ activeZone: '/', hasNavigated: false });
+    const { setActiveZone } = usePortfolioStore.getState();
+
+    // Same zone (e.g. App's initial route sync on mount): no navigation.
+    setActiveZone('/');
+    expect(usePortfolioStore.getState().hasNavigated).toBe(false);
+
+    // A real zone change marks the first navigation.
+    setActiveZone('/about');
+    expect(usePortfolioStore.getState().hasNavigated).toBe(true);
+
+    usePortfolioStore.setState({ activeZone: '/', hasNavigated: false });
   });
 
   it('keeps the About window stack ordered and deduplicated', () => {

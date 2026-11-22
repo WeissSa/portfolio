@@ -29,6 +29,13 @@ export interface PortfolioStore {
 
   activeZone: Route;
   setActiveZone: (route: Route) => void;
+  /**
+   * False until the first real zone change. The initial mount keeps the
+   * `app-initial` class so cut-in animations are suppressed and the React UI
+   * appears exactly like the styled static mirror it replaces (no frame-0
+   * jump). Flips true only when setActiveZone receives a different zone.
+   */
+  hasNavigated: boolean;
 
   climate: ClimateState;
   loadClimate: () => Promise<void>;
@@ -58,9 +65,14 @@ export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
   setMode: (mode) => set({ mode }),
 
   activeZone: '/',
+  hasNavigated: false,
   setActiveZone: (activeZone) => {
     if (get().activeZone !== activeZone) {
-      set({ activeZone });
+      // A real zone change: mark that we've navigated so the `app-initial`
+      // class drops and subsequent views play the cut-in animation. The
+      // initial mount sync (App's effect with the landing route) only flips
+      // this when the landing route actually differs from the default.
+      set({ activeZone, hasNavigated: true });
     }
   },
 
