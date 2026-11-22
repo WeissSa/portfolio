@@ -255,6 +255,19 @@ describe('fontPreloadFromCss / injectFontPreload', () => {
     );
   });
 
+  it('strips surrounding CSS quotes so the preload href does not 404', () => {
+    const doubleQuoted =
+      '@font-face{src:url("/portfolio/assets/anton-hash.woff2") format("woff2")}';
+    const preload = fontPreloadFromCss(doubleQuoted);
+    expect(preload).toBe(
+      '<link rel="preload" as="font" type="font/woff2" crossorigin href="/portfolio/assets/anton-hash.woff2">',
+    );
+    expect(preload).not.toContain('%22');
+    const singleQuoted =
+      "@font-face{src:url('/portfolio/assets/anton-hash.woff2') format('woff2')}";
+    expect(fontPreloadFromCss(singleQuoted)).toBe(preload);
+  });
+
   it('escapes the font href so CSS cannot break out of the attribute', () => {
     const css = '@font-face{src:url(a"&b.woff2) format("woff2")}';
     const preload = fontPreloadFromCss(css);

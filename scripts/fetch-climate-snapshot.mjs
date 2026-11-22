@@ -10,7 +10,7 @@
  *
  *   node scripts/fetch-climate-snapshot.mjs
  */
-import { writeFile } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
 
 const LATITUDE = 43.6532;
 const LONGITUDE = -79.3832;
@@ -59,11 +59,35 @@ try {
     flat,
   };
 
-  await writeFile(OUT_FILE, JSON.stringify(snapshot));
-  console.log(
-    `refreshed ${OUT_FILE}: ${Object.keys(flat).length} daily records ` +
-      `(${iso(startDate)} → ${iso(endDate)})`,
-  );
+  // Snapshot-drift guard: only rewrite the file when the DATA actually
+  // changed. `generatedAt` alone must not dirty the working tree on routine
+  // builds; the committed snapshot stays byte-identical (and remains the
+  // bundled fallback) unless Open-Meteo returns new/changed records.
+  const dataOnly = (value) =>
+    JSON.stringify({
+      location: value?.location,
+      flat: value?.flat,
+    });
+  let unchanged = false;
+  try {
+    const existing = JSON.parse(await readFile(OUT_FILE, 'utf8'));
+    unchanged = dataOnly(existing) === dataOnly(snapshot);
+  } catch {
+    // Missing or corrupt snapshot file: fall through and write a fresh one.
+  }
+
+  if (unchanged) {
+    console.log(
+      `${OUT_FILE} data unchanged; keeping the committed snapshot as-is ` +
+        `(generatedAt not bumped).`,
+    );
+  } else {
+    await writeFile(OUT_FILE, JSON.stringify(snapshot));
+    console.log(
+      `refreshed ${OUT_FILE}: ${Object.keys(flat).length} daily records ` +
+        `(${iso(startDate)} → ${iso(endDate)})`,
+    );
+  }
 } catch (error) {
   const message = error instanceof Error ? error.message : String(error);
   console.warn(

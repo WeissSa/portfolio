@@ -127,12 +127,15 @@ export function injectCriticalCss(html: string, css: string): string {
  * HTML flash, which the inline CSS eliminates.
  */
 export function fontPreloadFromCss(css: string): string {
-  const match = /url\(([^)]+\.woff2)\)/i.exec(css);
+  // Tolerate quoted and unquoted url() forms; capture only the URL itself so
+  // surrounding CSS quotes are never percent-encoded into the preload href
+  // (`url("font.woff2")` must not preload `%22font.woff2%22` → 404).
+  const match = /url\(\s*(["']?)([^)]*?\.woff2)\1\s*\)/i.exec(css);
   if (!match) return '';
   // The URL is interpolated into an HTML attribute: percent-encode it, then
   // escape HTML-significant characters so a quote in the CSS cannot break out
   // of the href (e.g. `url("x\").woff2")` must not inject a new attribute).
-  const href = escapeHtml(encodeURI((match[1] ?? '').trim()));
+  const href = escapeHtml(encodeURI((match[2] ?? '').trim()));
   return `<link rel="preload" as="font" type="font/woff2" crossorigin href="${href}">`;
 }
 

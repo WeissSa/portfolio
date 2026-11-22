@@ -31,8 +31,8 @@
     <!--
       Hand-authored critical CSS for the first paint. Vite's dev server injects
       app CSS from JS (main.tsx), so the static mirror injected into #root
-      would otherwise flash as raw HTML. This block ships in BOTH dev and built
-      HTML; the build strips it and inlines the full CSS bundle instead (see
+      would otherwise flash as raw HTML. This block ships in dev HTML; in the
+      build it is replaced by the full inlined bundle CSS (see
       injectCriticalCss in scripts/static-mirror.ts).
     -->
     <style data-critical-mirror>

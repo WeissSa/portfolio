@@ -48,5 +48,14 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Built-HTML critical-CSS dedupe guard
+        # dist/index.html must carry exactly one inline <style> (the full
+        # built CSS bundle) and none of the dev-only static critical block;
+        # a regression here would re-introduce duplicate mirror rules.
+        run: |
+          test -f dist/index.html
+          ! grep -q 'data-critical-mirror' dist/index.html
+          test "$(grep -o '<style' dist/index.html | wc -l)" -eq 1
+
       - name: Size budget
         run: npm run size
