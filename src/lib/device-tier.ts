@@ -58,6 +58,14 @@ export const MODE_STORAGE_KEY = 'portfolio:mode';
  * removes it, so neither "Auto" nor a page reload can re-arm the crash.
  */
 export const SCENE_FAILURE_STORAGE_KEY = 'portfolio:3d-failed';
+/**
+ * Canonical sentinel value (art-overhaul commit 0, QA defect D1): the sticky
+ * crash flag is stored and read as EXACTLY this string. A historical QA pass
+ * probed `'1'`, which never tripped the gate because `readSceneFailure()`
+ * compares against `'true'`. `'true'` is canonical (matches every shipped
+ * write path); tests pin both the stored string and the write→resolve path.
+ */
+export const SCENE_FAILURE_VALUE = 'true';
 
 /** Classify hardware into a render tier. Pure — no DOM access. */
 export function classifyTier(caps: DeviceCapabilities): DeviceTier {
@@ -117,7 +125,9 @@ export function clearManualMode(): void {
 export function readSceneFailure(): boolean {
   try {
     if (typeof localStorage === 'undefined') return false;
-    return localStorage.getItem(SCENE_FAILURE_STORAGE_KEY) === 'true';
+    return (
+      localStorage.getItem(SCENE_FAILURE_STORAGE_KEY) === SCENE_FAILURE_VALUE
+    );
   } catch {
     return false;
   }
@@ -126,7 +136,7 @@ export function readSceneFailure(): boolean {
 /** Persist a 3D crash so Auto/reload keep the authoritative 2D shell. */
 export function writeSceneFailure(): void {
   try {
-    localStorage.setItem(SCENE_FAILURE_STORAGE_KEY, 'true');
+    localStorage.setItem(SCENE_FAILURE_STORAGE_KEY, SCENE_FAILURE_VALUE);
   } catch {
     // Non-fatal: the in-memory autoMode is still forced to 2D for this session.
   }

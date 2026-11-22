@@ -13,11 +13,12 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "format:check": "prettier --check --no-error-on-unmatched-pattern src scripts tests index.html public/404.html vite.config.ts package.json",
-    "format:fix": "prettier --write --no-error-on-unmatched-pattern src scripts tests index.html public/404.html vite.config.ts package.json",
+    "format:check": "prettier --check --no-error-on-unmatched-pattern src scripts tests index.html playwright.config.ts public/404.html vite.config.ts package.json",
+    "format:fix": "prettier --write --no-error-on-unmatched-pattern src scripts tests index.html playwright.config.ts public/404.html vite.config.ts package.json",
     "test": "vitest run",
     "test:watch": "vitest",
     "size": "size-limit && node scripts/check-3d-budget.mjs",
+    "capture:qa": "npm run build && playwright test",
     "verify": "npm run typecheck && npm run lint && npm run format:check && npm run test && npm run build && npm run size"
   },
   "dependencies": {
@@ -30,6 +31,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.31.0",
+    "@playwright/test": "^1.65.1",
     "@react-three/test-renderer": "^9.1.1",
     "@size-limit/file": "^11.2.0",
     "@testing-library/dom": "^10.4.0",

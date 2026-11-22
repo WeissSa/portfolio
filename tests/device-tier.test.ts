@@ -16,6 +16,7 @@ import {
   recommendMode,
   resolveMode,
   SCENE_FAILURE_STORAGE_KEY,
+  SCENE_FAILURE_VALUE,
   writeManualMode,
   writeSceneFailure,
   type DeviceCapabilities,
@@ -223,6 +224,32 @@ describe('persisted scene failure (crash recovery)', () => {
   beforeEach(() => {
     clearManualMode();
     clearSceneFailure();
+  });
+
+  it('pins the canonical sentinel: write stores exactly SCENE_FAILURE_VALUE and resolveMode forces 2d', () => {
+    // Path 1 — the exact stored string (QA defect D1: writer and reader must
+    // agree on ONE canonical value; 'true' is canonical, '1' never was).
+    writeSceneFailure();
+    expect(SCENE_FAILURE_VALUE).toBe('true');
+    expect(localStorage.getItem(SCENE_FAILURE_STORAGE_KEY)).toBe(
+      SCENE_FAILURE_VALUE,
+    );
+
+    // Path 2 — writeSceneFailure() then resolveMode() forces the 2D shell.
+    expect(resolveMode(capable)).toMatchObject({
+      mode: '2d',
+      source: 'auto',
+      reason: 'scene-failed',
+    });
+  });
+
+  it('ignores non-canonical sentinel values such as the legacy QA probe "1"', () => {
+    localStorage.setItem(SCENE_FAILURE_STORAGE_KEY, '1');
+    expect(readSceneFailure()).toBe(false);
+    expect(resolveMode(capable)).toMatchObject({
+      mode: '3d',
+      reason: 'capable',
+    });
   });
 
   it('forces 2D on Auto and reload, beating even a stored 3d override', () => {
