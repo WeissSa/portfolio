@@ -1,13 +1,13 @@
 # Sam Weiss — Portfolio ("The Room")
 
-A painterly 3D portfolio room built with **Vite + React 19 + TypeScript + react-three-fiber**, with a complete, always-usable P5-styled 2D DOM experience underneath. Deployed to GitHub Pages at <https://weisssa.github.io/portfolio/>.
+A painterly 3D portfolio room built with **Vite + React 19 + TypeScript + react-three-fiber**, with a complete, always-usable high-contrast arcade-styled 2D DOM experience underneath. Deployed to GitHub Pages at <https://weisssa.github.io/portfolio/>.
 
 ## Architecture
 
 - `src/content/` — typed single source of truth (13 posts, bio, links, SEO, climate copy). `climate-config.mjs` is shared by the browser client and the build-time snapshot script.
 - `src/state/store.ts` — zustand store: mode, active hash route, climate cache, About windows, 3D selection/hover, year.
-- `src/ui/` — the P5 design system and every content panel: main menu, mode toggle, Experience/Projects/Climate views, desktop-OS About (`DesktopZoom` shares `AboutDesktop`), focus-managed detail dialogs, scene error boundary.
-- `src/scene/` — procedural Dishonored-style room (canvas-generated textures, seeded geometry, one cheap painterly pass), `CameraRig`, and four `React.lazy` zones: Library (books), Desk (monitor), Game Cases, Projector.
+- `src/ui/` — the arcade-pop design system and every content panel: main menu, mode toggle, Experience/Projects/Climate views, desktop-OS About (`DesktopZoom` shares `AboutDesktop`), focus-managed detail dialogs, scene error boundary.
+- `src/scene/` — procedural painterly room (canvas-generated textures, seeded geometry, one cheap painterly pass), `CameraRig`, and four `React.lazy` zones: Library (books), Desk (monitor), Game Cases, Projector.
 - `src/lib/` — hash router, device tiering, climate math/API, a11y/focus helpers. `scripts/` — climate snapshot fetch, static HTML mirror, budget checks.
 - **2D-first streaming:** the built HTML ships the full styled content mirror and critical CSS, so menu + all zone content paint instantly. Capable devices then opt into the lazily imported 3D chunk in a post-paint effect; the room fades in when ready. 3D never blocks content.
 

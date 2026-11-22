@@ -55,6 +55,13 @@ describe('ClimateView (2D)', () => {
     expect(
       screen.getByRole('link', { name: 'Open-Meteo.com' }),
     ).toHaveAttribute('href', 'https://open-meteo.com/');
+    expect(screen.getByRole('link', { name: 'CC BY 4.0' })).toHaveAttribute(
+      'href',
+      'https://creativecommons.org/licenses/by/4.0/',
+    );
+    expect(screen.getByText(/Weather data by/)).toHaveTextContent(
+      'Weather data by Open-Meteo.com (CC BY 4.0) — values rounded',
+    );
     expect(
       screen.getByRole('link', { name: 'Climate Defense Fund of Ontario' }),
     ).toHaveAttribute(

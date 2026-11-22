@@ -52,17 +52,28 @@ export const HEATMAP_LEGEND: readonly string[] = [
 ];
 
 export const CLIMATE_ATTRIBUTION = {
-  weatherProviderLabel: 'Weather data provided by:',
+  weatherProviderLabel: 'Weather data by',
   openMeteo: {
     label: 'Open-Meteo.com',
     url: 'https://open-meteo.com/',
   },
+  license: {
+    label: 'CC BY 4.0',
+    url: 'https://creativecommons.org/licenses/by/4.0/',
+  },
+  roundedNote: '— values rounded',
   supportLabel: 'Support climate action:',
   climateDefenseFund: {
     label: 'Climate Defense Fund of Ontario',
     url: 'https://www.climatesolutions.ca/climate-defense-fund-ontario',
   },
 } as const;
+
+/** Plain-text form used by the projected texture and snapshot metadata. */
+export const CLIMATE_ATTRIBUTION_LINE =
+  `${CLIMATE_ATTRIBUTION.weatherProviderLabel} ` +
+  `${CLIMATE_ATTRIBUTION.openMeteo.label} ` +
+  `(${CLIMATE_ATTRIBUTION.license.label}) ${CLIMATE_ATTRIBUTION.roundedNote}`;
 
 export const CLIMATE_UNAVAILABLE_MESSAGE =
   'Climate data is temporarily unavailable. Live weather data comes from Open-Meteo; a bundled snapshot is used as a fallback when the API cannot be reached.';

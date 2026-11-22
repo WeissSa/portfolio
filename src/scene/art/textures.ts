@@ -907,7 +907,7 @@ export function planProjectorScreen(
   });
   ops.push({
     kind: 'text',
-    text: 'historical heatmap · open-meteo.org',
+    text: 'historical heatmap · open-meteo.com',
     x: width / 2,
     y: height * 0.72,
     font: `12px ${BODY_FONT}`,

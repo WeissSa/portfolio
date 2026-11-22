@@ -76,6 +76,12 @@ try {
   const snapshot = {
     generatedAt: new Date().toISOString(),
     location: { latitude: LATITUDE, longitude: LONGITUDE, name: NAME },
+    // CC BY 4.0 attribution travels with the data (M2). Keep these strings in
+    // sync with src/content/climate.ts CLIMATE_ATTRIBUTION{,_LINE}.
+    attribution: 'Weather data by Open-Meteo.com (CC BY 4.0) — values rounded',
+    license: 'CC BY 4.0',
+    licenseUrl: 'https://creativecommons.org/licenses/by/4.0/',
+    sourceUrl: 'https://open-meteo.com/',
     flat,
   };
 
@@ -86,6 +92,10 @@ try {
   const dataOnly = (value) =>
     JSON.stringify({
       location: value?.location,
+      attribution: value?.attribution,
+      license: value?.license,
+      licenseUrl: value?.licenseUrl,
+      sourceUrl: value?.sourceUrl,
       flat: value?.flat,
     });
   let unchanged = false;

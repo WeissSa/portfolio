@@ -35,6 +35,15 @@ describe('renderStaticMirror', () => {
     }
   });
 
+  it('carries the full CC BY 4.0 Open-Meteo attribution with both links', () => {
+    expect(mirror).toContain(
+      'Weather data by <a href="https://open-meteo.com/"',
+    );
+    expect(mirror).toContain('https://creativecommons.org/licenses/by/4.0/');
+    expect(mirror).toContain('CC BY 4.0');
+    expect(mirror).toContain('values rounded');
+  });
+
   it('marks featured posts with a star', () => {
     expect(mirror).toContain('Gusto - Software Engineer ★');
   });

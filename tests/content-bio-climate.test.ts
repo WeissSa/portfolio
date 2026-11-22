@@ -1,7 +1,10 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   BIO_PARAGRAPH,
   CLIMATE_ATTRIBUTION,
+  CLIMATE_ATTRIBUTION_LINE,
   CLIMATE_LOCATION,
   CLIMATE_STATEMENT,
   HEADLINE,
@@ -62,11 +65,31 @@ describe('climate content', () => {
     ]);
   });
 
-  it('keeps attribution links verbatim', () => {
+  it('keeps attribution links and the full CC BY line verbatim', () => {
     expect(CLIMATE_ATTRIBUTION.openMeteo.url).toBe('https://open-meteo.com/');
+    expect(CLIMATE_ATTRIBUTION.license.url).toBe(
+      'https://creativecommons.org/licenses/by/4.0/',
+    );
+    expect(CLIMATE_ATTRIBUTION_LINE).toBe(
+      'Weather data by Open-Meteo.com (CC BY 4.0) — values rounded',
+    );
     expect(CLIMATE_ATTRIBUTION.climateDefenseFund.url).toBe(
       'https://www.climatesolutions.ca/climate-defense-fund-ontario',
     );
+  });
+
+  it('bundles CC BY metadata with the offline snapshot (legal gate M2)', () => {
+    const snapshot = JSON.parse(
+      readFileSync(
+        resolve(process.cwd(), 'public/climate-snapshot.json'),
+        'utf8',
+      ),
+    ) as Record<string, unknown>;
+    expect(snapshot.attribution).toBe(CLIMATE_ATTRIBUTION_LINE);
+    expect(snapshot.license).toBe('CC BY 4.0');
+    expect(snapshot.licenseUrl).toBe(CLIMATE_ATTRIBUTION.license.url);
+    expect(snapshot.sourceUrl).toBe(CLIMATE_ATTRIBUTION.openMeteo.url);
+    expect(Object.keys(snapshot.flat as object).length).toBeGreaterThan(1000);
   });
 });
 

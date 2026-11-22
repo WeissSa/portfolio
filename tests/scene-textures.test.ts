@@ -164,6 +164,6 @@ describe('monitor + projector screens', () => {
     const labels = textOps(planProjectorScreen('p')).map((op) => op.text);
     expect(labels).toContain('OUR CLIMATE,');
     expect(labels).toContain('OUR FUTURE');
-    expect(labels.some((text) => text.includes('open-meteo.org'))).toBe(true);
+    expect(labels.some((text) => text.includes('open-meteo.com'))).toBe(true);
   });
 });

@@ -246,7 +246,17 @@ export function ClimateView({ idPrefix = '' }: { idPrefix?: string }) {
             className="font-bold text-[#93c5fd] underline"
           >
             {CLIMATE_ATTRIBUTION.openMeteo.label}
+          </a>{' '}
+          (
+          <a
+            href={CLIMATE_ATTRIBUTION.license.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-bold text-[#93c5fd] underline"
+          >
+            {CLIMATE_ATTRIBUTION.license.label}
           </a>
+          ) {CLIMATE_ATTRIBUTION.roundedNote}
         </p>
         <p>
           {CLIMATE_ATTRIBUTION.supportLabel}{' '}

@@ -1,0 +1,44 @@
+MIT License — portfolio application code
+
+Copyright (c) 2026 Sam Weiss
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---
+
+SCOPE AND EXCLUSIONS (layered licensing)
+
+This MIT grant covers the portfolio's source code, build scripts, tests and
+documentation authored by the owner. It does NOT cover, and grants no rights
+in:
+
+- `public/images` and every image file anywhere under `public/` (employer /
+  workplace logos, project imagery, social link icons, photos). These are
+  owner-confirmed workplace or owner-authored assets retained for the owner's
+  employment history; see `ASSETS.md` for per-file provenance. They remain the
+  property of their respective owners and are NOT relicensed under MIT.
+- Site content and post copy under `src/content/` (including blog text,
+  disclosed metrics and named individuals). Provenance/permissions are
+  recorded in `ASSETS.md`; the owner has confirmed NDA and consent gates.
+- Fonts (the vendored Anton woff2 and its SIL Open Font License text in
+  `public/fonts/ANTON-OFL.txt`). Fonts are governed by the OFL, not MIT.
+- Third-party dependencies. Their notices and licenses are listed in
+  `LICENSES.md` and in each package's own distribution.
+
+`ASSETS.md` is provenance evidence, not a license grant.

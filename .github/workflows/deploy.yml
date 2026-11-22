@@ -37,6 +37,9 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Font license companion check
+        run: node scripts/check-dist-licenses.mjs
+
       - name: Disable Jekyll processing
         run: touch dist/.nojekyll
 

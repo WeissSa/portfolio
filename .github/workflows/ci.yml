@@ -22,6 +22,12 @@ jobs:
           test -z "$(git ls-files -- '~')"
           git check-ignore -q '~'
 
+      - name: Asset provenance (ASSETS.md schema + every public/ file)
+        run: node scripts/check-assets-provenance.mjs
+
+      - name: Trademark guard (SEO/marketing copy only)
+        run: node scripts/check-trademarks.mjs
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -30,6 +36,12 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Third-party license audit (informational)
+        # Notices are curated in LICENSES.md; a new transitive license is
+        # reported here for review but never blocks the build.
+        continue-on-error: true
+        run: npx --yes license-checker@25.0.1 --summary --production
 
       - name: Typecheck
         run: npm run typecheck
@@ -58,6 +70,9 @@ jobs:
           test -f dist/index.html
           ! grep -q 'data-critical-mirror' dist/index.html
           test "$(grep -o '<style' dist/index.html | wc -l)" -eq 1
+
+      - name: Font license companion check
+        run: node scripts/check-dist-licenses.mjs
 
       - name: Size budget
         run: npm run size

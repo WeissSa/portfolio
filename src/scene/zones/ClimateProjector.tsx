@@ -19,7 +19,11 @@
 import { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import { useThree, type ThreeEvent } from '@react-three/fiber';
-import { CLIMATE_ATTRIBUTION, CLIMATE_TITLE } from '../../content/climate';
+import {
+  CLIMATE_ATTRIBUTION,
+  CLIMATE_ATTRIBUTION_LINE,
+  CLIMATE_TITLE,
+} from '../../content/climate';
 import {
   availableYears,
   heatmapForYear,
@@ -131,11 +135,7 @@ export function buildProjectorTexture(
   // line still names both sources so the room reads as the real widget.
   ctx.fillStyle = INK;
   ctx.font = '19px system-ui, sans-serif';
-  ctx.fillText(
-    `${CLIMATE_ATTRIBUTION.weatherProviderLabel} ${CLIMATE_ATTRIBUTION.openMeteo.label}`,
-    PROJECTOR_TEXTURE_WIDTH / 2,
-    492,
-  );
+  ctx.fillText(CLIMATE_ATTRIBUTION_LINE, PROJECTOR_TEXTURE_WIDTH / 2, 492);
   ctx.fillStyle = RED;
   ctx.font = 'bold 19px system-ui, sans-serif';
   ctx.fillText(

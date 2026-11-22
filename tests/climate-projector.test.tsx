@@ -14,7 +14,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as THREE from 'three';
 import ReactThreeTestRenderer from '@react-three/test-renderer';
 import App from '../src/App';
-import { CLIMATE_ATTRIBUTION, CLIMATE_STATEMENT } from '../src/content/climate';
+import {
+  CLIMATE_ATTRIBUTION,
+  CLIMATE_ATTRIBUTION_LINE,
+  CLIMATE_STATEMENT,
+} from '../src/content/climate';
 import { flatToHistorical, type HeatmapCell } from '../src/lib/climate';
 import { ClimateView } from '../src/ui/ClimateView';
 import { ClimateProjectorPanel } from '../src/ui/ClimateProjectorPanel';
@@ -141,9 +145,7 @@ describe('buildProjectorTexture (shared drawer, headless)', () => {
     expect(text.some((line) => line.includes('2024'))).toBe(true);
     expect(text).toContain('IS TODAY WEIRDLY HOT/COLD?');
     expect(text).toContain('26.0°C — 2.0°C HOTTER THAN USUAL');
-    expect(text).toContain(
-      `${CLIMATE_ATTRIBUTION.weatherProviderLabel} ${CLIMATE_ATTRIBUTION.openMeteo.label}`,
-    );
+    expect(text).toContain(CLIMATE_ATTRIBUTION_LINE);
     expect(text).toContain(
       `${CLIMATE_ATTRIBUTION.supportLabel} ${CLIMATE_ATTRIBUTION.climateDefenseFund.label}`,
     );
