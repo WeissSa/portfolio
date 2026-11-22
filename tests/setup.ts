@@ -1,20 +1,25 @@
 import '@testing-library/jest-dom/vitest';
 import { afterEach, vi } from 'vitest';
 import { cleanup } from '@testing-library/react';
-import { MODE_STORAGE_KEY } from '../src/lib/device-tier';
+import {
+  MODE_STORAGE_KEY,
+  SCENE_FAILURE_STORAGE_KEY,
+} from '../src/lib/device-tier';
 import { usePortfolioStore } from '../src/state/store';
 
 afterEach(() => {
   cleanup();
   window.location.hash = '';
-  // Mode is a persisted, global concern: keep one test's manual override from
-  // leaking into the next file/App render (which would mount the lazy Canvas).
+  document.body.style.cursor = '';
+  // Mode is a persisted, global concern: keep one test's manual override,
+  // crash signal or auto recommendation from leaking into the next App render.
   try {
     localStorage.removeItem(MODE_STORAGE_KEY);
+    localStorage.removeItem(SCENE_FAILURE_STORAGE_KEY);
   } catch {
     // Storage may be unavailable; nothing to clean.
   }
-  usePortfolioStore.setState({ mode: '2d' });
+  usePortfolioStore.setState({ mode: '2d', autoMode: '2d' });
   // Undo per-test `vi.stubGlobal` overrides so the shared fixture below is
   // restored for the next test; individual test files need no afterEach.
   vi.unstubAllGlobals();

@@ -159,9 +159,9 @@ describe('R3F case zone (headless, structural)', () => {
     await renderer.unmount();
     disposeRoomMaterials(materials);
     // Geometries belong to Room's furniture and are freed by its teardown, not
-    // by this zone — assert the lid geometry is still the exact input object.
+    // by this zone. Never dispose them here: `cases` is module-level shared by
+    // every test in this file and a disposed geometry breaks later/re-run tests.
     expect(lidPart.geometry).toBeInstanceOf(THREE.BufferGeometry);
-    cases.forEach((part) => part.geometry.dispose());
   });
 });
 

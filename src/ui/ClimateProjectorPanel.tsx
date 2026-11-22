@@ -8,10 +8,13 @@
  * top of the canvas. Esc, the backdrop and the close button all dismiss; focus
  * is trapped and restored like the other zone dialogs. The `idPrefix` keeps
  * the dialog's label/heading ids unique when the 2D view is also mounted.
+ * The background shell is inert while open and 3D hover/cursor state is cleared
+ * (shared dialog effects), and Escape defers to any sibling 3D modal.
  */
 import { useEffect } from 'react';
 import { CLIMATE_TITLE } from '../content/climate';
 import { useFocusTrap } from '../lib/a11y';
+import { useClearSceneHover, useInertBackground } from '../lib/dialog-effects';
 import { usePortfolioStore } from '../state/store';
 import { ClimateView } from './ClimateView';
 
@@ -21,11 +24,23 @@ export function ClimateProjectorPanel() {
     (state) => state.closeClimatePanel,
   );
   const trapRef = useFocusTrap<HTMLDivElement>(open);
+  useInertBackground(open);
+  useClearSceneHover(open);
 
   useEffect(() => {
     if (!open) return;
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Escape' || event.defaultPrevented) return;
+      // A sibling 3D dialog (book/case detail or desktop zoom) handles Escape
+      // first; do not double-close both overlays with one keypress.
+      const state = usePortfolioStore.getState();
+      if (
+        state.selectedPostId ||
+        state.selectedProjectId ||
+        state.desktopOpen
+      ) {
+        return;
+      }
       event.preventDefault();
       closeClimatePanel();
     };

@@ -92,6 +92,31 @@ describe('zone viewpoints', () => {
       HOME_VIEWPOINT,
     );
   });
+
+  it('applies the mobile-portrait pullback on resize for every zone without mutating shared constants', () => {
+    const routes: Route[] = [
+      '/',
+      '/about',
+      '/experience',
+      '/projects',
+      '/climate',
+    ];
+    for (const route of routes) {
+      const landscape = getZoneViewpoint(route);
+      const before = JSON.stringify(landscape);
+      const portrait = getZoneViewpoint(route, {
+        portrait: true,
+        tier: 'mobile',
+      });
+      expect(portrait).not.toBe(landscape);
+      expect(portrait.position[2]).toBeGreaterThanOrEqual(
+        landscape.position[2],
+      );
+      expect(portrait.target).toEqual(landscape.target);
+      // A resize must be a pure lookup — the base viewpoint is untouched.
+      expect(JSON.stringify(landscape)).toBe(before);
+    }
+  });
 });
 
 describe('monitor desktop zoom viewpoint (commit 7)', () => {

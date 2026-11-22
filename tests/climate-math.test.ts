@@ -8,6 +8,7 @@ import {
   heatmapLegendColor,
   historicalAverage,
   HOTTEST_ON_RECORD,
+  reconcileSelectedYear,
   temperatureLevel,
   todayComparison,
   yearsWithData,
@@ -185,5 +186,24 @@ describe('yearsWithData', () => {
 
   it('returns an empty list when the snapshot has no usable years', () => {
     expect(yearsWithData({})).toEqual([]);
+  });
+});
+
+describe('reconcileSelectedYear (shared 2D/3D heatmap guard)', () => {
+  it('keeps a year that actually has data', () => {
+    expect(reconcileSelectedYear(2024, [2025, 2024, 2023])).toBe(2024);
+  });
+
+  it('maps a stale current year onto the newest available year', () => {
+    // Bundled snapshot ends in 2025 while the store seeds the year from today.
+    expect(reconcileSelectedYear(2026, [2025, 2024, 2023])).toBe(2025);
+  });
+
+  it('chooses the nearest year when one is much older than the dataset', () => {
+    expect(reconcileSelectedYear(2010, [2025, 2024, 2011, 2009])).toBe(2011);
+  });
+
+  it('leaves the year unchanged when no data is available yet', () => {
+    expect(reconcileSelectedYear(2026, [])).toBe(2026);
   });
 });

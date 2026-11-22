@@ -1,9 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { CLIMATE_FETCH_TIMEOUT_MS } from '../src/content/climate-config.mjs';
 import {
   CACHE_KEY,
+  LIVE_FETCH_TIMEOUT_MS,
   archiveUrl,
   currentWeatherUrl,
   fetchLiveClimate,
+  fetchSnapshot,
   formatDataAge,
   loadCache,
   loadClimateData,
@@ -175,6 +178,49 @@ describe('localStorage cache', () => {
       }),
     );
     expect(loadCache()).toBeNull();
+  });
+
+  it('rejects a cache entry whose locationName is not a string or null', () => {
+    window.localStorage.setItem(
+      CACHE_KEY,
+      JSON.stringify({
+        fetchedAt: Date.now(),
+        data: {
+          currentTemp: 10,
+          locationName: { city: 'Toronto' },
+          flat: FLAT,
+        },
+      }),
+    );
+    expect(loadCache()).toBeNull();
+  });
+
+  it('accepts a null locationName (snapshot payloads have none)', () => {
+    const data = { currentTemp: null, locationName: null, flat: FLAT };
+    saveCache(data, 1000);
+    expect(loadCache(1000)?.data).toEqual(data);
+  });
+});
+
+describe('shared climate fetch deadline', () => {
+  it('re-exports the single constant from climate-config.mjs', () => {
+    expect(LIVE_FETCH_TIMEOUT_MS).toBe(CLIMATE_FETCH_TIMEOUT_MS);
+    expect(LIVE_FETCH_TIMEOUT_MS).toBe(15_000);
+  });
+
+  it('bounds the same-origin snapshot fetch too', async () => {
+    const fetchMock = vi.fn(
+      async (_input: unknown, init?: { signal?: AbortSignal }) => ({
+        ok: true,
+        json: async () => ({ generatedAt: 'x', flat: FLAT }),
+        signal: init?.signal,
+      }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    const snapshot = await fetchSnapshot('/portfolio/');
+    expect(snapshot?.flat).toEqual(FLAT);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls[0]?.[1]?.signal).toBeInstanceOf(AbortSignal);
   });
 });
 

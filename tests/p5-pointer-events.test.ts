@@ -33,9 +33,16 @@ describe('3D canvas pointer routing (review fix A2)', () => {
       '.app-3d .app-shell a', // menu links + contact icons
       '.app-3d .app-shell button', // mode toggle + desktop icons/close
       '.app-3d .app-shell input',
+      '.app-3d .app-shell label', // climate year label
+      '.app-3d .app-shell summary',
+      '.app-3d .app-shell [contenteditable]',
       ".app-3d .app-shell [role='button']",
       ".app-3d .app-shell [role='dialog']", // overlay windows
       ".app-3d .app-shell [role='group']", // rendering-mode toggle
+      ".app-3d .app-shell [role='link']",
+      ".app-3d .app-shell [role='checkbox']",
+      ".app-3d .app-shell [role='switch']",
+      ".app-3d .app-shell [role='tab']",
       ".app-3d .app-shell [tabindex]:not([tabindex='-1'])",
     ];
     for (const selector of interactive) {

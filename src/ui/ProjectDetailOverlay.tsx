@@ -12,6 +12,7 @@
 import { useEffect } from 'react';
 import { findPostById } from '../content/posts';
 import { useFocusTrap } from '../lib/a11y';
+import { useClearSceneHover, useInertBackground } from '../lib/dialog-effects';
 import { usePortfolioStore } from '../state/store';
 import { PostCard } from './PostCard';
 
@@ -22,6 +23,8 @@ export function ProjectDetailOverlay() {
   const selectProject = usePortfolioStore((state) => state.selectProject);
   const project = findPostById(selectedProjectId);
   const trapRef = useFocusTrap<HTMLDivElement>(Boolean(project));
+  useInertBackground(Boolean(project));
+  useClearSceneHover(Boolean(project));
 
   useEffect(() => {
     if (!project) return;

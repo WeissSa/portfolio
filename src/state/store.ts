@@ -23,7 +23,11 @@ export interface ClimateState {
 export type AboutWindowId = 'bio' | 'now' | 'hobbies' | 'skills' | 'links';
 
 export interface PortfolioStore {
-  /** Rendering mode. Starts in 2D; capability detection may opt into 3D. */
+  /**
+   * Rendering mode. Starts in 2D so the shell/content can paint from the static
+   * mirror first; App's post-paint capability gate upgrades capable desktops
+   * AND mobile devices to 3D (§4.5). Never blocks first paint.
+   */
   mode: Mode;
   /**
    * Set the rendering mode. Leaving 3D clears all 3D-only UI state (book/case
@@ -90,6 +94,12 @@ export interface PortfolioStore {
   /** Fine pointer present: enables R3F picking; keyboard users use the DOM. */
   pointerFine: boolean;
   setPointerFine: (fine: boolean) => void;
+  /**
+   * Clear hover highlights and the R3F pointer cursor when a dialog covers the
+   * canvas (or the scene unmounts), so no stale `pointer`/card highlight leaks
+   * across a selection or zoom.
+   */
+  clearSceneHover: () => void;
 
   /* Desk / About desktop zoom (commit 7): the monitor sets this flag; App
    * renders the SAME AboutDesktop DOM full-screen, and CameraRig flies to the
@@ -130,24 +140,39 @@ const IDLE_CLIMATE: ClimateState = {
   isStale: false,
 };
 
+/**
+ * All 3D modal flags in their closed state. Opening ANY one modal clears the
+ * others so two focus-trapped `aria-modal` dialogs (and their Escape handlers)
+ * can never stack. Closing a modal only clears its own flag.
+ */
+const CLOSED_MODALS = {
+  selectedPostId: null,
+  selectedProjectId: null,
+  desktopOpen: false,
+  climatePanelOpen: false,
+};
+
 /** 3D-only UI state that must not survive a switch back to 2D (A3/B3). */
 const CLEARED_3D_UI = {
-  selectedPostId: null,
+  ...CLOSED_MODALS,
   hoveredPostId: null,
-  desktopOpen: false,
-  selectedProjectId: null,
   hoveredProjectId: null,
-  climatePanelOpen: false,
 };
 
 export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
   mode: '2d',
-  setMode: (mode) =>
+  setMode: (mode) => {
+    const leaving3d = get().mode === '3d' && mode === '2d';
+    if (leaving3d) get().clearSceneHover();
     set((state) => ({
       mode,
       ...(state.mode === '3d' && mode === '2d' ? CLEARED_3D_UI : {}),
-    })),
-  clear3dSelection: () => set(CLEARED_3D_UI),
+    }));
+  },
+  clear3dSelection: () => {
+    get().clearSceneHover();
+    set(CLEARED_3D_UI);
+  },
   autoMode: '2d',
   setAutoMode: (autoMode) => set({ autoMode }),
 
@@ -222,35 +247,60 @@ export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
   closeAllWindows: () => set({ openWindows: [] }),
 
   selectedPostId: null,
-  // Picking a book and picking a case are mutually exclusive: only one modal
-  // detail dialog may own the screen. Closing (null) never touches the other
-  // selection, so a close handler cannot resurrect a different detail view.
-  selectPost: (selectedPostId) =>
+  // Picking a book, a case, the monitor or the projector is mutually exclusive:
+  // only one modal dialog may own the screen. Closing (null) never touches the
+  // other flags, so a close handler cannot resurrect a different detail view.
+  selectPost: (selectedPostId) => {
+    get().clearSceneHover();
     set(
       selectedPostId
-        ? { selectedPostId, selectedProjectId: null }
+        ? { ...CLOSED_MODALS, selectedPostId }
         : { selectedPostId },
-    ),
+    );
+  },
   hoveredPostId: null,
   setHoveredPost: (hoveredPostId) => set({ hoveredPostId }),
   pointerFine: false,
   setPointerFine: (pointerFine) => set({ pointerFine }),
+  clearSceneHover: () => {
+    if (typeof document !== 'undefined' && document.body.style.cursor) {
+      document.body.style.cursor = '';
+    }
+    const { hoveredPostId, hoveredProjectId } = get();
+    if (hoveredPostId !== null || hoveredProjectId !== null) {
+      set({ hoveredPostId: null, hoveredProjectId: null });
+    }
+  },
 
   desktopOpen: false,
-  openDesktop: () => set({ desktopOpen: true }),
-  closeDesktop: () => set({ desktopOpen: false }),
+  openDesktop: () => {
+    get().clearSceneHover();
+    set({ ...CLOSED_MODALS, desktopOpen: true });
+  },
+  closeDesktop: () => {
+    get().clearSceneHover();
+    set({ desktopOpen: false });
+  },
 
   selectedProjectId: null,
-  selectProject: (selectedProjectId) =>
+  selectProject: (selectedProjectId) => {
+    get().clearSceneHover();
     set(
       selectedProjectId
-        ? { selectedProjectId, selectedPostId: null }
+        ? { ...CLOSED_MODALS, selectedProjectId }
         : { selectedProjectId },
-    ),
+    );
+  },
   hoveredProjectId: null,
   setHoveredProject: (hoveredProjectId) => set({ hoveredProjectId }),
 
   climatePanelOpen: false,
-  openClimatePanel: () => set({ climatePanelOpen: true }),
-  closeClimatePanel: () => set({ climatePanelOpen: false }),
+  openClimatePanel: () => {
+    get().clearSceneHover();
+    set({ ...CLOSED_MODALS, climatePanelOpen: true });
+  },
+  closeClimatePanel: () => {
+    get().clearSceneHover();
+    set({ climatePanelOpen: false });
+  },
 }));

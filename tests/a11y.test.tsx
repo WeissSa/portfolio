@@ -27,6 +27,28 @@ function TrapHarness({
   );
 }
 
+function NestedTrapHarness() {
+  // A window dialog lives inside the full-screen desktop zoom: both traps are
+  // active and the outer one must defer to the inner one's handled Tab.
+  const outerRef = useFocusTrap<HTMLDivElement>(true);
+  const innerRef = useFocusTrap<HTMLDivElement>(true);
+  return (
+    <div ref={outerRef} data-testid="outer" tabIndex={-1}>
+      <div ref={innerRef} data-testid="inner" tabIndex={-1}>
+        <button type="button" data-testid="inner-first">
+          Inner first
+        </button>
+        <button type="button" data-testid="inner-last">
+          Inner last
+        </button>
+      </div>
+      <button type="button" data-testid="outer-last">
+        Outer last
+      </button>
+    </div>
+  );
+}
+
 describe('useFocusTrap', () => {
   it('does not tear down and steal focus when restoreFocus flips mid-trap', async () => {
     const { rerender } = render(<TrapHarness active={false} restoreFocus />);
@@ -65,5 +87,25 @@ describe('useFocusTrap', () => {
 
     expect(event.defaultPrevented).toBe(true);
     expect(screen.getByTestId('last')).toHaveFocus();
+  });
+
+  it('a nested inner trap handles Tab (defaultPrevented) and the outer trap keeps out', async () => {
+    render(<NestedTrapHarness />);
+    await waitFor(() =>
+      expect(screen.getByTestId('inner-first')).toHaveFocus(),
+    );
+
+    const innerLast = screen.getByTestId('inner-last');
+    innerLast.focus();
+    const event = new KeyboardEvent('keydown', {
+      key: 'Tab',
+      bubbles: true,
+      cancelable: true,
+    });
+    innerLast.dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(screen.getByTestId('inner-first')).toHaveFocus();
+    expect(screen.getByTestId('outer-last')).not.toHaveFocus();
   });
 });

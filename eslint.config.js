@@ -9,9 +9,9 @@ import configPrettier from 'eslint-config-prettier';
 
 export default [
   {
-    // Legacy Next.js/Vue-era sources stay unreferenced until the cleanup
-    // commit (see REWORK_PLAN ladder #11); they are outside the new
-    // typecheck/lint/build scope on purpose.
+    // Legacy Next.js/Vue-era sources were removed in the final cleanup pass;
+    // the old paths stay ignored defensively so a stray re-add cannot silently
+    // enter lint scope. Active sources live under src/, tests/ and scripts/.
     ignores: [
       'dist/**',
       'coverage/**',

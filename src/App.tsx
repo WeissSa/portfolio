@@ -4,6 +4,7 @@ import {
   detectCapabilities,
   recommendMode,
   resolveMode,
+  writeSceneFailure,
   type DeviceTier,
 } from './lib/device-tier';
 import { useRoute, type Route } from './lib/router';
@@ -29,10 +30,17 @@ const ZONE_NAMES: Record<Route, string> = {
   '/climate': 'Climate',
 };
 
-function ZoneContent({ route }: { route: Route }) {
+function ZoneContent({
+  route,
+  suppressAbout,
+}: {
+  route: Route;
+  /** The 3D monitor zoom renders its own AboutDesktop — never render two. */
+  suppressAbout?: boolean;
+}) {
   switch (route) {
     case '/about':
-      return <AboutDesktop />;
+      return suppressAbout ? null : <AboutDesktop />;
     case '/experience':
       return <ExperienceView />;
     case '/projects':
@@ -72,11 +80,14 @@ export default function App() {
   const [tier, setTier] = useState<DeviceTier>('desktop');
 
   // If the optional 3D layer ever throws, contain it: force the authoritative
-  // 2D shell and clear the override so the crash cannot repeat on reload.
+  // 2D shell, clear the manual override AND persist a failure signal, so neither
+  // "Auto" nor a reload can re-arm a Canvas this device cannot create.
   const handleSceneError = useCallback(() => {
+    writeSceneFailure();
     clearManualMode();
+    setAutoMode('2d');
     setMode('2d');
-  }, [setMode]);
+  }, [setAutoMode, setMode]);
 
   useEffect(() => {
     if (!initialRouteSynced.current) {
@@ -166,7 +177,10 @@ export default function App() {
               Open projector info panel
             </button>
           )}
-          <ZoneContent route={route} />
+          <ZoneContent
+            route={route}
+            suppressAbout={mode === '3d' && desktopOpen}
+          />
         </main>
       </div>
     </div>

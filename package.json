@@ -18,7 +18,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "size": "size-limit && node scripts/check-3d-budget.mjs",
-    "verify": "npm run typecheck && npm run lint && npm run test && npm run build && npm run size"
+    "verify": "npm run typecheck && npm run lint && npm run format:check && npm run test && npm run build && npm run size"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.9",

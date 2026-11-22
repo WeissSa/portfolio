@@ -6,8 +6,22 @@
 import { act, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import App from '../src/App';
-import { MODE_STORAGE_KEY } from '../src/lib/device-tier';
+import {
+  MODE_STORAGE_KEY,
+  SCENE_FAILURE_STORAGE_KEY,
+  resolveMode,
+  type DeviceCapabilities,
+} from '../src/lib/device-tier';
 import { usePortfolioStore } from '../src/state/store';
+
+const capable: DeviceCapabilities = {
+  webgl2: true,
+  deviceMemory: 8,
+  hardwareConcurrency: 8,
+  saveData: false,
+  pointerType: 'fine',
+  reducedMotion: false,
+};
 
 // Test stub: a child of the boundary that throws on mount, standing in for a
 // WebGL2-less Canvas creation failure.
@@ -43,6 +57,14 @@ describe('SceneLayer error boundary', () => {
 
       expect(usePortfolioStore.getState().mode).toBe('2d');
       expect(localStorage.getItem(MODE_STORAGE_KEY)).toBeNull();
+      // "Auto" cannot re-arm the crash: the recommendation is now 2D and the
+      // persisted failure signal survives a reload (resolveMode is pure+storage).
+      expect(usePortfolioStore.getState().autoMode).toBe('2d');
+      expect(localStorage.getItem(SCENE_FAILURE_STORAGE_KEY)).toBe('true');
+      expect(resolveMode(capable)).toMatchObject({
+        mode: '2d',
+        reason: 'scene-failed',
+      });
       // The entire 2D root (menu + zone heading) is still usable.
       expect(
         screen.getByRole('navigation', { name: 'Main menu' }),

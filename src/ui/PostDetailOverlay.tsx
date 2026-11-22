@@ -11,6 +11,7 @@
 import { useEffect } from 'react';
 import { findPostById } from '../content/posts';
 import { useFocusTrap } from '../lib/a11y';
+import { useClearSceneHover, useInertBackground } from '../lib/dialog-effects';
 import { usePortfolioStore } from '../state/store';
 import { PostCard } from './PostCard';
 
@@ -19,11 +20,13 @@ export function PostDetailOverlay() {
   const selectPost = usePortfolioStore((state) => state.selectPost);
   const post = findPostById(selectedPostId);
   const trapRef = useFocusTrap<HTMLDivElement>(Boolean(post));
+  useInertBackground(Boolean(post));
+  useClearSceneHover(Boolean(post));
 
   useEffect(() => {
     if (!post) return;
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return;
+      if (event.key !== 'Escape' || event.defaultPrevented) return;
       event.preventDefault();
       selectPost(null);
     };

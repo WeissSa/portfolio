@@ -251,6 +251,70 @@ describe('ClimateProjector R3F zone (headless, structural)', () => {
     screenGeometry.dispose();
   });
 
+  it('reconciles a stale stored year onto the newest year with data', async () => {
+    // The store seeds the current year (2026), but the bundled snapshot ends
+    // in 2025. While in OTHER 3D zones ClimateView is not mounted, so the
+    // projector itself must reconcile or it paints an all-gray no-data grid.
+    usePortfolioStore.setState({
+      climate: readyClimate(),
+      selectedClimateYear: 2026,
+    });
+    const { factory, calls } = recordingFactory();
+    const renderer = await mount(factory);
+
+    await waitFor(() =>
+      expect(usePortfolioStore.getState().selectedClimateYear).toBe(2025),
+    );
+    expect(
+      calls
+        .filter((call) => call.method === 'fillText')
+        .map((call) => String(call.args[0]))
+        .some((line) => line.includes('2025')),
+    ).toBe(true);
+
+    await renderer.unmount();
+    disposeRoomMaterials(materials);
+    screenGeometry.dispose();
+  });
+
+  it('year-dial prev/next are no-ops at the dataset boundaries', async () => {
+    const renderer = await mount();
+    const next = renderer.scene.find(
+      (node) => node.props.name === 'climate-year-next',
+    )!;
+    const prev = renderer.scene.find(
+      (node) => node.props.name === 'climate-year-prev',
+    )!;
+
+    act(() => usePortfolioStore.setState({ selectedClimateYear: 2025 }));
+    act(() => next.props.onClick({ stopPropagation: vi.fn() }));
+    expect(usePortfolioStore.getState().selectedClimateYear).toBe(2025);
+
+    act(() => usePortfolioStore.setState({ selectedClimateYear: 2020 }));
+    act(() => prev.props.onClick({ stopPropagation: vi.fn() }));
+    expect(usePortfolioStore.getState().selectedClimateYear).toBe(2020);
+
+    await renderer.unmount();
+    disposeRoomMaterials(materials);
+    screenGeometry.dispose();
+  });
+
+  it('a 3D dial change is visible in the 2D year selector (shared store)', async () => {
+    const renderer = await mount();
+    const next = renderer.scene.find(
+      (node) => node.props.name === 'climate-year-next',
+    )!;
+    act(() => next.props.onClick({ stopPropagation: vi.fn() }));
+    expect(usePortfolioStore.getState().selectedClimateYear).toBe(2025);
+
+    render(<ClimateView />);
+    expect(screen.getByLabelText('Select Year')).toHaveValue('2025');
+
+    await renderer.unmount();
+    disposeRoomMaterials(materials);
+    screenGeometry.dispose();
+  });
+
   it('clicking the screen opens the DOM panel (stopping propagation)', async () => {
     const renderer = await mount();
     const screen = renderer.scene.find(
@@ -339,6 +403,38 @@ describe('ClimateProjectorPanel (accessible DOM equivalent)', () => {
     await user.click(
       screen.getByRole('button', { name: 'Close climate panel' }),
     );
+    expect(usePortfolioStore.getState().climatePanelOpen).toBe(false);
+  });
+
+  it('closes on backdrop click', async () => {
+    const user = userEvent.setup();
+    act(() =>
+      usePortfolioStore.setState({ climatePanelOpen: true, mode: '3d' }),
+    );
+    render(<ClimateProjectorPanel />);
+    await user.click(
+      document.querySelector(
+        '.climate-projector-overlay .post-detail-backdrop',
+      ) as HTMLElement,
+    );
+    expect(usePortfolioStore.getState().climatePanelOpen).toBe(false);
+  });
+
+  it('Escape defers to a sibling 3D modal instead of double-closing', async () => {
+    act(() =>
+      usePortfolioStore.setState({ climatePanelOpen: true, mode: '3d' }),
+    );
+    render(<ClimateProjectorPanel />);
+    await screen.findByRole('dialog');
+
+    // Inject a sibling overlay flag directly (the open actions would clear the
+    // panel). Its Escape handler runs first; the panel must not also close.
+    act(() => usePortfolioStore.setState({ selectedPostId: 'cidel' }));
+    await userEvent.keyboard('{Escape}');
+    expect(usePortfolioStore.getState().climatePanelOpen).toBe(true);
+
+    act(() => usePortfolioStore.setState({ selectedPostId: null }));
+    await userEvent.keyboard('{Escape}');
     expect(usePortfolioStore.getState().climatePanelOpen).toBe(false);
   });
 });

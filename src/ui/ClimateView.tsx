@@ -16,6 +16,7 @@ import {
   climateMeterEmoji,
   heatmapForYear,
   heatmapLegendColor,
+  reconcileSelectedYear,
   todayComparison,
   yearsWithData,
 } from '../lib/climate';
@@ -46,19 +47,6 @@ export function ClimateView({ idPrefix = '' }: { idPrefix?: string }) {
     void loadClimate();
   }, [loadClimate]);
 
-  const comparison = useMemo(() => {
-    if (climate.currentTemp === null) return null;
-    return todayComparison(climate.historical, climate.currentTemp, new Date());
-  }, [climate.currentTemp, climate.historical]);
-
-  const cells = useMemo(
-    () =>
-      climate.status === 'ready'
-        ? heatmapForYear(climate.historical, selectedYear)
-        : [],
-    [climate.historical, climate.status, selectedYear],
-  );
-
   // Only offer years that actually have data. A failed build-time refresh can
   // leave a months-old (but still valid) snapshot, so deriving from the loaded
   // dataset is safer than assuming the current year is present.
@@ -69,11 +57,27 @@ export function ClimateView({ idPrefix = '' }: { idPrefix?: string }) {
       : availableYears(new Date().getFullYear());
   }, [climate.historical]);
 
+  // Shared guard with the 3D projector: never DRAW a year the dataset lacks.
+  const renderYear = reconcileSelectedYear(selectedYear, years);
+
   useEffect(() => {
-    if (years.length > 0 && !years.includes(selectedYear)) {
-      setSelectedYear(years[0]!);
+    if (years.length > 0 && renderYear !== selectedYear) {
+      setSelectedYear(renderYear);
     }
-  }, [years, selectedYear, setSelectedYear]);
+  }, [years, renderYear, selectedYear, setSelectedYear]);
+
+  const comparison = useMemo(() => {
+    if (climate.currentTemp === null) return null;
+    return todayComparison(climate.historical, climate.currentTemp, new Date());
+  }, [climate.currentTemp, climate.historical]);
+
+  const cells = useMemo(
+    () =>
+      climate.status === 'ready'
+        ? heatmapForYear(climate.historical, renderYear)
+        : [],
+    [climate.historical, climate.status, renderYear],
+  );
 
   const loading = climate.status === 'idle' || climate.status === 'loading';
 
@@ -180,7 +184,7 @@ export function ClimateView({ idPrefix = '' }: { idPrefix?: string }) {
 
       <P5Panel slashed className="mb-4">
         <h3 className="p5-display mb-3 text-xl">
-          {HEATMAP_TITLE_PREFIX} {selectedYear}
+          {HEATMAP_TITLE_PREFIX} {renderYear}
         </h3>
         <div className="mb-4 max-w-xs">
           <label
@@ -191,7 +195,7 @@ export function ClimateView({ idPrefix = '' }: { idPrefix?: string }) {
           </label>
           <select
             id={yearSelectId}
-            value={selectedYear}
+            value={renderYear}
             onChange={(event) => setSelectedYear(Number(event.target.value))}
             className="min-h-[44px] w-full border-2 border-p5-black bg-white px-2 font-bold text-p5-black"
           >
@@ -211,7 +215,7 @@ export function ClimateView({ idPrefix = '' }: { idPrefix?: string }) {
         )}
         {climate.status === 'ready' && (
           <>
-            <HeatmapCanvas cells={cells} year={selectedYear} />
+            <HeatmapCanvas cells={cells} year={renderYear} />
             <h4 className="mt-4 text-sm font-bold">Legend:</h4>
             <ul className="mt-2 flex flex-wrap gap-2">
               {HEATMAP_LEGEND.map((label, index) => (

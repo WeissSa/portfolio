@@ -72,19 +72,21 @@ describe('portfolio store', () => {
   });
 
   it('clears 3D-only UI state when leaving 3D mode (A3/B3)', () => {
-    const { setMode, openDesktop } = usePortfolioStore.getState();
+    const { setMode } = usePortfolioStore.getState();
     setMode('3d');
-    // Set both ids directly: the setters intentionally keep only one modal
-    // dialog open at a time (tested separately), but a stale pair must still
-    // be fully cleared by clear3dSelection / a 3d → 2d transition.
+    // Inject a stale multi-modal pair directly: the open actions now enforce
+    // the one-modal invariant (tested separately), but a stale combination
+    // from an older session must still be fully cleared on a 3d → 2d switch.
     usePortfolioStore.setState({
       selectedPostId: 'gusto-software-engineer',
       hoveredPostId: 'gusto-software-engineer',
       selectedProjectId: 'dreamzzz-game-development-project',
       hoveredProjectId: 'dreamzzz-game-development-project',
+      desktopOpen: true,
+      climatePanelOpen: true,
     });
-    openDesktop();
     expect(usePortfolioStore.getState().desktopOpen).toBe(true);
+    expect(usePortfolioStore.getState().climatePanelOpen).toBe(true);
     expect(usePortfolioStore.getState().selectedPostId).not.toBeNull();
     expect(usePortfolioStore.getState().selectedProjectId).not.toBeNull();
 
@@ -96,6 +98,61 @@ describe('portfolio store', () => {
     expect(state.selectedProjectId).toBeNull();
     expect(state.hoveredProjectId).toBeNull();
     expect(state.desktopOpen).toBe(false);
+    expect(state.climatePanelOpen).toBe(false);
+  });
+
+  it('lets only one 3D modal own the screen at a time', () => {
+    const s = () => usePortfolioStore.getState();
+    usePortfolioStore.setState({
+      mode: '3d',
+      selectedPostId: null,
+      selectedProjectId: null,
+      desktopOpen: false,
+      climatePanelOpen: false,
+    });
+
+    // Opening the projector clears the book/case dialogs and the desktop zoom.
+    usePortfolioStore.setState({
+      selectedPostId: 'gusto-software-engineer',
+      selectedProjectId: 'dreamzzz-game-development-project',
+      desktopOpen: true,
+    });
+    s().openClimatePanel();
+    expect(s().climatePanelOpen).toBe(true);
+    expect(s().selectedPostId).toBeNull();
+    expect(s().selectedProjectId).toBeNull();
+    expect(s().desktopOpen).toBe(false);
+
+    // Each of the other open actions clears climatePanelOpen in turn.
+    s().selectPost('cidel');
+    expect(s().selectedPostId).toBe('cidel');
+    expect(s().climatePanelOpen).toBe(false);
+    s().selectProject('dreamzzz-game-development-project');
+    expect(s().selectedProjectId).toBe('dreamzzz-game-development-project');
+    expect(s().selectedPostId).toBeNull();
+    expect(s().climatePanelOpen).toBe(false);
+    s().openDesktop();
+    expect(s().desktopOpen).toBe(true);
+    expect(s().selectedProjectId).toBeNull();
+    expect(s().climatePanelOpen).toBe(false);
+
+    // Closing (null/false) never resurrects another dialog.
+    s().closeDesktop();
+    expect(s().selectedPostId).toBeNull();
+    expect(s().selectedProjectId).toBeNull();
+    expect(s().climatePanelOpen).toBe(false);
+  });
+
+  it('clearSceneHover resets hover ids and the body cursor', () => {
+    usePortfolioStore.setState({
+      hoveredPostId: 'gusto-software-engineer',
+      hoveredProjectId: 'dreamzzz-game-development-project',
+    });
+    document.body.style.cursor = 'pointer';
+    usePortfolioStore.getState().clearSceneHover();
+    expect(usePortfolioStore.getState().hoveredPostId).toBeNull();
+    expect(usePortfolioStore.getState().hoveredProjectId).toBeNull();
+    expect(document.body.style.cursor).toBe('');
   });
 
   it('tracks case selection/hover and keeps book/case dialogs mutually exclusive (commit 8)', () => {

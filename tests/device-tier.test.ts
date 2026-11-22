@@ -8,12 +8,16 @@ import {
   capabilityGate,
   classifyTier,
   clearManualMode,
+  clearSceneFailure,
   detectCapabilities,
   MODE_STORAGE_KEY,
   readManualMode,
+  readSceneFailure,
   recommendMode,
   resolveMode,
+  SCENE_FAILURE_STORAGE_KEY,
   writeManualMode,
+  writeSceneFailure,
   type DeviceCapabilities,
 } from '../src/lib/device-tier';
 
@@ -82,8 +86,46 @@ describe('recommendMode', () => {
     expect(recommendMode(withOverrides({ deviceMemory: 2 }))).toBe('2d');
   });
 
-  it('recommends 3D for an unproblematic mobile tier', () => {
-    expect(recommendMode(withOverrides({ pointerType: 'coarse' }))).toBe('3d');
+  it('defaults capable MOBILE (touch/coarse pointer) to 3D too', () => {
+    const mobile = withOverrides({
+      pointerType: 'coarse',
+      deviceMemory: 4,
+      hardwareConcurrency: 4,
+    });
+    expect(classifyTier(mobile)).toBe('mobile');
+    expect(recommendMode(mobile)).toBe('3d');
+    expect(resolveMode(mobile)).toMatchObject({
+      mode: '3d',
+      tier: 'mobile',
+      source: 'auto',
+      reason: 'capable',
+    });
+  });
+
+  it('defaults a capable fine-pointer desktop to 3D with no stored override', () => {
+    expect(readManualMode()).toBeNull();
+    expect(resolveMode(capable)).toMatchObject({
+      mode: '3d',
+      tier: 'desktop',
+      source: 'auto',
+      reason: 'capable',
+    });
+  });
+
+  it('keeps static gates authoritative on mobile (2D on constraint)', () => {
+    const mobile = { pointerType: 'coarse' as const };
+    expect(recommendMode(withOverrides({ ...mobile, deviceMemory: 2 }))).toBe(
+      '2d',
+    );
+    expect(recommendMode(withOverrides({ ...mobile, saveData: true }))).toBe(
+      '2d',
+    );
+    expect(
+      recommendMode(withOverrides({ ...mobile, reducedMotion: true })),
+    ).toBe('2d');
+    expect(recommendMode(withOverrides({ ...mobile, webgl2: false }))).toBe(
+      '2d',
+    );
   });
 });
 
@@ -174,6 +216,53 @@ describe('manual mode persistence', () => {
     expect(resolveMode(withOverrides({ webgl2: false })).reason).toBe(
       'no-webgl2',
     );
+  });
+});
+
+describe('persisted scene failure (crash recovery)', () => {
+  beforeEach(() => {
+    clearManualMode();
+    clearSceneFailure();
+  });
+
+  it('forces 2D on Auto and reload, beating even a stored 3d override', () => {
+    writeSceneFailure();
+    expect(readSceneFailure()).toBe(true);
+    expect(localStorage.getItem(SCENE_FAILURE_STORAGE_KEY)).toBe('true');
+    expect(recommendMode(capable)).toBe('2d');
+    expect(resolveMode(capable)).toMatchObject({
+      mode: '2d',
+      source: 'auto',
+      reason: 'scene-failed',
+    });
+
+    writeManualMode('3d');
+    expect(resolveMode(capable)).toMatchObject({
+      mode: '2d',
+      reason: 'scene-failed',
+    });
+
+    clearSceneFailure();
+    expect(readSceneFailure()).toBe(false);
+    expect(resolveMode(capable)).toMatchObject({
+      mode: '3d',
+      reason: 'manual',
+    });
+  });
+
+  it('keeps recommendMode and the authoritative gate on the same source', () => {
+    const profiles = [
+      capable,
+      withOverrides({ pointerType: 'coarse', deviceMemory: 4 }),
+      withOverrides({ reducedMotion: true }),
+      withOverrides({ saveData: true }),
+      withOverrides({ webgl2: false }),
+    ];
+    for (const profile of profiles) {
+      expect(recommendMode(profile)).toBe(
+        capabilityGate(profile) ? '2d' : '3d',
+      );
+    }
   });
 });
 

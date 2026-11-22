@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import axe from 'axe-core';
 import App from '../src/App';
+import { POSTS, postId } from '../src/content/posts';
 import { usePortfolioStore } from '../src/state/store';
 
 beforeEach(() => {
@@ -56,5 +57,32 @@ describe('axe-core accessibility scans (2D mode)', () => {
     await screen.findByRole('dialog', { name: 'Bio window' });
     const violations = await runAxe(container);
     expect(violations).toEqual([]);
+  });
+
+  it('hides the background shell while a modal dialog is open (and restores it)', async () => {
+    const user = userEvent.setup();
+    const post = POSTS[0]!;
+    window.location.hash = '#/experience';
+    usePortfolioStore.setState({ selectedPostId: postId(post) });
+    const { container } = render(<App />);
+
+    const dialog = await screen.findByRole('dialog', {
+      name: new RegExp(post.title),
+    });
+    expect(dialog).toHaveAttribute('aria-modal', 'true');
+    const shell = container.querySelector('.app-shell') as HTMLElement;
+    expect(shell).toHaveAttribute('inert');
+    expect(shell).toHaveAttribute('aria-hidden', 'true');
+
+    const violations = await runAxe(container);
+    expect(violations).toEqual([]);
+
+    await user.click(
+      screen.getByRole('button', {
+        name: `Close details for ${post.title}`,
+      }),
+    );
+    expect(shell).not.toHaveAttribute('inert');
+    expect(shell).not.toHaveAttribute('aria-hidden');
   });
 });

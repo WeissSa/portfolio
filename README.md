@@ -1,39 +1,50 @@
-# portfolio
+# Sam Weiss — Portfolio ("The Room")
 
-A personal portfolio project built with React, Mantine, and Motion.
+A painterly 3D portfolio room built with **Vite + React 19 + TypeScript + react-three-fiber**, with a complete, always-usable P5-styled 2D DOM experience underneath. Deployed to GitHub Pages at <https://weisssa.github.io/portfolio/>.
 
-Redesigned 2025, originally designed c.2022.
+## Architecture
 
-See website at https://weisssa.github.io/portfolio/#/
+- `src/content/` — typed single source of truth (13 posts, bio, links, SEO, climate copy). `climate-config.mjs` is shared by the browser client and the build-time snapshot script.
+- `src/state/store.ts` — zustand store: mode, active hash route, climate cache, About windows, 3D selection/hover, year.
+- `src/ui/` — the P5 design system and every content panel: main menu, mode toggle, Experience/Projects/Climate views, desktop-OS About (`DesktopZoom` shares `AboutDesktop`), focus-managed detail dialogs, scene error boundary.
+- `src/scene/` — procedural Dishonored-style room (canvas-generated textures, seeded geometry, one cheap painterly pass), `CameraRig`, and four `React.lazy` zones: Library (books), Desk (monitor), Game Cases, Projector.
+- `src/lib/` — hash router, device tiering, climate math/API, a11y/focus helpers. `scripts/` — climate snapshot fetch, static HTML mirror, budget checks.
+- **2D-first streaming:** the built HTML ships the full styled content mirror and critical CSS, so menu + all zone content paint instantly. Capable devices then opt into the lazily imported 3D chunk in a post-paint effect; the room fades in when ready. 3D never blocks content.
 
-## Project setup on local
+## Rendering modes and controls
 
-```
+- **Auto (default):** a device that passes every static capability gate starts in 3D. This includes **capable desktops and capable mobile/touch devices**; mobile uses a lighter tier (DPR cap 1.5, no post pass, portrait camera framings).
+- **Automatic 2D** on constrained devices: no WebGL2, save-data, `prefers-reduced-motion`, or very low memory/core count. A device whose 3D scene has crashed is also pinned to 2D via a persisted failure signal, so "Auto" and reloads cannot re-trigger the crash (error boundary + `portfolio:3d-failed`).
+- **Manual override:** the `Rendering mode` group in the main menu has a `3D room mode` button and an `Auto` button. A chosen mode is persisted (`portfolio:mode`); `Auto` clears the override and returns to the device's safe default. Only one 3D modal dialog can be open at a time.
+- Keyboard: Tab/arrow keys navigate, Enter activates, Escape closes the top dialog, and a skip link targets `#main`. Canvas is `aria-hidden`; all content has DOM equivalents.
+
+## Climate data
+
+Toronto coordinates, 30-year Open-Meteo archive + current-weather comparison. Runtime `fetch → localStorage cache → bundled snapshot → stale cache → graceful "unavailable" plaque`. `prebuild` refreshes `public/climate-snapshot.json` best-effort and keeps the last-good file when the API returns nothing usable. Both the 2D heatmap and the projector texture reconcile the selected year against years that actually have data.
+
+## Development and verification
+
+Requires **Node 22** in CI (Node 21 works locally via the ESM alias in `vite.config.ts`).
+
+```bash
 npm install
+npm run dev            # http://localhost:5173/portfolio/#/
+npm run verify         # typecheck → lint → format:check → test → build → size
+npm run format:check   # Prettier (also in the CI verify job)
+npm run size           # shell ≤120 KB + lazy 3D chunk ≤260 KB (brotli)
 ```
 
-### Compiles and hot-reloads for development
+`npm run build` copies `public/404.html` (legacy Next.js path → hash-route redirector) and a no-JS static mirror into `dist/`. `dist/index.html` carries exactly one inlined `<style>` and no dev-only critical-mirror block; CI asserts both.
 
-```
-npm run dev
-```
+### Browser visual QA hooks (deferred to the owner's real-browser pass)
 
-(note go to http://localhost:3000/portfolio)
+The automated suite is headless (jsdom + `@react-three/test-renderer`): it verifies structure, state and a11y, **not pixels**. Playwright/Lighthouse tooling is intentionally not installed and no broken CI job was added; browser screenshots, the full device/viewport matrix and Lighthouse budgets remain a manual owner gate. For a headless-browser screenshot run:
 
-### Compiles and minifies for production
+- Force 3D without relying on GPU detection: set `localStorage.setItem('portfolio:mode', '3d')` (and clear `portfolio:3d-failed`) before loading the page. Clear the key (or click `Auto`) to return to automatic mode.
+- Routes (hash): `#/`, `#/about`, `#/experience`, `#/projects`, `#/climate`.
+- Mode controls: `button[aria-label="3D room mode"]` and `button[aria-label="Automatic mode"]` inside the `Rendering mode` group.
+- Dialogs: `role="dialog"` overlays for book/case details, the full-screen About desktop (`.desktop-zoom`), and the climate panel (`.climate-projector-overlay`).
 
-```
-npm run build
-```
+## Deployment
 
-### Run your unit tests
-
-```
-npm run test:unit
-```
-
-### Lints and fixes files
-
-```
-npm run lint
-```
+GitHub Actions (`.github/workflows/deploy.yml`) builds on push to `main` and deploys via `actions/upload-pages-artifact` + `actions/deploy-pages` — no force-push, no `gh-pages` commits. **Before merging, switch the repository's Pages source to "GitHub Actions"** and retire the stale `gh-pages` branch after cutover; otherwise the old site keeps serving. `ci.yml` runs the same `verify` chain on PRs plus the built-HTML guards.

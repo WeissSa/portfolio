@@ -4,6 +4,7 @@
  * the REWORK_PLAN §4.4 pipeline: live fetch → localStorage cache →
  * build-time bundled snapshot → graceful failure.
  */
+import { CLIMATE_FETCH_TIMEOUT_MS } from '../content/climate-config.mjs';
 import { CLIMATE_LOCATION, CLIMATE_YEARS_OF_HISTORY } from '../content/climate';
 import type { FlatTemps } from './climate';
 
@@ -32,8 +33,8 @@ export interface SnapshotData {
 
 export const CACHE_KEY = 'portfolio.climate.v1';
 export const CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
-/** Same best-effort timeout used by the build-time snapshot script. */
-export const LIVE_FETCH_TIMEOUT_MS = 15_000;
+/** Re-export of the shared deadline in climate-config.mjs (client + script). */
+export const LIVE_FETCH_TIMEOUT_MS = CLIMATE_FETCH_TIMEOUT_MS;
 
 interface CacheEntry {
   fetchedAt: number;
@@ -42,9 +43,9 @@ interface CacheEntry {
 
 /**
  * Runtime validation for untrusted localStorage JSON. `currentTemp` flows
- * into `toFixed(1)` in the view, so a corrupt string must invalidate the
- * entry instead of reaching the render path (null is valid: snapshots have
- * no live temperature).
+ * into `toFixed(1)` in the view and `locationName` is rendered as text, so a
+ * corrupt string must invalidate the entry instead of reaching the render path
+ * (null is valid for both: snapshots have no live temperature/location).
  */
 function isValidCacheEntry(entry: CacheEntry | null | undefined): boolean {
   return (
@@ -52,7 +53,9 @@ function isValidCacheEntry(entry: CacheEntry | null | undefined): boolean {
     typeof entry?.data?.flat === 'object' &&
     entry.data.flat !== null &&
     (typeof entry.data.currentTemp === 'number' ||
-      entry.data.currentTemp === null)
+      entry.data.currentTemp === null) &&
+    (typeof entry.data.locationName === 'string' ||
+      entry.data.locationName === null)
   );
 }
 
@@ -176,7 +179,10 @@ export async function fetchSnapshot(
   baseUrl: string = import.meta.env.BASE_URL,
 ): Promise<SnapshotData | null> {
   try {
-    const res = await fetch(`${baseUrl}climate-snapshot.json`);
+    const res = await fetch(`${baseUrl}climate-snapshot.json`, {
+      // Same-origin and small, but bounded like every other climate fetch.
+      signal: AbortSignal.timeout(LIVE_FETCH_TIMEOUT_MS),
+    });
     if (!res.ok) return null;
     const parsed = (await res.json()) as {
       flat?: FlatTemps;

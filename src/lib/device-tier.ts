@@ -8,11 +8,16 @@
  *
  * Decision order (most conservative wins):
  *   reduced motion | save-data | no WebGL2 | very low-end  → auto 2D
- *   coarse pointer or ≤4 GB / ≤4 cores                    → mobile 3D
- *   otherwise                                             → desktop 3D
+ *   everything else (desktop OR mobile tier)               → auto 3D (default)
  * A persisted manual mode beats the automatic decision ONLY when no capability
  * gate trips. Gates (no WebGL2 / save-data / reduced-motion / low tier) are
- * authoritative: a stale "3d" override can never force a crashing Canvas.
+ * authoritative: a stale "3d" override can never force a crashing Canvas. A
+ * persisted scene failure is equally authoritative (crash recovery).
+ *
+ * Pointer type is NOT a gate: a capable touch phone defaults into the lighter
+ * mobile 3D tier (DPR cap, no post pass, portrait viewpoints). The store still
+ * starts in 2D so the shell can paint from the static mirror first, and App
+ * upgrades in a post-paint effect (§4.5) — 2D-first streaming is unchanged.
  */
 import type { Mode } from '../state/store';
 
@@ -34,6 +39,7 @@ export type ModeReason =
   | 'save-data'
   | 'no-webgl2'
   | 'low-tier'
+  | 'scene-failed'
   | 'capable';
 
 export interface ModeDecision {
@@ -44,6 +50,14 @@ export interface ModeDecision {
 }
 
 export const MODE_STORAGE_KEY = 'portfolio:mode';
+/**
+ * Persisted crash signal. Written by the scene error boundary's onError path;
+ * once set, 3D is never auto-selected again (even after "Auto" or a reload) so
+ * a device that passes the capability gates but cannot create a Canvas cannot
+ * be trapped in a crash loop. Deliberately sticky: only `clearSceneFailure()`
+ * removes it, so neither "Auto" nor a page reload can re-arm the crash.
+ */
+export const SCENE_FAILURE_STORAGE_KEY = 'portfolio:3d-failed';
 
 /** Classify hardware into a render tier. Pure — no DOM access. */
 export function classifyTier(caps: DeviceCapabilities): DeviceTier {
@@ -61,13 +75,13 @@ export function classifyTier(caps: DeviceCapabilities): DeviceTier {
   return 'desktop';
 }
 
-/** Automatic mode recommendation, ignoring any persisted override. */
+/**
+ * Automatic mode recommendation, ignoring any persisted manual override.
+ * Delegates to the SAME capabilityGate as resolveMode so the UI toggle and the
+ * authoritative decision can never disagree about what this device supports.
+ */
 export function recommendMode(caps: DeviceCapabilities): Mode {
-  if (caps.reducedMotion) return '2d';
-  if (caps.saveData) return '2d';
-  if (!caps.webgl2) return '2d';
-  if (classifyTier(caps) === 'low') return '2d';
-  return '3d';
+  return capabilityGate(caps) || readSceneFailure() ? '2d' : '3d';
 }
 
 /** Read the persisted manual override. Returns null when none/invalid. */
@@ -99,36 +113,74 @@ export function clearManualMode(): void {
   }
 }
 
+/** True once the optional 3D scene has crashed on this device. */
+export function readSceneFailure(): boolean {
+  try {
+    if (typeof localStorage === 'undefined') return false;
+    return localStorage.getItem(SCENE_FAILURE_STORAGE_KEY) === 'true';
+  } catch {
+    return false;
+  }
+}
+
+/** Persist a 3D crash so Auto/reload keep the authoritative 2D shell. */
+export function writeSceneFailure(): void {
+  try {
+    localStorage.setItem(SCENE_FAILURE_STORAGE_KEY, 'true');
+  } catch {
+    // Non-fatal: the in-memory autoMode is still forced to 2D for this session.
+  }
+}
+
+/** Test/recovery escape hatch — not used by the normal UI (sticky by design). */
+export function clearSceneFailure(): void {
+  try {
+    localStorage.removeItem(SCENE_FAILURE_STORAGE_KEY);
+  } catch {
+    // Non-fatal.
+  }
+}
+
 /**
  * The first capability gate that forces 2D, or null when 3D is safe.
- * Shared by `resolveMode` (authoritative gate) and the UI (disable 3D).
+ * SINGLE SOURCE used by `resolveMode` (authoritative decision), `recommendMode`
+ * (the toggle's "can 3D be offered?" flag) and the UI's disabled explanation.
  */
 export function capabilityGate(
   caps: DeviceCapabilities,
   tier: DeviceTier = classifyTier(caps),
-): Exclude<ModeReason, 'manual' | 'capable'> | null {
+): Exclude<ModeReason, 'manual' | 'capable' | 'scene-failed'> | null {
   if (caps.reducedMotion) return 'reduced-motion';
   if (caps.saveData) return 'save-data';
   // three r187 has no WebGL1 fallback: no WebGL2 ⇒ the R3F Canvas throws on
   // mount and (without a boundary) unmounts the whole 2D shell. Hard gate.
   if (!caps.webgl2) return 'no-webgl2';
   if (tier === 'low') return 'low-tier';
+  // Pointer type intentionally omitted: capable mobile/touch devices get the
+  // lighter mobile 3D tier, not an automatic 2D downgrade (owner decision).
   return null;
 }
 
 /**
  * Combine hardware classification + manual override into one decision.
  *
- * SAFETY: capability gates win unconditionally. A stored "3d" override is
- * honoured only on a device that can actually render it; otherwise the gate's
- * reason is reported and the mode is forced to 2D (with the override left in
- * storage for the user to clear via the toggle's "Auto" option).
+ * SAFETY: capability gates and a persisted scene failure win unconditionally.
+ * A stored "3d" override is honoured only on a device that can actually render
+ * it; otherwise the gate's reason is reported and the mode is forced to 2D
+ * (with the override left in storage for the user to clear via "Auto"). With no
+ * override, any device that passes every gate defaults to 3D (desktop and
+ * capable mobile alike).
  */
 export function resolveMode(caps: DeviceCapabilities): ModeDecision {
   const tier = classifyTier(caps);
   const gate = capabilityGate(caps, tier);
   if (gate) {
     return { mode: '2d', tier, source: 'auto', reason: gate };
+  }
+  // Crash recovery is as authoritative as a hardware gate: a device that
+  // passed detection but failed to create a Canvas must not retry on reload.
+  if (readSceneFailure()) {
+    return { mode: '2d', tier, source: 'auto', reason: 'scene-failed' };
   }
   const manual = readManualMode();
   if (manual) {

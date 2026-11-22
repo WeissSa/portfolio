@@ -24,6 +24,7 @@ import {
   availableYears,
   heatmapForYear,
   LEVEL_COLORS,
+  reconcileSelectedYear,
   todayComparison,
   yearsWithData,
   type HeatmapCell,
@@ -176,12 +177,31 @@ export function ClimateProjector({
     void loadClimate();
   }, [loadClimate]);
 
+  // Derive the selectable years from the loaded dataset exactly like the 2D
+  // widget: a last-good snapshot may end in a prior year. This runs in EVERY
+  // 3D zone (not just #/climate), so the shared stored year must be reconciled
+  // here too or the projector paints an all-gray "no data" grid.
+  const years = useMemo(() => {
+    const withData = yearsWithData(climate.historical);
+    return withData.length > 0
+      ? withData
+      : availableYears(new Date().getFullYear());
+  }, [climate.historical]);
+
+  const renderYear = reconcileSelectedYear(selectedYear, years);
+
+  useEffect(() => {
+    if (years.length > 0 && renderYear !== selectedYear) {
+      setSelectedClimateYear(renderYear);
+    }
+  }, [years, renderYear, selectedYear, setSelectedClimateYear]);
+
   const cells = useMemo<HeatmapCell[]>(
     () =>
       climate.status === 'ready'
-        ? heatmapForYear(climate.historical, selectedYear)
+        ? heatmapForYear(climate.historical, renderYear)
         : [],
-    [climate.historical, climate.status, selectedYear],
+    [climate.historical, climate.status, renderYear],
   );
 
   const todayLabel = useMemo(() => {
@@ -199,8 +219,8 @@ export function ClimateProjector({
   }, [climate.currentTemp, climate.historical]);
 
   const texture = useMemo(
-    () => buildProjectorTexture(cells, selectedYear, todayLabel, canvasFactory),
-    [cells, selectedYear, todayLabel, canvasFactory],
+    () => buildProjectorTexture(cells, renderYear, todayLabel, canvasFactory),
+    [cells, renderYear, todayLabel, canvasFactory],
   );
 
   // One owned material per texture; both are disposed when the year/data
@@ -238,23 +258,17 @@ export function ClimateProjector({
     [prevGeometry, nextGeometry],
   );
 
-  const years = useMemo(() => {
-    const withData = yearsWithData(climate.historical);
-    return withData.length > 0
-      ? withData
-      : availableYears(new Date().getFullYear());
-  }, [climate.historical]);
-
   // `years` is newest-first: ◀ steps toward older years, ▶ toward newer ones.
+  // Step from the RENDERED year so a stale stored year cannot strand the dial.
   const stepYear =
     (direction: 'prev' | 'next') => (event: ThreeEvent<MouseEvent>) => {
       event.stopPropagation();
-      const index = years.indexOf(selectedYear);
+      const index = years.indexOf(renderYear);
       const target =
         direction === 'prev'
           ? years[index < 0 ? 0 : Math.min(index + 1, years.length - 1)]
           : years[index < 0 ? 0 : Math.max(index - 1, 0)];
-      if (target !== undefined && target !== selectedYear) {
+      if (target !== undefined && target !== renderYear) {
         setSelectedClimateYear(target);
       }
     };

@@ -12,6 +12,7 @@
  */
 import { useEffect } from 'react';
 import { useFocusTrap } from '../lib/a11y';
+import { useClearSceneHover, useInertBackground } from '../lib/dialog-effects';
 import { usePortfolioStore } from '../state/store';
 import { AboutDesktop } from './AboutDesktop';
 
@@ -20,6 +21,8 @@ export function DesktopZoom() {
   // Focus the close button on entry, cycle Tab within the desktop, and restore
   // the previously focused control when the room returns.
   const trapRef = useFocusTrap<HTMLDivElement>(true, true);
+  useInertBackground(true);
+  useClearSceneHover(true);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {

@@ -11,6 +11,7 @@
  */
 import { readFile, writeFile } from 'node:fs/promises';
 import {
+  CLIMATE_FETCH_TIMEOUT_MS as FETCH_TIMEOUT_MS,
   CLIMATE_LATITUDE as LATITUDE,
   CLIMATE_LOCATION_NAME as NAME,
   CLIMATE_LONGITUDE as LONGITUDE,
@@ -18,6 +19,12 @@ import {
 } from '../src/content/climate-config.mjs';
 
 const OUT_FILE = 'public/climate-snapshot.json';
+/**
+ * An all-null (or almost empty) API response must never replace the good
+ * committed fallback with a blank heatmap. ~30 years of daily data normally
+ * yields thousands of records; require at least a month of them.
+ */
+const MIN_SNAPSHOT_RECORDS = 28;
 
 const endDate = new Date();
 const startDate = new Date(endDate);
@@ -35,7 +42,9 @@ const url =
  * emit a warning so CI logs still surface the problem.
  */
 try {
-  const res = await fetch(url, { signal: AbortSignal.timeout(15_000) });
+  const res = await fetch(url, {
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+  });
   if (!res.ok) {
     throw new Error(`Open-Meteo archive request failed: HTTP ${res.status}`);
   }
@@ -49,10 +58,20 @@ try {
   const flat = {};
   times.forEach((dateString, index) => {
     const value = means[index];
-    if (typeof value === 'number' && !Number.isNaN(value)) {
+    if (typeof value === 'number' && Number.isFinite(value)) {
       flat[dateString] = Math.round(value * 10) / 10;
     }
   });
+
+  // Best-effort guard: an outage can return every daily value as null. Even
+  // though `times.length > 0`, that payload carries no usable data — bail out
+  // so the last-good committed snapshot keeps serving the heatmap.
+  if (Object.keys(flat).length < MIN_SNAPSHOT_RECORDS) {
+    throw new Error(
+      `Open-Meteo archive returned only ${Object.keys(flat).length} usable ` +
+        `daily records (expected ≥ ${MIN_SNAPSHOT_RECORDS})`,
+    );
+  }
 
   const snapshot = {
     generatedAt: new Date().toISOString(),

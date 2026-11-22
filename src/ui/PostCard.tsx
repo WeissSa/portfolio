@@ -23,7 +23,7 @@ export function PostCard({
   variant?: 'library' | 'case';
   /** Force the detail open (detail overlay); omit for the inline toggle. */
   expanded?: boolean;
-  /** A hovered/selected 3D book highlights its accessible DOM twin. */
+  /** A hovered/selected 3D book or game case highlights its DOM twin. */
   highlighted?: boolean;
 }) {
   const [internalExpanded, setInternalExpanded] = useState(false);

@@ -214,3 +214,31 @@ export function yearsWithData(historical: HistoricalData): number[] {
     )
     .sort((a, b) => b - a);
 }
+
+/**
+ * Reconcile a stored year against the years that actually have data before
+ * drawing a heatmap. The store seeds `selectedClimateYear` with the current
+ * year, but a last-good bundled snapshot can end in a prior year; feeding that
+ * stale year straight to `heatmapForYear()` paints an all-gray "no data" grid.
+ *
+ * Shared by the 2D selector and the 3D projector so both always draw a year
+ * with data. Returns the nearest available year (ties favour the newer one,
+ * since `available` is newest-first); an empty list leaves the input intact.
+ */
+export function reconcileSelectedYear(
+  year: number,
+  available: readonly number[],
+): number {
+  if (available.length === 0) return year;
+  if (available.includes(year)) return year;
+  let best = available[0]!;
+  let bestDistance = Math.abs(year - best);
+  for (const candidate of available) {
+    const distance = Math.abs(year - candidate);
+    if (distance < bestDistance) {
+      best = candidate;
+      bestDistance = distance;
+    }
+  }
+  return best;
+}
