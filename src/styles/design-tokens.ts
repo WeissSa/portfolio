@@ -34,6 +34,40 @@ export const DESIGN_TOKENS = {
   library: tokens.library,
 } as const;
 
+/**
+ * Semantic, Mantine-ready palette seed (owner decision 2026-11-22).
+ *
+ * Plain named hex values only — deliberately NO Mantine import here — so the
+ * later Mantine-first commit can do:
+ *
+ *   const theme = createTheme({
+ *     colors: MANTINE_THEME_ROLES,
+ *     primaryColor: MANTINE_PRIMARY_COLOR,
+ *     // defaultRadius / fontFamily / other tokens come from the same module
+ *   });
+ *
+ * Every value below is an EXISTING token value: this export adds no new color
+ * and changes no rendering (zero visual change in the 1a/1b refactor). Commit 2
+ * retargets the canonical values here; the Mantine theme follows automatically.
+ */
+export const MANTINE_THEME_ROLES = {
+  background: DESIGN_TOKENS.p5.black,
+  panel: DESIGN_TOKENS.p5.ink,
+  text: DESIGN_TOKENS.p5.white,
+  accent: DESIGN_TOKENS.p5.red,
+  teal: DESIGN_TOKENS.scene.plasterTeal,
+  brass: DESIGN_TOKENS.scene.brass,
+  gold: DESIGN_TOKENS.scene.brassLight,
+  purple: DESIGN_TOKENS.p5.linkVisited,
+  danger: DESIGN_TOKENS.p5.red,
+  focus: DESIGN_TOKENS.p5.yellow,
+} as const;
+
+export type MantineThemeRole = keyof typeof MANTINE_THEME_ROLES;
+
+/** Mantine's `primaryColor` key — the P5 red accent in today's palette. */
+export const MANTINE_PRIMARY_COLOR: MantineThemeRole = 'accent';
+
 /** Every canonical hex value (lowercase), for drift/disjointness guards. */
 export const ALL_TOKEN_VALUES: readonly string[] = [
   ...Object.values(DESIGN_TOKENS.p5),

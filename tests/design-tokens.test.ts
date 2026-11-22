@@ -12,6 +12,8 @@ import { BOOK_SPINE_COLORS, PALETTE } from '../src/scene/art/palette';
 import {
   ALL_TOKEN_VALUES,
   DESIGN_TOKENS,
+  MANTINE_PRIMARY_COLOR,
+  MANTINE_THEME_ROLES,
   normalizeHex,
 } from '../src/styles/design-tokens';
 
@@ -73,6 +75,33 @@ describe('canonical design tokens (commit 1a)', () => {
         normalizeHex(value),
       );
     }
+  });
+
+  it('exposes a Mantine-ready semantic palette of canonical values', () => {
+    expect(Object.keys(MANTINE_THEME_ROLES).sort()).toEqual(
+      [
+        'background',
+        'panel',
+        'text',
+        'accent',
+        'teal',
+        'brass',
+        'gold',
+        'purple',
+        'danger',
+        'focus',
+      ].sort(),
+    );
+    const canonical = ALL_TOKEN_VALUES.map(normalizeHex);
+    for (const [role, value] of Object.entries(MANTINE_THEME_ROLES)) {
+      expect(canonical, `${role} must be an existing token value`).toContain(
+        normalizeHex(value),
+      );
+    }
+    expect(MANTINE_PRIMARY_COLOR).toBe('accent');
+    expect(MANTINE_THEME_ROLES.background).toBe(DESIGN_TOKENS.p5.black);
+    expect(MANTINE_THEME_ROLES.focus).toBe(DESIGN_TOKENS.p5.yellow);
+    expect(MANTINE_THEME_ROLES.gold).toBe(DESIGN_TOKENS.scene.brassLight);
   });
 
   it('normalizes shorthand hex for mirror comparisons', () => {
