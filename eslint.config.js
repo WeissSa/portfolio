@@ -96,4 +96,15 @@ export default [
       },
     },
   },
+  {
+    // react-three-fiber elements (<mesh>, <group>, <pointLight>, …) take
+    // three.js props (position, geometry, material, args, attach, intensity,
+    // …) that eslint-plugin-react's DOM-oriented no-unknown-property rule
+    // does not recognise. R3F's own types already validate these props, so the
+    // rule only produces false positives inside the scene tree.
+    files: ['src/scene/**/*.{ts,tsx}'],
+    rules: {
+      'react/no-unknown-property': 'off',
+    },
+  },
 ];
