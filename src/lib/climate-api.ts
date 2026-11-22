@@ -14,10 +14,21 @@ export interface ClimatePayload {
 }
 
 export type ClimateOutcome =
-  | { status: 'live'; data: ClimatePayload }
-  | { status: 'cache'; data: ClimatePayload }
-  | { status: 'snapshot'; data: ClimatePayload }
+  | { status: 'live'; data: ClimatePayload; fetchedAt: number; stale: false }
+  | { status: 'cache'; data: ClimatePayload; fetchedAt: number; stale: boolean }
+  | {
+      status: 'snapshot';
+      data: ClimatePayload;
+      fetchedAt: number | null;
+      stale: false;
+    }
   | { status: 'error'; error: string };
+
+export interface SnapshotData {
+  flat: FlatTemps;
+  /** `generatedAt` from the JSON file, converted to epoch ms when valid. */
+  generatedAt: number | null;
+}
 
 export const CACHE_KEY = 'portfolio.climate.v1';
 export const CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
@@ -153,23 +164,54 @@ export function saveCache(
 /** Build-time snapshot fallback (public/climate-snapshot.json). */
 export async function fetchSnapshot(
   baseUrl: string = import.meta.env.BASE_URL,
-): Promise<FlatTemps | null> {
+): Promise<SnapshotData | null> {
   try {
     const res = await fetch(`${baseUrl}climate-snapshot.json`);
     if (!res.ok) return null;
-    const parsed = (await res.json()) as { flat?: FlatTemps };
+    const parsed = (await res.json()) as {
+      flat?: FlatTemps;
+      generatedAt?: unknown;
+    };
     if (!parsed || typeof parsed.flat !== 'object' || parsed.flat === null) {
       return null;
     }
-    return parsed.flat;
+    const generatedMs =
+      typeof parsed.generatedAt === 'string'
+        ? Date.parse(parsed.generatedAt)
+        : Number.NaN;
+    return {
+      flat: parsed.flat,
+      generatedAt: Number.isFinite(generatedMs) ? generatedMs : null,
+    };
   } catch {
     return null;
   }
 }
 
+/** Honest, human-readable age of the data currently on screen. */
+export function formatDataAge(
+  fetchedAt: number,
+  nowMs: number = Date.now(),
+): string {
+  if (!Number.isFinite(fetchedAt)) return 'unknown age';
+  const ageMs = Math.max(0, nowMs - fetchedAt);
+  const minutes = Math.floor(ageMs / 60_000);
+  if (minutes < 1) return 'just now';
+  const hours = Math.floor(minutes / 60);
+  if (hours < 1) return `${minutes} minute${minutes === 1 ? '' : 's'} ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 1) return `${hours} hour${hours === 1 ? '' : 's'} ago`;
+  return `${days} day${days === 1 ? '' : 's'} ago`;
+}
+
 /**
- * Full pipeline: live → stale/fresh cache → snapshot → error.
- * A successful live fetch refreshes the localStorage cache.
+ * Full pipeline: live → fresh cache → snapshot → stale cache → error.
+ *
+ * A successful live fetch refreshes the localStorage cache. When the live API
+ * fails, a cache entry within its TTL is still preferred; beyond the TTL the
+ * bundled snapshot wins so arbitrarily old cached data can never masquerade
+ * as "current". An expired cache is used only as a last resort, and is
+ * flagged `stale` so the UI can disclose its age.
  */
 export async function loadClimateData(
   now: Date = new Date(),
@@ -177,12 +219,18 @@ export async function loadClimateData(
   try {
     const data = await fetchLiveClimate(now);
     saveCache(data, now.getTime());
-    return { status: 'live', data };
+    return { status: 'live', data, fetchedAt: now.getTime(), stale: false };
   } catch (liveError) {
-    const cached = loadCache(now.getTime()) ?? loadCacheEntryIgnoringAge();
-    if (cached) {
-      return { status: 'cache', data: cached.data };
+    const fresh = loadCache(now.getTime());
+    if (fresh) {
+      return {
+        status: 'cache',
+        data: fresh.data,
+        fetchedAt: fresh.fetchedAt,
+        stale: false,
+      };
     }
+
     const snapshot = await fetchSnapshot();
     if (snapshot) {
       return {
@@ -190,10 +238,23 @@ export async function loadClimateData(
         data: {
           currentTemp: null,
           locationName: CLIMATE_LOCATION.name,
-          flat: snapshot,
+          flat: snapshot.flat,
         },
+        fetchedAt: snapshot.generatedAt,
+        stale: false,
       };
     }
+
+    const staleCache = loadCacheEntryIgnoringAge();
+    if (staleCache) {
+      return {
+        status: 'cache',
+        data: staleCache.data,
+        fetchedAt: staleCache.fetchedAt,
+        stale: true,
+      };
+    }
+
     const message =
       liveError instanceof Error ? liveError.message : String(liveError);
     return { status: 'error', error: message };

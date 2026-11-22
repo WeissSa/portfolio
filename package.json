@@ -6,6 +6,8 @@
   "homepage": "https://weisssa.github.io/portfolio/",
   "scripts": {
     "dev": "vite",
+    "climate:snapshot": "node scripts/fetch-climate-snapshot.mjs",
+    "prebuild": "npm run climate:snapshot",
     "build": "vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
@@ -55,7 +57,7 @@
   "size-limit": [
     {
       "path": [
-        "dist/assets/*.js",
+        "dist/assets/index-*.js",
         "dist/assets/*.css",
         "dist/assets/*.woff2"
       ],

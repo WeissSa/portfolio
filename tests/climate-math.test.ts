@@ -8,6 +8,7 @@ import {
   HOTTEST_ON_RECORD,
   temperatureLevel,
   todayComparison,
+  yearsWithData,
   type HistoricalData,
 } from '../src/lib/climate';
 
@@ -144,5 +145,21 @@ describe('availableYears', () => {
     expect(years).toHaveLength(30);
     expect(years[0]).toBe(2026);
     expect(years[29]).toBe(1997);
+  });
+});
+
+describe('yearsWithData', () => {
+  it('returns only years that actually have records, newest first', () => {
+    const historical: HistoricalData = {
+      2021: { 0: { 1: 5 } },
+      2026: {}, // present but empty — must not be offered by the selector
+      2019: { 6: { 15: 20 } },
+      2024: { 11: { 31: -3 } },
+    };
+    expect(yearsWithData(historical)).toEqual([2024, 2021, 2019]);
+  });
+
+  it('returns an empty list when the snapshot has no usable years', () => {
+    expect(yearsWithData({})).toEqual([]);
   });
 });

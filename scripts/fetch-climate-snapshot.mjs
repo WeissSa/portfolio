@@ -28,33 +28,46 @@ const url =
   `&longitude=${LONGITUDE}&start_date=${iso(startDate)}&end_date=${iso(endDate)}` +
   `&daily=temperature_2m_mean&temperature_unit=celsius&timezone=auto`;
 
-const res = await fetch(url);
-if (!res.ok) {
-  throw new Error(`Open-Meteo archive request failed: HTTP ${res.status}`);
-}
-const json = await res.json();
-const times = json?.daily?.time;
-const means = json?.daily?.temperature_2m_mean;
-if (!Array.isArray(times) || !Array.isArray(means) || times.length === 0) {
-  throw new Error('Open-Meteo archive response missing daily data');
-}
-
-const flat = {};
-times.forEach((dateString, index) => {
-  const value = means[index];
-  if (typeof value === 'number' && !Number.isNaN(value)) {
-    flat[dateString] = Math.round(value * 10) / 10;
+/**
+ * Refresh is best-effort: a transient Open-Meteo outage must never break a
+ * build. On failure we keep the last-good committed snapshot in place and
+ * emit a warning so CI logs still surface the problem.
+ */
+try {
+  const res = await fetch(url, { signal: AbortSignal.timeout(15_000) });
+  if (!res.ok) {
+    throw new Error(`Open-Meteo archive request failed: HTTP ${res.status}`);
   }
-});
+  const json = await res.json();
+  const times = json?.daily?.time;
+  const means = json?.daily?.temperature_2m_mean;
+  if (!Array.isArray(times) || !Array.isArray(means) || times.length === 0) {
+    throw new Error('Open-Meteo archive response missing daily data');
+  }
 
-const snapshot = {
-  generatedAt: new Date().toISOString(),
-  location: { latitude: LATITUDE, longitude: LONGITUDE, name: NAME },
-  flat,
-};
+  const flat = {};
+  times.forEach((dateString, index) => {
+    const value = means[index];
+    if (typeof value === 'number' && !Number.isNaN(value)) {
+      flat[dateString] = Math.round(value * 10) / 10;
+    }
+  });
 
-await writeFile(OUT_FILE, JSON.stringify(snapshot));
-console.log(
-  `wrote ${OUT_FILE}: ${Object.keys(flat).length} daily records ` +
-    `(${iso(startDate)} → ${iso(endDate)})`,
-);
+  const snapshot = {
+    generatedAt: new Date().toISOString(),
+    location: { latitude: LATITUDE, longitude: LONGITUDE, name: NAME },
+    flat,
+  };
+
+  await writeFile(OUT_FILE, JSON.stringify(snapshot));
+  console.log(
+    `refreshed ${OUT_FILE}: ${Object.keys(flat).length} daily records ` +
+      `(${iso(startDate)} → ${iso(endDate)})`,
+  );
+} catch (error) {
+  const message = error instanceof Error ? error.message : String(error);
+  console.warn(
+    `warning: climate snapshot refresh failed (${message}); ` +
+      `keeping the existing ${OUT_FILE}.`,
+  );
+}

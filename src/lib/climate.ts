@@ -186,3 +186,20 @@ export function availableYears(currentYear: number): number[] {
   }
   return years;
 }
+
+/**
+ * Years that actually have data in a loaded dataset (live fetch or bundled
+ * snapshot), newest first. The year selector uses this so it can never offer
+ * a year with no underlying snapshot/archive data — e.g. when the build-time
+ * refresh failed and the last-good snapshot is several months old.
+ */
+export function yearsWithData(historical: HistoricalData): number[] {
+  return Object.keys(historical)
+    .map(Number)
+    .filter(
+      (year) =>
+        Number.isInteger(year) &&
+        Object.keys(historical[year] ?? {}).length > 0,
+    )
+    .sort((a, b) => b - a);
+}

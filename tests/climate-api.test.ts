@@ -4,6 +4,7 @@ import {
   archiveUrl,
   currentWeatherUrl,
   fetchLiveClimate,
+  formatDataAge,
   loadCache,
   loadClimateData,
   saveCache,
@@ -206,5 +207,67 @@ describe('loadClimateData pipeline', () => {
     if (outcome.status === 'error') {
       expect(outcome.error).toContain('network failure');
     }
+  });
+
+  it('prefers the bundled snapshot over an expired cache entry', async () => {
+    const staleData = {
+      currentTemp: 1,
+      locationName: 'Toronto, Canada',
+      flat: { '2000-01-01': 1 },
+    };
+    const now = Date.now();
+    saveCache(staleData, now - 30 * 24 * 60 * 60 * 1000);
+    vi.stubGlobal(
+      'fetch',
+      mockFetchByUrl({
+        failUrls: [/open-meteo\.com/],
+        snapshot: { generatedAt: '2026-11-20T00:00:00.000Z', flat: FLAT },
+      }),
+    );
+
+    const outcome = await loadClimateData(new Date(now));
+    expect(outcome.status).toBe('snapshot');
+    if (outcome.status === 'snapshot') {
+      expect(outcome.data.flat).toEqual(FLAT);
+      expect(outcome.fetchedAt).toBe(Date.parse('2026-11-20T00:00:00.000Z'));
+      expect(outcome.stale).toBe(false);
+    }
+  });
+
+  it('uses an expired cache only as a last resort, flagged stale with its age', async () => {
+    const staleData = {
+      currentTemp: 1,
+      locationName: 'Toronto, Canada',
+      flat: { '2000-01-01': 1 },
+    };
+    const fetchedAt = Date.now() - 10 * 24 * 60 * 60 * 1000;
+    saveCache(staleData, fetchedAt);
+    vi.stubGlobal(
+      'fetch',
+      mockFetchByUrl({ failUrls: [/open-meteo\.com/, /climate-snapshot/] }),
+    );
+
+    const outcome = await loadClimateData();
+    expect(outcome.status).toBe('cache');
+    if (outcome.status === 'cache') {
+      expect(outcome.data).toEqual(staleData);
+      expect(outcome.fetchedAt).toBe(fetchedAt);
+      expect(outcome.stale).toBe(true);
+    }
+  });
+});
+
+describe('formatDataAge', () => {
+  const now = Date.parse('2026-11-21T12:00:00.000Z');
+
+  it('reports just now / minutes / hours / days', () => {
+    expect(formatDataAge(now, now)).toBe('just now');
+    expect(formatDataAge(now - 5 * 60_000, now)).toBe('5 minutes ago');
+    expect(formatDataAge(now - 3 * 60 * 60_000, now)).toBe('3 hours ago');
+    expect(formatDataAge(now - 2 * 24 * 60 * 60_000, now)).toBe('2 days ago');
+  });
+
+  it('handles an unknown/invalid age', () => {
+    expect(formatDataAge(Number.NaN, now)).toBe('unknown age');
   });
 });

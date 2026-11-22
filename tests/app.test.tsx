@@ -25,6 +25,11 @@ describe('App shell', () => {
     expect(
       await screen.findByRole('heading', { level: 2, name: /Climate/i }),
     ).toBeInTheDocument();
+    // Wait for the (globally stubbed) loadClimate effect to settle so its
+    // state update cannot land after this test has finished.
+    expect(
+      await screen.findByText(/Data source: live Open-Meteo/),
+    ).toBeInTheDocument();
   });
 
   it('exposes a skip link targeting the main content', () => {

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ClimateView } from '../src/ui/ClimateView';
 import { usePortfolioStore } from '../src/state/store';
@@ -148,6 +148,67 @@ describe('ClimateView (2D)', () => {
     const plaques = await screen.findAllByText(CLIMATE_UNAVAILABLE_MESSAGE);
     expect(plaques.length).toBeGreaterThanOrEqual(2); // widget + heatmap
     expect(screen.queryByRole('img')).not.toBeInTheDocument();
+  });
+
+  it('offers only years with data and selects the newest one by default', async () => {
+    const flat: Record<string, number> = {
+      '2019-06-15': 10,
+      '2021-06-15': 12,
+      '2024-06-15': 14,
+    };
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: unknown) => {
+        const url = String(input);
+        if (url.startsWith('https://api.open-meteo.com')) {
+          return {
+            ok: true,
+            json: async () => ({ current_weather: { temperature: 25 } }),
+          } as Response;
+        }
+        if (url.startsWith('https://archive-api.open-meteo.com')) {
+          return {
+            ok: true,
+            json: async () => ({
+              daily: {
+                time: Object.keys(flat),
+                temperature_2m_mean: Object.values(flat),
+              },
+            }),
+          } as Response;
+        }
+        return { ok: false, status: 404 } as Response;
+      }),
+    );
+
+    render(<ClimateView />);
+    const select = await screen.findByLabelText('Select Year');
+    await waitFor(() => expect(select).toHaveValue('2024'));
+    expect(
+      Array.from(select.querySelectorAll('option')).map(
+        (option) => option.value,
+      ),
+    ).toEqual(['2024', '2021', '2019']);
+  });
+
+  it('discloses a stale cache with its age and source', () => {
+    usePortfolioStore.setState({
+      climate: {
+        status: 'ready',
+        source: 'cache',
+        currentTemp: null,
+        locationName: 'Toronto, Canada',
+        historical: {},
+        error: null,
+        fetchedAt: Date.now() - 5 * 24 * 60 * 60 * 1000,
+        isStale: true,
+      },
+    });
+
+    render(<ClimateView />);
+    expect(screen.getByText(/Data source: local cache/)).toBeInTheDocument();
+    expect(screen.getByText(/5 days ago/)).toBeInTheDocument();
+    expect(screen.getByText(/stale/)).toBeInTheDocument();
   });
 
   it('changes the heatmap year via the selector', async () => {

@@ -51,7 +51,10 @@ export function PostCard({
       </div>
 
       {!expanded && tags.length > 0 && (
-        <ul aria-hidden="true" className="mt-3 flex flex-wrap gap-1">
+        <ul
+          aria-label={`Tags for ${post.title}`}
+          className="mt-3 flex flex-wrap gap-1"
+        >
           {tags.slice(0, 3).map((tag) => (
             <TagChip key={tag} tag={tag} />
           ))}

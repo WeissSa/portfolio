@@ -76,6 +76,32 @@ describe('About desktop-OS (2D)', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
+  it('restores focus to the top dialog when a middle window is closed', async () => {
+    const user = userEvent.setup();
+    renderAbout();
+    await user.click(screen.getByRole('button', { name: /Bio/ }));
+    await screen.findByRole('dialog', { name: 'Bio window' });
+    await user.click(screen.getByRole('button', { name: /Now/ }));
+    const nowDialog = await screen.findByRole('dialog', { name: 'Now window' });
+    await user.click(screen.getByRole('button', { name: /Hobbies/ }));
+    const hobbiesDialog = await screen.findByRole('dialog', {
+      name: 'Hobbies window',
+    });
+
+    await user.click(
+      within(nowDialog).getByRole('button', { name: 'Close Now window' }),
+    );
+
+    expect(
+      screen.queryByRole('dialog', { name: 'Now window' }),
+    ).not.toBeInTheDocument();
+    // Focus stays inside the still-open top dialog, not on a desktop icon.
+    expect(hobbiesDialog).toContainElement(
+      document.activeElement as HTMLElement | null,
+    );
+    expect(screen.getByRole('button', { name: /Now/ })).not.toHaveFocus();
+  });
+
   it('closes a window via its close button', async () => {
     const user = userEvent.setup();
     renderAbout();

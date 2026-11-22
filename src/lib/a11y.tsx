@@ -47,6 +47,7 @@ const FOCUSABLE_SELECTOR = [
  */
 export function useFocusTrap<T extends HTMLElement>(
   active: boolean,
+  restoreFocus = true,
 ): RefObject<T | null> {
   const ref = useRef<T>(null);
 
@@ -97,11 +98,17 @@ export function useFocusTrap<T extends HTMLElement>(
     return () => {
       cancelAnimationFrame(raf);
       node.removeEventListener('keydown', onKeyDown);
-      if (previouslyFocused && typeof previouslyFocused.focus === 'function') {
+      // When another dialog stays open the caller moves focus to that dialog
+      // instead; restoring here would pull focus back to a desktop icon.
+      if (
+        restoreFocus &&
+        previouslyFocused &&
+        typeof previouslyFocused.focus === 'function'
+      ) {
         previouslyFocused.focus({ preventScroll: true });
       }
     };
-  }, [active]);
+  }, [active, restoreFocus]);
 
   return ref;
 }

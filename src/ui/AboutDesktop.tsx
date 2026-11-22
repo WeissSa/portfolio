@@ -25,6 +25,21 @@ const WINDOWS: readonly WindowSpec[] = [
   { id: 'links', label: 'Links', glyph: '🔗' },
 ];
 
+/**
+ * Focus the dialog that is still on top after a close; only go back to the
+ * desktop icon when no dialog remains. Reads the store *after* the close so
+ * the remaining stack is already up to date.
+ */
+function focusAfterClose(closedId: AboutWindowId): void {
+  const remaining = usePortfolioStore.getState().openWindows;
+  if (remaining.length > 0) {
+    const top = remaining[remaining.length - 1]!;
+    document.getElementById(`about-window-${top}`)?.focus();
+  } else {
+    document.getElementById(`about-icon-${closedId}`)?.focus();
+  }
+}
+
 function WindowBody({ id }: { id: AboutWindowId }) {
   switch (id) {
     case 'bio':
@@ -105,23 +120,27 @@ function DesktopWindow({
   spec,
   index,
   isTop,
+  isOnlyWindow,
 }: {
   spec: WindowSpec;
   index: number;
   isTop: boolean;
+  isOnlyWindow: boolean;
 }) {
   const closeWindow = usePortfolioStore((s) => s.closeWindow);
-  const trapRef = useFocusTrap<HTMLDivElement>(isTop);
+  // Only the last remaining window restores focus itself; when another dialog
+  // stays open, focusAfterClose() moves focus to that dialog instead.
+  const trapRef = useFocusTrap<HTMLDivElement>(isTop, isOnlyWindow);
 
   const close = () => {
     closeWindow(spec.id);
-    // Return focus to the desktop icon that opened this window.
-    document.getElementById(`about-icon-${spec.id}`)?.focus();
+    focusAfterClose(spec.id);
   };
 
   return (
     <div
       ref={trapRef}
+      id={`about-window-${spec.id}`}
       role="dialog"
       aria-label={`${spec.label} window`}
       tabIndex={-1}
@@ -165,7 +184,7 @@ export function AboutDesktop() {
       const top = closeTopWindow();
       if (top) {
         event.preventDefault();
-        document.getElementById(`about-icon-${top}`)?.focus();
+        focusAfterClose(top);
       }
     };
     document.addEventListener('keydown', onKeyDown);
@@ -215,6 +234,7 @@ export function AboutDesktop() {
               spec={spec}
               index={index}
               isTop={index === openWindows.length - 1}
+              isOnlyWindow={openWindows.length === 1}
             />
           );
         })}

@@ -14,6 +14,10 @@ export interface ClimateState {
   locationName: string | null;
   historical: HistoricalData;
   error: string | null;
+  /** When the displayed data was collected (live/cache) or generated (snapshot). */
+  fetchedAt: number | null;
+  /** True when an expired localStorage entry was the only data available. */
+  isStale: boolean;
 }
 
 export type AboutWindowId = 'bio' | 'now' | 'hobbies' | 'skills' | 'links';
@@ -45,6 +49,8 @@ const IDLE_CLIMATE: ClimateState = {
   locationName: null,
   historical: {},
   error: null,
+  fetchedAt: null,
+  isStale: false,
 };
 
 export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
@@ -84,6 +90,8 @@ export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
         locationName: outcome.data.locationName,
         historical: flatToHistorical(outcome.data.flat),
         error: null,
+        fetchedAt: outcome.fetchedAt,
+        isStale: outcome.stale,
       },
     });
   },

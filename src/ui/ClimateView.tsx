@@ -10,12 +10,14 @@ import {
   TODAY_WIDGET_COPY,
   TODAY_WIDGET_TITLE,
 } from '../content/climate';
+import { formatDataAge } from '../lib/climate-api';
 import {
   availableYears,
   climateMeterEmoji,
   heatmapForYear,
   LEVEL_COLORS,
   todayComparison,
+  yearsWithData,
 } from '../lib/climate';
 import { usePortfolioStore } from '../state/store';
 import { DisplayTitle, P5Panel } from './primitives';
@@ -51,9 +53,34 @@ export function ClimateView() {
     [climate.historical, climate.status, selectedYear],
   );
 
-  const years = useMemo(() => availableYears(new Date().getFullYear()), []);
+  // Only offer years that actually have data. A failed build-time refresh can
+  // leave a months-old (but still valid) snapshot, so deriving from the loaded
+  // dataset is safer than assuming the current year is present.
+  const years = useMemo(() => {
+    const withData = yearsWithData(climate.historical);
+    return withData.length > 0
+      ? withData
+      : availableYears(new Date().getFullYear());
+  }, [climate.historical]);
+
+  useEffect(() => {
+    if (years.length > 0 && !years.includes(selectedYear)) {
+      setSelectedYear(years[0]!);
+    }
+  }, [years, selectedYear]);
 
   const loading = climate.status === 'idle' || climate.status === 'loading';
+
+  const sourceLabel =
+    climate.source === 'live'
+      ? 'live Open-Meteo'
+      : climate.source === 'cache'
+        ? 'local cache'
+        : climate.source === 'snapshot'
+          ? 'bundled snapshot'
+          : null;
+  const ageLabel =
+    climate.fetchedAt !== null ? formatDataAge(climate.fetchedAt) : null;
 
   return (
     <section aria-labelledby="climate-heading" className="p5-cut-in">
@@ -113,12 +140,29 @@ export function ClimateView() {
                   : 'Today’s comparison is not available yet.'}
               </p>
             )}
-            {climate.source !== 'live' && climate.source !== null && (
-              <p className="mt-2 text-xs font-bold text-p5-yellow">
-                Data source:{' '}
-                {climate.source === 'cache'
-                  ? 'local cache'
-                  : 'bundled snapshot'}
+            {sourceLabel && (
+              <p
+                className="mt-2 text-xs font-bold text-p5-yellow"
+                data-testid="climate-data-source"
+              >
+                Data source: {sourceLabel}
+                {ageLabel && (
+                  <>
+                    {' '}
+                    ·{' '}
+                    {climate.source === 'snapshot'
+                      ? 'generated'
+                      : 'collected'}{' '}
+                    {ageLabel}
+                  </>
+                )}
+                {climate.isStale && (
+                  <>
+                    {' '}
+                    · stale — live data and the bundled snapshot are
+                    unavailable, so an expired cache entry is shown
+                  </>
+                )}
               </p>
             )}
           </>
