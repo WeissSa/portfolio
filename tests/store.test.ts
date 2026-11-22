@@ -158,6 +158,37 @@ describe('portfolio store', () => {
     expect(usePortfolioStore.getState().desktopOpen).toBe(false);
   });
 
+  it('shares the climate year across modes but clears the 3D-only panel (commit 9)', () => {
+    const {
+      setSelectedClimateYear,
+      openClimatePanel,
+      closeClimatePanel,
+      setMode,
+    } = usePortfolioStore.getState();
+    const originalYear = usePortfolioStore.getState().selectedClimateYear;
+    setMode('3d');
+    setSelectedClimateYear(2019);
+    openClimatePanel();
+    expect(usePortfolioStore.getState().selectedClimateYear).toBe(2019);
+    expect(usePortfolioStore.getState().climatePanelOpen).toBe(true);
+
+    // 3d → 2d clears the dialog but NOT the visitor's year choice.
+    setMode('2d');
+    let state = usePortfolioStore.getState();
+    expect(state.climatePanelOpen).toBe(false);
+    expect(state.selectedClimateYear).toBe(2019);
+
+    // A plain 2d → 2d gate cannot clear either value.
+    setMode('2d');
+    state = usePortfolioStore.getState();
+    expect(state.selectedClimateYear).toBe(2019);
+
+    openClimatePanel();
+    closeClimatePanel();
+    expect(usePortfolioStore.getState().climatePanelOpen).toBe(false);
+    setSelectedClimateYear(originalYear);
+  });
+
   it('keeps the About window stack ordered and deduplicated', () => {
     const { openWindow, closeWindow, closeTopWindow, closeAllWindows } =
       usePortfolioStore.getState();

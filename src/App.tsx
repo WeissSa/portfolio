@@ -19,6 +19,7 @@ import { PostDetailOverlay } from './ui/PostDetailOverlay';
 import { ProjectDetailOverlay } from './ui/ProjectDetailOverlay';
 import { ProjectsView } from './ui/ProjectsView';
 import { ClimateView } from './ui/ClimateView';
+import { ClimateProjectorPanel } from './ui/ClimateProjectorPanel';
 
 const ZONE_NAMES: Record<Route, string> = {
   '/': 'Home',
@@ -63,6 +64,10 @@ export default function App() {
   // Monitor desktop zoom (commit 7): 3D-only. 2D #/about keeps rendering
   // AboutDesktop through ZoneContent below, unaffected by this flag.
   const desktopOpen = usePortfolioStore((s) => s.desktopOpen);
+  // Climate projector dialog (commit 9): a 3D-only DOM panel opened by the
+  // screen pick or by the keyboard-accessible trigger below.
+  const climatePanelOpen = usePortfolioStore((s) => s.climatePanelOpen);
+  const openClimatePanel = usePortfolioStore((s) => s.openClimatePanel);
   const initialRouteSynced = useRef(false);
   const [tier, setTier] = useState<DeviceTier>('desktop');
 
@@ -140,11 +145,27 @@ export default function App() {
           Only in 3D — a stale flag can never double-render the 2D About zone. */}
       {mode === '3d' && desktopOpen && <DesktopZoom />}
 
+      {/* Climate projector dialog: the same ClimateView as the 2D route, in a
+          focus-managed panel on top of the canvas (every fact reachable in DOM). */}
+      {mode === '3d' && climatePanelOpen && <ClimateProjectorPanel />}
+
       <div className="app-shell mx-auto flex max-w-7xl flex-col gap-4 p-3 md:flex-row md:p-6">
         <div className="md:w-64 md:shrink-0">
           <MainMenu />
         </div>
         <main id="main" className="min-w-0 flex-1">
+          {/* Keyboard/SR equivalent of picking the 3D projector screen (§3.3).
+              Only rendered in 3D; the 2D #/climate route is untouched. */}
+          {mode === '3d' && route === '/climate' && (
+            <button
+              type="button"
+              onClick={openClimatePanel}
+              aria-haspopup="dialog"
+              className="p5-btn p5-btn--red mb-3 min-h-[44px] px-4 font-bold"
+            >
+              Open projector info panel
+            </button>
+          )}
           <ZoneContent route={route} />
         </main>
       </div>

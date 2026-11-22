@@ -4,30 +4,15 @@ import {
   useState,
   type MouseEvent as ReactMouseEvent,
 } from 'react';
-import { LEVEL_COLORS, type HeatmapCell } from '../lib/climate';
-
-const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
-const CELL = 12;
-const GAP = 3;
-const STEP = CELL + GAP;
-const TOP_LABELS = 16;
-const LEFT_LABELS = 22;
-
-const MONTH_LABELS = [
-  'Jan',
-  'Feb',
-  'Mar',
-  'Apr',
-  'May',
-  'Jun',
-  'Jul',
-  'Aug',
-  'Sep',
-  'Oct',
-  'Nov',
-  'Dec',
-];
+import { type HeatmapCell } from '../lib/climate';
+import {
+  drawHeatmap,
+  HEATMAP_LEFT_LABELS,
+  HEATMAP_STEP,
+  HEATMAP_TOP_LABELS,
+  heatmapFirstWeekday,
+  heatmapSize,
+} from '../lib/climate-draw';
 
 function cellText(cell: HeatmapCell): string {
   if (cell.temp === null) return `${cell.date}: no data`;
@@ -41,9 +26,11 @@ function cellText(cell: HeatmapCell): string {
 }
 
 /**
- * Calendar heatmap drawn to canvas (same canvas is reused as the projector
- * CanvasTexture in 3D mode later — REWORK_PLAN §4.4). An accessible table
- * mirror of every cell is rendered visually hidden alongside it; jsdom-less
+ * Calendar heatmap drawn to canvas. The drawing itself lives in the pure
+ * `drawHeatmap()` helper (src/lib/climate-draw.ts) so the 3D projector can wrap
+ * the very same function in a CanvasTexture — one source of truth for the
+ * cells, labels and colors (REWORK_PLAN §4.4). An accessible table mirror of
+ * every cell is rendered visually hidden alongside the canvas; jsdom-less
  * canvas contexts degrade gracefully.
  */
 export function HeatmapCanvas({
@@ -61,55 +48,16 @@ export function HeatmapCanvas({
   } | null>(null);
 
   // GitHub-style layout: columns are weeks starting from Jan 1's week.
-  const firstWeekday = new Date(year, 0, 1).getDay();
-  const weeks = Math.ceil((cells.length + firstWeekday) / 7);
-  const width = LEFT_LABELS + weeks * STEP;
-  const height = TOP_LABELS + 7 * STEP;
+  const firstWeekday = heatmapFirstWeekday(year);
+  const { width, height } = heatmapSize(cells, year);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return; // e.g. jsdom without canvas support
-
-    ctx.clearRect(0, 0, width, height);
-    ctx.font = '10px sans-serif';
-    ctx.fillStyle = '#ffffff';
-    ctx.textBaseline = 'top';
-
-    // Month labels along the top.
-    let lastMonth = -1;
-    cells.forEach((cell, index) => {
-      const month = Number(cell.date.slice(5, 7)) - 1;
-      if (month !== lastMonth) {
-        const column = Math.floor((index + firstWeekday) / 7);
-        ctx.fillText(MONTH_LABELS[month] ?? '', LEFT_LABELS + column * STEP, 2);
-        lastMonth = month;
-      }
-    });
-
-    // Weekday labels (Mon/Wed/Fri).
-    [1, 3, 5].forEach((weekday) => {
-      ctx.fillText(
-        WEEKDAY_LABELS[weekday]!,
-        0,
-        TOP_LABELS + weekday * STEP + 1,
-      );
-    });
-
-    // Cells.
-    cells.forEach((cell, index) => {
-      const column = Math.floor((index + firstWeekday) / 7);
-      const row = (index + firstWeekday) % 7;
-      ctx.fillStyle = LEVEL_COLORS[cell.level] ?? LEVEL_COLORS[0]!;
-      ctx.fillRect(
-        LEFT_LABELS + column * STEP,
-        TOP_LABELS + row * STEP,
-        CELL,
-        CELL,
-      );
-    });
-  }, [cells, year, firstWeekday, width, height]);
+    drawHeatmap(ctx, cells, year);
+  }, [cells, year]);
 
   const onMouseMove = (event: ReactMouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
@@ -117,8 +65,8 @@ export function HeatmapCanvas({
     const rect = canvas.getBoundingClientRect();
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
-    const column = Math.floor((x - LEFT_LABELS) / STEP);
-    const row = Math.floor((y - TOP_LABELS) / STEP);
+    const column = Math.floor((x - HEATMAP_LEFT_LABELS) / HEATMAP_STEP);
+    const row = Math.floor((y - HEATMAP_TOP_LABELS) / HEATMAP_STEP);
     if (column < 0 || row < 0 || row > 6) {
       setTooltip(null);
       return;

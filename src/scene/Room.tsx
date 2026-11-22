@@ -62,6 +62,7 @@ import {
 import { LibraryZone } from './zones/Library';
 import { DeskZone } from './zones/Desk';
 import { ProjectCases } from './zones/ProjectCases';
+import { ClimateProjector } from './zones/ClimateProjector';
 import {
   createPlanTexture,
   createTexturePlans,
@@ -351,9 +352,12 @@ export function RoomScene({
       </group>
 
       <group name="projector-screen" position={SCREEN_POSITION}>
-        <mesh
-          geometry={furniture.screenCloth}
-          material={materials.screenFabric}
+        {/* Commit 9: the static cloth is replaced by the live climate
+            CanvasTexture (heatmap + today widget + attribution) with a year
+            dial; the room-owned projector body + light cone above stay put. */}
+        <ClimateProjector
+          screenGeometry={furniture.screenCloth}
+          materials={materials}
         />
         <mesh
           geometry={furniture.screenBar}

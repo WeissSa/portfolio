@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo } from 'react';
 import {
   CLIMATE_ATTRIBUTION,
   CLIMATE_STATEMENT,
@@ -29,12 +29,18 @@ import { HeatmapCanvas } from './HeatmapCanvas';
  * year selector), Open-Meteo attribution and the Climate Defense Fund of
  * Ontario link always visible (REWORK_PLAN §3.2.4).
  */
-export function ClimateView() {
+export function ClimateView({ idPrefix = '' }: { idPrefix?: string }) {
   const climate = usePortfolioStore((s) => s.climate);
   const loadClimate = usePortfolioStore((s) => s.loadClimate);
-  const [selectedYear, setSelectedYear] = useState<number>(() =>
-    new Date().getFullYear(),
-  );
+  // Shared with the 3D projector dial (commit 9): one year across both modes.
+  const selectedYear = usePortfolioStore((s) => s.selectedClimateYear);
+  const setSelectedYear = usePortfolioStore((s) => s.setSelectedClimateYear);
+  // The 3D dialog renders a second copy of this view; the prefix keeps the
+  // heading/label ids unique so aria references and <label for> stay valid.
+  const headingId = idPrefix
+    ? `${idPrefix}-climate-heading`
+    : 'climate-heading';
+  const yearSelectId = idPrefix ? `${idPrefix}-heatmap-year` : 'heatmap-year';
 
   useEffect(() => {
     void loadClimate();
@@ -67,7 +73,7 @@ export function ClimateView() {
     if (years.length > 0 && !years.includes(selectedYear)) {
       setSelectedYear(years[0]!);
     }
-  }, [years, selectedYear]);
+  }, [years, selectedYear, setSelectedYear]);
 
   const loading = climate.status === 'idle' || climate.status === 'loading';
 
@@ -83,9 +89,9 @@ export function ClimateView() {
     climate.fetchedAt !== null ? formatDataAge(climate.fetchedAt) : null;
 
   return (
-    <section aria-labelledby="climate-heading" className="p5-cut-in">
+    <section aria-labelledby={headingId} className="p5-cut-in">
       <DisplayTitle level={2} className="mb-4 text-p5-red">
-        <span id="climate-heading">{CLIMATE_TITLE}</span>
+        <span id={headingId}>{CLIMATE_TITLE}</span>
       </DisplayTitle>
 
       <P5Panel slashed className="mb-4">
@@ -178,13 +184,13 @@ export function ClimateView() {
         </h3>
         <div className="mb-4 max-w-xs">
           <label
-            htmlFor="heatmap-year"
+            htmlFor={yearSelectId}
             className="mb-1 block text-sm font-bold"
           >
             {HEATMAP_YEAR_LABEL}
           </label>
           <select
-            id="heatmap-year"
+            id={yearSelectId}
             value={selectedYear}
             onChange={(event) => setSelectedYear(Number(event.target.value))}
             className="min-h-[44px] w-full border-2 border-p5-black bg-white px-2 font-bold text-p5-black"

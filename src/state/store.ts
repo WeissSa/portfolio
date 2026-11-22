@@ -64,6 +64,13 @@ export interface PortfolioStore {
   loadClimate: () => Promise<void>;
   resetClimate: () => void;
 
+  /* Climate projector (commit 9): the year is SHARED by the 2D selector and
+   * the 3D projector dial, so it is deliberately NOT in CLEARED_3D_UI — leaving
+   * 3D must not reset the year the visitor chose in the DOM. */
+  /** Year whose heatmap the 2D widget and the 3D projector screen display. */
+  selectedClimateYear: number;
+  setSelectedClimateYear: (year: number) => void;
+
   /** About desktop-OS: stack of open windows, bottom → top. */
   openWindows: AboutWindowId[];
   openWindow: (id: AboutWindowId) => void;
@@ -103,6 +110,13 @@ export interface PortfolioStore {
   /** Hovered case → highlights the matching 2D project card (visual parity). */
   hoveredProjectId: string | null;
   setHoveredProject: (id: string | null) => void;
+
+  /* Climate projector info panel (commit 9): clicking the 3D screen opens the
+   * SAME accessible ClimateView used by the 2D route in a DOM dialog. 3D-only. */
+  /** True while the projector's climate info dialog is open. */
+  climatePanelOpen: boolean;
+  openClimatePanel: () => void;
+  closeClimatePanel: () => void;
 }
 
 const IDLE_CLIMATE: ClimateState = {
@@ -123,6 +137,7 @@ const CLEARED_3D_UI = {
   desktopOpen: false,
   selectedProjectId: null,
   hoveredProjectId: null,
+  climatePanelOpen: false,
 };
 
 export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
@@ -182,6 +197,9 @@ export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
   },
   resetClimate: () => set({ climate: IDLE_CLIMATE }),
 
+  selectedClimateYear: new Date().getFullYear(),
+  setSelectedClimateYear: (selectedClimateYear) => set({ selectedClimateYear }),
+
   openWindows: [],
   openWindow: (id) =>
     set((state) => ({
@@ -231,4 +249,8 @@ export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
     ),
   hoveredProjectId: null,
   setHoveredProject: (hoveredProjectId) => set({ hoveredProjectId }),
+
+  climatePanelOpen: false,
+  openClimatePanel: () => set({ climatePanelOpen: true }),
+  closeClimatePanel: () => set({ climatePanelOpen: false }),
 }));
