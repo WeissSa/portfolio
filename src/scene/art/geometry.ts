@@ -179,6 +179,9 @@ export function createDesk(seed: string | number): RoomPart[] {
 
 /* -------------------------------------------------------------- monitor -- */
 
+/** Local y of the monitor's screen quad (shared with the desktop-zoom camera). */
+export const MONITOR_SCREEN_LOCAL_Y = 0.565;
+
 /** CRT-ish flat monitor: bezel, emissive screen, stand. Origin at desk top. */
 export function createMonitor(seed: string | number): RoomPart[] {
   const rng = createRng(
@@ -206,7 +209,7 @@ export function createMonitor(seed: string | number): RoomPart[] {
       'monitor-screen',
       new THREE.PlaneGeometry(bezelW - 0.08, bezelH - 0.09),
       'monitorScreen',
-      [Math.sin(yaw) * 0.027, 0.565, Math.cos(yaw) * 0.027],
+      [Math.sin(yaw) * 0.027, MONITOR_SCREEN_LOCAL_Y, Math.cos(yaw) * 0.027],
       [0, yaw, 0],
     ),
     // Chin brand dot.
@@ -514,6 +517,9 @@ export function atlasCellUV(
   };
 }
 
+/** Vertices in one spine-label quad (two triangles). */
+export const SPINE_LABEL_VERTICES = 4;
+
 /**
  * All spine labels in ONE BufferGeometry (one draw call): a quad per book on
  * the front face, UVs remapped into its atlas cell. Keeps instancing discipline
@@ -550,7 +556,7 @@ export function createSpineLabelsGeometry(
       [u1, v1],
       [u0, v1],
     ];
-    const base = i * 4;
+    const base = i * SPINE_LABEL_VERTICES;
     corners.forEach(([cornerX, cornerY], corner) => {
       positions.push(cornerX, cornerY, frontZ);
       normals.push(0, 0, 1);
@@ -567,6 +573,37 @@ export function createSpineLabelsGeometry(
   geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
   geometry.setIndex(indices);
   return geometry;
+}
+
+/**
+ * Review fix A1: a selected book's BODY slides toward the viewer by `pullOut`,
+ * but the shared label geometry's quad would stay behind and be occluded by
+ * the body's own front face. Return a COPY of `labelsGeometry` with the
+ * selected book's four label vertices shifted forward by `pullOut`, so spine
+ * and body travel together. `selectedIndex === null` returns an untouched copy.
+ *
+ * Pure CPU data: the input geometry is never mutated, so this is unit-testable
+ * headlessly (the GPU copy is disposed by the caller on selection change).
+ */
+export function withPulledOutLabel(
+  labelsGeometry: THREE.BufferGeometry,
+  selectedIndex: number | null,
+  pullOut: number,
+): THREE.BufferGeometry {
+  const copy = labelsGeometry.clone();
+  const position = copy.getAttribute('position');
+  if (selectedIndex !== null && position) {
+    const first = selectedIndex * SPINE_LABEL_VERTICES;
+    for (
+      let vertex = first;
+      vertex < first + SPINE_LABEL_VERTICES;
+      vertex += 1
+    ) {
+      position.setZ(vertex, position.getZ(vertex) + pullOut);
+    }
+    position.needsUpdate = true;
+  }
+  return copy;
 }
 
 /* ------------------------------------------------------------------ rug -- */

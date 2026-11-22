@@ -19,6 +19,7 @@ import {
   bookAtlasRows,
   createLibraryBooks,
   createSpineLabelsGeometry,
+  withPulledOutLabel,
   type LibraryBook,
   type ShelfCell,
 } from '../art/geometry';
@@ -41,18 +42,31 @@ export function LibraryZone({ cells, materials }: LibraryZoneProps) {
       ),
     [cells],
   );
-  const bodyGeometry = useMemo(() => new THREE.BoxGeometry(1, 1, 1), []);
-  const labelsGeometry = useMemo(
-    () => createSpineLabelsGeometry(books, bookAtlasRows(books.length)),
-    [books],
-  );
-  const meshRef = useRef<THREE.InstancedMesh>(null);
-  const invalidate = useThree((state) => state.invalidate);
-
   const hoveredPostId = usePortfolioStore((state) => state.hoveredPostId);
   const selectedPostId = usePortfolioStore((state) => state.selectedPostId);
   const setHoveredPost = usePortfolioStore((state) => state.setHoveredPost);
   const selectPost = usePortfolioStore((state) => state.selectPost);
+
+  const bodyGeometry = useMemo(() => new THREE.BoxGeometry(1, 1, 1), []);
+  const baseLabelsGeometry = useMemo(
+    () => createSpineLabelsGeometry(books, bookAtlasRows(books.length)),
+    [books],
+  );
+  // The selected volume's spine must ride out with its body (review fix A1):
+  // a per-selection COPY of the label geometry moves just that book's quad by
+  // PULL_OUT, so the opaque body can no longer occlude its own title.
+  const selectedIndex = books.findIndex((book) => book.id === selectedPostId);
+  const labelsGeometry = useMemo(
+    () =>
+      withPulledOutLabel(
+        baseLabelsGeometry,
+        selectedIndex < 0 ? null : selectedIndex,
+        PULL_OUT,
+      ),
+    [baseLabelsGeometry, selectedIndex],
+  );
+  const meshRef = useRef<THREE.InstancedMesh>(null);
+  const invalidate = useThree((state) => state.invalidate);
 
   // Refresh instance transforms/colours on mount and on hover/selection change.
   // Scratch objects are allocated once per effect (not per frame) and the
@@ -89,11 +103,15 @@ export function LibraryZone({ cells, materials }: LibraryZoneProps) {
   useEffect(
     () => () => {
       bodyGeometry.dispose();
-      labelsGeometry.dispose();
+      baseLabelsGeometry.dispose();
       document.body.style.cursor = '';
     },
-    [bodyGeometry, labelsGeometry],
+    [bodyGeometry, baseLabelsGeometry],
   );
+  // The rendered labels are a per-selection COPY: dispose the previous copy as
+  // soon as React swaps it (and the last one on unmount), so toggling books
+  // repeatedly cannot leak GPU buffers (review fix A1).
+  useEffect(() => () => labelsGeometry.dispose(), [labelsGeometry]);
 
   const bookAt = (instanceId: number | undefined): LibraryBook | undefined =>
     instanceId === undefined ? undefined : books[instanceId];

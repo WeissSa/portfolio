@@ -25,7 +25,7 @@ import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
 import type { DeviceTier } from '../lib/device-tier';
 import { usePortfolioStore } from '../state/store';
-import { getZoneViewpoint, HOME_VIEWPOINT } from './viewpoints';
+import { getCameraViewpoint, HOME_VIEWPOINT } from './viewpoints';
 
 const DAMP_LAMBDA = 3.6;
 const MAX_DELTA = 0.1;
@@ -46,6 +46,9 @@ export function CameraRig({
   tier,
 }: CameraRigProps) {
   const activeZone = usePortfolioStore((state) => state.activeZone);
+  // Desktop zoom (commit 7): fly to the monitor close-up while the 2D desktop
+  // overlay is open, and back to the zone viewpoint when it closes.
+  const desktopOpen = usePortfolioStore((state) => state.desktopOpen);
   const camera = useThree((state) => state.camera);
   const invalidate = useThree((state) => state.invalidate);
   const size = useThree((state) => state.size);
@@ -59,7 +62,10 @@ export function CameraRig({
   const mounted = useRef(false);
 
   useEffect(() => {
-    const viewpoint = getZoneViewpoint(activeZone, { portrait, tier });
+    const viewpoint = getCameraViewpoint(activeZone, desktopOpen, {
+      portrait,
+      tier,
+    });
     desiredPosition.set(...viewpoint.position);
     desiredTarget.set(...viewpoint.target);
 
@@ -83,6 +89,7 @@ export function CameraRig({
     invalidate();
   }, [
     activeZone,
+    desktopOpen,
     instant,
     portrait,
     tier,

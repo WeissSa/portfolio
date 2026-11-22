@@ -6,9 +6,22 @@
  * (camera framings) derive from one source of truth without a circular
  * Room ↔ CameraRig import.
  */
-import { ROOM_DIMS, type Vec3 } from './art/geometry';
+import { DESK_TOP_HEIGHT, ROOM_DIMS, type Vec3 } from './art/geometry';
 
 export const DESK_POSITION: Vec3 = [1.9, 0, -2.55];
+/** Monitor group's position relative to the desk group (Room.tsx). */
+export const MONITOR_DESK_OFFSET: Vec3 = [
+  -0.35,
+  DESK_TOP_HEIGHT + 0.035,
+  -0.18,
+];
+/** Monitor group's world position — the desktop-zoom camera derives its
+ * close-up from this so camera and mesh can never drift apart. */
+export const MONITOR_POSITION: Vec3 = [
+  DESK_POSITION[0] + MONITOR_DESK_OFFSET[0],
+  DESK_POSITION[1] + MONITOR_DESK_OFFSET[1],
+  DESK_POSITION[2] + MONITOR_DESK_OFFSET[2],
+];
 export const SHELF_POSITION: Vec3 = [-3.55, 0, -0.4];
 export const SHELF_ROTATION: Vec3 = [0, Math.PI / 2, 0];
 export const LAMP_POSITION: Vec3 = [3.15, 0, 1.7];

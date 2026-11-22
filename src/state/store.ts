@@ -25,7 +25,16 @@ export type AboutWindowId = 'bio' | 'now' | 'hobbies' | 'skills' | 'links';
 export interface PortfolioStore {
   /** Rendering mode. Starts in 2D; capability detection may opt into 3D. */
   mode: Mode;
+  /**
+   * Set the rendering mode. Leaving 3D clears all 3D-only UI state (book
+   * highlight/selection and the monitor's desktop zoom) so DOM cards never
+   * stay highlighted and a stale desktop overlay cannot leak into 2D (A3/B3).
+   * Only a real 3d → 2d transition clears: the initial 2d gate must not wipe
+   * a detail panel opened directly from the 2D DOM.
+   */
   setMode: (mode: Mode) => void;
+  /** Explicit teardown of 3D-only UI state (also used by setMode). */
+  clear3dSelection: () => void;
   /**
    * Capability-derived automatic mode (no manual override). The toggle's
    * "Auto" option restores this after clearing a stuck override; safe default
@@ -74,6 +83,15 @@ export interface PortfolioStore {
   /** Fine pointer present: enables R3F picking; keyboard users use the DOM. */
   pointerFine: boolean;
   setPointerFine: (fine: boolean) => void;
+
+  /* Desk / About desktop zoom (commit 7): the monitor sets this flag; App
+   * renders the SAME AboutDesktop DOM full-screen, and CameraRig flies to the
+   * monitor close-up. Separate from selectedPostId / hash route so 2D #/about
+   * keeps working. */
+  /** True while the 3D monitor's full-screen desktop-OS overlay is open. */
+  desktopOpen: boolean;
+  openDesktop: () => void;
+  closeDesktop: () => void;
 }
 
 const IDLE_CLIMATE: ClimateState = {
@@ -87,9 +105,21 @@ const IDLE_CLIMATE: ClimateState = {
   isStale: false,
 };
 
+/** 3D-only UI state that must not survive a switch back to 2D (A3/B3). */
+const CLEARED_3D_UI = {
+  selectedPostId: null,
+  hoveredPostId: null,
+  desktopOpen: false,
+};
+
 export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
   mode: '2d',
-  setMode: (mode) => set({ mode }),
+  setMode: (mode) =>
+    set((state) => ({
+      mode,
+      ...(state.mode === '3d' && mode === '2d' ? CLEARED_3D_UI : {}),
+    })),
+  clear3dSelection: () => set(CLEARED_3D_UI),
   autoMode: '2d',
   setAutoMode: (autoMode) => set({ autoMode }),
 
@@ -166,4 +196,8 @@ export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
   setHoveredPost: (hoveredPostId) => set({ hoveredPostId }),
   pointerFine: false,
   setPointerFine: (pointerFine) => set({ pointerFine }),
+
+  desktopOpen: false,
+  openDesktop: () => set({ desktopOpen: true }),
+  closeDesktop: () => set({ desktopOpen: false }),
 }));

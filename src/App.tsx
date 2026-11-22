@@ -13,6 +13,7 @@ import { SceneLayer } from './ui/SceneLayer';
 import { SceneErrorBoundary } from './ui/SceneErrorBoundary';
 import { HomeSplash } from './ui/HomeSplash';
 import { AboutDesktop } from './ui/AboutDesktop';
+import { DesktopZoom } from './ui/DesktopZoom';
 import { ExperienceView } from './ui/ExperienceView';
 import { PostDetailOverlay } from './ui/PostDetailOverlay';
 import { ProjectsView } from './ui/ProjectsView';
@@ -58,6 +59,9 @@ export default function App() {
   const setMode = usePortfolioStore((s) => s.setMode);
   const setAutoMode = usePortfolioStore((s) => s.setAutoMode);
   const setPointerFine = usePortfolioStore((s) => s.setPointerFine);
+  // Monitor desktop zoom (commit 7): 3D-only. 2D #/about keeps rendering
+  // AboutDesktop through ZoneContent below, unaffected by this flag.
+  const desktopOpen = usePortfolioStore((s) => s.desktopOpen);
   const initialRouteSynced = useRef(false);
   const [tier, setTier] = useState<DeviceTier>('desktop');
 
@@ -125,6 +129,10 @@ export default function App() {
       {/* Shared DOM detail overlay for a picked 3D book (renders null when no
           book is selected). Content lives here, never inside the canvas. */}
       <PostDetailOverlay />
+
+      {/* Monitor zoom: full-screen DOM About desktop, shared with 2D mode.
+          Only in 3D — a stale flag can never double-render the 2D About zone. */}
+      {mode === '3d' && desktopOpen && <DesktopZoom />}
 
       <div className="app-shell mx-auto flex max-w-7xl flex-col gap-4 p-3 md:flex-row md:p-6">
         <div className="md:w-64 md:shrink-0">

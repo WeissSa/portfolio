@@ -28,6 +28,8 @@ import {
   disposeParts,
   geometryChecksum,
   MAX_BOOK_INSTANCES,
+  SPINE_LABEL_VERTICES,
+  withPulledOutLabel,
   type RoomPart,
 } from '../src/scene/art/geometry';
 
@@ -261,6 +263,35 @@ describe('library books (commit 6)', () => {
       }
     });
     expect(() => geometry.dispose()).not.toThrow();
+  });
+
+  it('moves only the selected spine-label quad forward with the body (A1)', () => {
+    const rows = bookAtlasRows(books.length);
+    const geometry = createSpineLabelsGeometry(books, rows);
+    const source = geometry.getAttribute('position');
+    const selected = 2;
+    const first = selected * SPINE_LABEL_VERTICES;
+    const originalZ = source.getZ(first);
+
+    const pulled = withPulledOutLabel(geometry, selected, 0.13);
+    const moved = pulled.getAttribute('position');
+    for (let vertex = 0; vertex < source.count; vertex += 1) {
+      // Float32BufferAttribute rounds on write; mirror that exact rounding so
+      // the assertion checks semantics, not single-precision drift.
+      const expected =
+        vertex >= first && vertex < first + SPINE_LABEL_VERTICES
+          ? Math.fround(originalZ + 0.13)
+          : source.getZ(vertex);
+      expect(moved.getZ(vertex)).toBeCloseTo(expected, 6);
+    }
+    // Pure: the source geometry (and its vertex data) is never mutated.
+    expect(source.getZ(first)).toBe(originalZ);
+    const untouched = withPulledOutLabel(geometry, null, 0.13);
+    expect(untouched.getAttribute('position').getZ(first)).toBe(originalZ);
+
+    geometry.dispose();
+    pulled.dispose();
+    untouched.dispose();
   });
 });
 

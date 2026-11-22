@@ -5,15 +5,22 @@
  */
 import { describe, expect, it } from 'vitest';
 import type { Route } from '../src/lib/router';
-import { DESK_TOP_HEIGHT } from '../src/scene/art/geometry';
+import {
+  DESK_TOP_HEIGHT,
+  MONITOR_SCREEN_LOCAL_Y,
+} from '../src/scene/art/geometry';
 import {
   DESK_POSITION,
+  MONITOR_DESK_OFFSET,
+  MONITOR_POSITION,
   SCREEN_POSITION,
   SHELF_POSITION,
 } from '../src/scene/placement';
 import {
+  getCameraViewpoint,
   getZoneViewpoint,
   HOME_VIEWPOINT,
+  MONITOR_VIEWPOINT,
   ZONE_VIEWPOINTS,
 } from '../src/scene/viewpoints';
 
@@ -84,5 +91,52 @@ describe('zone viewpoints', () => {
     expect(getZoneViewpoint('/', { portrait: false, tier: 'mobile' })).toBe(
       HOME_VIEWPOINT,
     );
+  });
+});
+
+describe('monitor desktop zoom viewpoint (commit 7)', () => {
+  it('derives the close-up from the same monitor placement as the mesh', () => {
+    expect(MONITOR_POSITION[0]).toBeCloseTo(
+      DESK_POSITION[0] + MONITOR_DESK_OFFSET[0],
+    );
+    expect(MONITOR_POSITION[2]).toBeCloseTo(
+      DESK_POSITION[2] + MONITOR_DESK_OFFSET[2],
+    );
+    expect(MONITOR_VIEWPOINT.target[1]).toBeCloseTo(
+      MONITOR_POSITION[1] + MONITOR_SCREEN_LOCAL_Y,
+    );
+    // Camera sits in front of the screen (larger z) and looks straight at it.
+    expect(MONITOR_VIEWPOINT.position[2]).toBeGreaterThan(
+      MONITOR_VIEWPOINT.target[2],
+    );
+    expect(MONITOR_VIEWPOINT.position[0]).toBeCloseTo(
+      MONITOR_VIEWPOINT.target[0],
+    );
+    for (const value of [
+      ...MONITOR_VIEWPOINT.position,
+      ...MONITOR_VIEWPOINT.target,
+    ]) {
+      expect(Number.isFinite(value)).toBe(true);
+    }
+  });
+
+  it('flies to the monitor when open and back to the zone when closed', () => {
+    const zone = getZoneViewpoint('/about');
+    expect(getCameraViewpoint('/about', true)).toBe(MONITOR_VIEWPOINT);
+    expect(getCameraViewpoint('/about', false)).toBe(zone);
+    // Any zone returns to its own framing on close.
+    expect(getCameraViewpoint('/climate', false)).toBe(
+      getZoneViewpoint('/climate'),
+    );
+  });
+
+  it('applies the mobile-portrait pullback to the close-up too', () => {
+    const landscape = getCameraViewpoint('/about', true);
+    const portrait = getCameraViewpoint('/about', true, {
+      portrait: true,
+      tier: 'mobile',
+    });
+    expect(portrait.target).toBe(landscape.target);
+    expect(portrait.position[2]).toBeGreaterThan(landscape.position[2]);
   });
 });

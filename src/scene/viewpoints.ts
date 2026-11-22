@@ -7,8 +7,17 @@
  */
 import type { DeviceTier } from '../lib/device-tier';
 import type { Route } from '../lib/router';
-import { DESK_TOP_HEIGHT, type Vec3 } from './art/geometry';
-import { DESK_POSITION, SCREEN_POSITION, SHELF_POSITION } from './placement';
+import {
+  DESK_TOP_HEIGHT,
+  MONITOR_SCREEN_LOCAL_Y,
+  type Vec3,
+} from './art/geometry';
+import {
+  DESK_POSITION,
+  MONITOR_POSITION,
+  SCREEN_POSITION,
+  SHELF_POSITION,
+} from './placement';
 
 export interface ZoneViewpoint {
   /** Camera world position. */
@@ -63,6 +72,25 @@ export const ZONE_VIEWPOINTS: Record<Route, ZoneViewpoint> = {
   },
 };
 
+/**
+ * Close-up of the monitor screen — the camera pose while the 3D monitor's
+ * full-screen desktop-OS overlay is open (REWORK_PLAN §3.2.2, commit 7). The
+ * camera sits a short distance in front of the screen and looks straight at
+ * it; on close, CameraRig flies back to the active zone's normal viewpoint.
+ */
+export const MONITOR_VIEWPOINT: ZoneViewpoint = {
+  position: [
+    MONITOR_POSITION[0],
+    MONITOR_POSITION[1] + MONITOR_SCREEN_LOCAL_Y,
+    MONITOR_POSITION[2] + 0.62,
+  ],
+  target: [
+    MONITOR_POSITION[0],
+    MONITOR_POSITION[1] + MONITOR_SCREEN_LOCAL_Y,
+    MONITOR_POSITION[2] + 0.03,
+  ],
+};
+
 export interface ViewpointOptions {
   /** True when the viewport is taller than wide (mobile portrait). */
   portrait?: boolean;
@@ -79,12 +107,10 @@ export interface ViewpointOptions {
 const PORTRAIT_PULLBACK = 1.32;
 const PORTRAIT_LIFT = 0.08;
 
-/** Safe lookup (unknown hashes are normalised to '/' by the router). */
-export function getZoneViewpoint(
-  route: Route,
-  options: ViewpointOptions = {},
+function withPortrait(
+  base: ZoneViewpoint,
+  options: ViewpointOptions,
 ): ZoneViewpoint {
-  const base = ZONE_VIEWPOINTS[route] ?? HOME_VIEWPOINT;
   if (!options.portrait || options.tier !== 'mobile') return base;
   const [px, py, pz] = base.position;
   const [tx, ty, tz] = base.target;
@@ -96,4 +122,29 @@ export function getZoneViewpoint(
     ],
     target: base.target,
   };
+}
+
+/** Safe lookup (unknown hashes are normalised to '/' by the router). */
+export function getZoneViewpoint(
+  route: Route,
+  options: ViewpointOptions = {},
+): ZoneViewpoint {
+  return withPortrait(ZONE_VIEWPOINTS[route] ?? HOME_VIEWPOINT, options);
+}
+
+/**
+ * Camera pose for the current UI state: the monitor close-up while the desktop
+ * zoom is open, otherwise the active zone's (optionally portrait-adjusted)
+ * viewpoint. Pure data — no three/R3F — so the fly-in/fly-back decision is
+ * unit-testable without a WebGL context.
+ */
+export function getCameraViewpoint(
+  route: Route,
+  desktopOpen: boolean,
+  options: ViewpointOptions = {},
+): ZoneViewpoint {
+  const base = desktopOpen
+    ? MONITOR_VIEWPOINT
+    : (ZONE_VIEWPOINTS[route] ?? HOME_VIEWPOINT);
+  return withPortrait(base, options);
 }

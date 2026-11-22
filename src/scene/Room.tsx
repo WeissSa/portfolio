@@ -23,6 +23,7 @@ import {
   DESK_POSITION,
   FRAME_POSITIONS,
   LAMP_POSITION,
+  MONITOR_DESK_OFFSET,
   PROJECTOR_POSITION,
   PROJECTOR_ROTATION,
   RUG_POSITION,
@@ -59,6 +60,7 @@ import {
   type RoomMaterials,
 } from './art/materials';
 import { LibraryZone } from './zones/Library';
+import { DeskZone } from './zones/Desk';
 import {
   createPlanTexture,
   createTexturePlans,
@@ -293,8 +295,10 @@ export function RoomScene({
 
       <group name="desk" position={DESK_POSITION}>
         <Parts parts={furniture.desk} materials={materials} />
-        <group position={[-0.35, DESK_TOP_HEIGHT + 0.035, -0.18]}>
-          <Parts parts={furniture.monitor} materials={materials} />
+        {/* Pickable monitor (commit 7): offset from the desk via the same
+            constant the desktop-zoom camera derives its close-up from. */}
+        <group position={MONITOR_DESK_OFFSET}>
+          <DeskZone monitor={furniture.monitor} materials={materials} />
         </group>
         <group position={[-0.15, DESK_TOP_HEIGHT + 0.035, 0.18]}>
           <Parts parts={furniture.cases} materials={materials} />

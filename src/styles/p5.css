@@ -211,15 +211,68 @@
   pointer-events: auto;
 }
 
+/*
+ * Review fix A2: in 3D the DOM shell sits ABOVE the canvas (z-index 1). With
+ * pointer-events:auto it swallowed every click, so R3F only raycast books in
+ * the outer margins. Make the shell transparent to the pointer, then opt its
+ * interactive descendants back in — the DOM UI stays fully usable while clicks
+ * on empty / canvas areas reach the scene. 2D mode is untouched: every rule is
+ * scoped under `.app-3d`, which App only adds in 3D mode.
+ */
 .app-3d .app-shell {
   position: relative;
   z-index: 1;
+  pointer-events: none;
+}
+
+.app-3d .app-shell a,
+.app-3d .app-shell button,
+.app-3d .app-shell input,
+.app-3d .app-shell select,
+.app-3d .app-shell textarea,
+.app-3d .app-shell [role='button'],
+.app-3d .app-shell [role='dialog'],
+.app-3d .app-shell [role='group'],
+.app-3d .app-shell [tabindex]:not([tabindex='-1']) {
+  pointer-events: auto;
 }
 
 /* A hovered/selected 3D book highlights its accessible DOM twin. */
 .p5-panel.p5-card--highlight {
   outline: 3px solid #ffd400;
   outline-offset: 2px;
+}
+
+/*
+ * Commit 7: full-screen 2D desktop-OS crossfaded over the 3D room when the
+ * desk monitor is picked. Plain DOM (never canvas content); above the shell
+ * and the loading cut-in, and pointer-transparent to nothing so all its
+ * controls stay clickable. Reduced-motion is handled by the global rule below.
+ */
+.desktop-zoom {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  overflow: auto;
+  padding: 1rem;
+  background: #0a0a0a;
+  animation: desktop-zoom-in 320ms ease-out both;
+}
+
+.desktop-zoom__close {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 20;
+}
+
+@keyframes desktop-zoom-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 /* Shared DOM detail panel opened by a 3D book (commit 6). */

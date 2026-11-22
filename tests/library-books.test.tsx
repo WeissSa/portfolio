@@ -176,6 +176,40 @@ describe('R3F book zone (headless, structural only)', () => {
     disposeRoomMaterials(materials);
   });
 
+  it("the selected book's label geometry rides out with its body (A1)", async () => {
+    const renderer = await ReactThreeTestRenderer.create(
+      <LibraryZone cells={cells} materials={materials} />,
+      { frameloop: 'never' },
+    );
+    const labelZ = (index: number): number => {
+      const node = renderer.scene.find(
+        (candidate) =>
+          candidate.type === 'Mesh' &&
+          !(candidate.instance as THREE.InstancedMesh | undefined)
+            ?.isInstancedMesh,
+      );
+      const geometry = (node!.instance as THREE.Mesh)
+        .geometry as THREE.BufferGeometry;
+      return geometry.getAttribute('position').getZ(index * 4);
+    };
+
+    const selected = 2;
+    const beforeSelected = labelZ(selected);
+    const beforeOther = labelZ(0);
+    act(() => {
+      usePortfolioStore.setState({ selectedPostId: postId(POSTS[selected]!) });
+    });
+    expect(labelZ(selected) - beforeSelected).toBeCloseTo(0.13, 6);
+    // Neighbouring spines stay put — only the selected quad translates.
+    expect(labelZ(0)).toBeCloseTo(beforeOther, 6);
+
+    act(() => {
+      usePortfolioStore.setState({ selectedPostId: null });
+    });
+    expect(labelZ(selected)).toBeCloseTo(beforeSelected, 6);
+    await renderer.unmount();
+  });
+
   it('disposes its body + spine-label geometries on unmount', async () => {
     const renderer = await ReactThreeTestRenderer.create(
       <LibraryZone cells={cells} materials={materials} />,

@@ -71,7 +71,9 @@ export function useFocusTrap<T extends HTMLElement>(
     const raf = requestAnimationFrame(focusFirst);
 
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Tab') return;
+      if (event.key !== 'Tab' || event.defaultPrevented) return;
+      // Nested traps (e.g. a window dialog inside the desktop zoom) handle the
+      // Tab first; an outer trap must not fight it and yank focus outward.
       const focusables = Array.from(
         node.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
       );
