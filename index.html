@@ -42,19 +42,21 @@
         --p5-red: #ff2a1a;
         --p5-white: #fff;
         --p5-yellow: #ffd400;
+        --p5-link: #93c5fd;
+        --p5-link-visited: #c4b5fd;
       }
       html,
       body {
         margin: 0;
         padding: 0;
-        background: #0a0a0a;
-        color: #fff;
+        background: var(--p5-black);
+        color: var(--p5-white);
       }
       .static-mirror {
         max-width: 72rem;
         margin: 0 auto;
         padding: 1rem 1.25rem 3rem;
-        color: #fff;
+        color: var(--p5-white);
         font-family:
           system-ui,
           -apple-system,
@@ -70,7 +72,7 @@
         text-transform: uppercase;
         letter-spacing: 0.02em;
         line-height: 1.05;
-        color: #fff;
+        color: var(--p5-white);
       }
       .static-mirror h1 {
         margin: 0.25rem 0 0.5rem;
@@ -100,12 +102,12 @@
         margin: 0.15rem 0;
       }
       .static-mirror a {
-        color: #93c5fd;
+        color: var(--p5-link);
         font-weight: 700;
         text-decoration: underline;
       }
       .static-mirror a:visited {
-        color: #c4b5fd;
+        color: var(--p5-link-visited);
       }
       .static-mirror header {
         padding-bottom: 0.5rem;

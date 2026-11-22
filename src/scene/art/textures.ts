@@ -10,6 +10,7 @@
  * Dishonored oil-painting feel; sizes stay ≤ 512px for memory/perf.
  */
 import * as THREE from 'three';
+import { DESIGN_TOKENS } from '../../styles/design-tokens';
 import { createRng, type Rng } from './rng';
 import { BOOK_SPINE_COLORS, PALETTE, shadeHex } from './palette';
 
@@ -330,7 +331,9 @@ export function planPaper(seed: string | number, size = 256): TexturePlan {
       y: rng.range(0, size),
       w: rng.range(1, 3),
       h: rng.range(0.5, 1.5),
-      color: rng.chance(0.5) ? PALETTE.paperDark : '#efe6cd',
+      color: rng.chance(0.5)
+        ? PALETTE.paperDark
+        : DESIGN_TOKENS.texture.paperLight,
       alpha: rng.range(0.05, 0.15),
       angle: rng.range(-0.4, 0.4),
     });
@@ -688,14 +691,23 @@ export function planMonitorDesktop(
   const rng = createRng(
     typeof seed === 'string' ? `${seed}:monitor` : seed + 808,
   );
-  const ops: PaintOp[] = [{ kind: 'fill', color: '#101418' }];
+  const ops: PaintOp[] = [
+    { kind: 'fill', color: DESIGN_TOKENS.texture.monitorFill },
+  ];
   // Wallpaper: dark teal wash with painterly strokes.
-  brushNoise(rng, ops, { width, height }, 60, '#16222a', {
-    lenRange: [30, 120],
-    widthRange: [6, 18],
-    alphaRange: [0.05, 0.14],
-    shade: 0.1,
-  });
+  brushNoise(
+    rng,
+    ops,
+    { width, height },
+    60,
+    DESIGN_TOKENS.texture.monitorWash,
+    {
+      lenRange: [30, 120],
+      widthRange: [6, 18],
+      alphaRange: [0.05, 0.14],
+      shade: 0.1,
+    },
+  );
   // Top menu bar.
   ops.push({
     kind: 'rect',
@@ -817,7 +829,7 @@ export function planMonitorDesktop(
       y: wy + 36 + l * 16,
       w: (ww - 28) * rng.range(0.55, 0.98),
       h: 5,
-      color: '#9aa3ad',
+      color: DESIGN_TOKENS.texture.monitorText,
       alpha: 0.75,
     });
   }
@@ -911,7 +923,7 @@ export function planProjectorScreen(
     x: width / 2,
     y: height * 0.72,
     font: `12px ${BODY_FONT}`,
-    color: '#4a4f57',
+    color: DESIGN_TOKENS.texture.projectorCaption,
     align: 'center',
   });
   ops.push(edgeDarken(0.3));

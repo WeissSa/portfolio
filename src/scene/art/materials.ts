@@ -8,6 +8,7 @@
  * disposal (disposeRoomMaterials).
  */
 import * as THREE from 'three';
+import { DESIGN_TOKENS } from '../../styles/design-tokens';
 import { PALETTE } from './palette';
 import type { TextureKey } from './textures';
 
@@ -84,37 +85,47 @@ export function createRoomMaterials(
   const materials: RoomMaterials = {
     wood: standard({
       map: textures.wood,
-      color: textures.wood ? '#ffffff' : PALETTE.woodMid,
+      color: textures.wood
+        ? DESIGN_TOKENS.material.textureNeutral
+        : PALETTE.woodMid,
       roughness: 0.82,
       metalness: 0.04,
     }),
     woodDark: standard({
       map: withRepeat(textures.wood, [2, 2], clones),
-      color: textures.wood ? '#9c8a76' : PALETTE.woodDark,
+      color: textures.wood ? DESIGN_TOKENS.material.woodTint : PALETTE.woodDark,
       roughness: 0.85,
       metalness: 0.04,
     }),
     plaster: standard({
       map: withRepeat(textures.plaster, [2.5, 1.5], clones),
-      color: textures.plaster ? '#ffffff' : PALETTE.plasterTeal,
+      color: textures.plaster
+        ? DESIGN_TOKENS.material.textureNeutral
+        : PALETTE.plasterTeal,
       roughness: 0.95,
       metalness: 0,
     }),
     brass: standard({
       map: textures.brass,
-      color: textures.brass ? '#ffffff' : PALETTE.brass,
+      color: textures.brass
+        ? DESIGN_TOKENS.material.textureNeutral
+        : PALETTE.brass,
       roughness: 0.38,
       metalness: 0.65,
     }),
     paper: standard({
       map: textures.paper,
-      color: textures.paper ? '#ffffff' : PALETTE.paper,
+      color: textures.paper
+        ? DESIGN_TOKENS.material.textureNeutral
+        : PALETTE.paper,
       roughness: 0.92,
       metalness: 0,
     }),
     rug: standard({
       map: textures.rug,
-      color: textures.rug ? '#ffffff' : PALETTE.rugIndigo,
+      color: textures.rug
+        ? DESIGN_TOKENS.material.textureNeutral
+        : PALETTE.rugIndigo,
       roughness: 1,
       metalness: 0,
     }),
@@ -126,8 +137,10 @@ export function createRoomMaterials(
     // Self-lit surfaces: modest emissive so they glow without light probes.
     monitorScreen: standard({
       map: textures.monitor,
-      color: textures.monitor ? '#ffffff' : '#141a20',
-      emissive: new THREE.Color('#8fb7d9'),
+      color: textures.monitor
+        ? DESIGN_TOKENS.material.textureNeutral
+        : DESIGN_TOKENS.material.monitorBack,
+      emissive: new THREE.Color(DESIGN_TOKENS.material.monitorEmissive),
       emissiveMap: textures.monitor,
       emissiveIntensity: 0.5,
       roughness: 0.35,
@@ -141,7 +154,7 @@ export function createRoomMaterials(
       metalness: 0.1,
     }),
     lampShade: standard({
-      color: '#c98f4a',
+      color: DESIGN_TOKENS.material.lampShade,
       emissive: new THREE.Color(PALETTE.lampWarm),
       emissiveIntensity: 0.35,
       roughness: 0.9,
@@ -149,10 +162,10 @@ export function createRoomMaterials(
       side: THREE.DoubleSide,
     }),
     bulb: new THREE.MeshBasicMaterial({ color: PALETTE.lampWarm }),
-    led: new THREE.MeshBasicMaterial({ color: '#39d2c0' }),
+    led: new THREE.MeshBasicMaterial({ color: DESIGN_TOKENS.material.led }),
     // Projector light cone: additive, unlit, no depth writes (§3.5 light cone).
     beam: new THREE.MeshBasicMaterial({
-      color: '#ffd9a0',
+      color: DESIGN_TOKENS.material.beam,
       transparent: true,
       opacity: 0.07,
       side: THREE.DoubleSide,
@@ -161,21 +174,31 @@ export function createRoomMaterials(
     }),
     screenFabric: standard({
       map: textures.projector,
-      color: textures.projector ? '#ffffff' : PALETTE.screenCloth,
-      emissive: new THREE.Color('#ffffff'),
+      color: textures.projector
+        ? DESIGN_TOKENS.material.textureNeutral
+        : PALETTE.screenCloth,
+      emissive: new THREE.Color(DESIGN_TOKENS.material.textureNeutral),
       emissiveMap: textures.projector,
       emissiveIntensity: 0.18,
       roughness: 0.9,
       metalness: 0,
     }),
-    silhouette: standard({ color: '#20242c', roughness: 1, metalness: 0 }),
-    book: standard({ color: '#ffffff', roughness: 0.85, metalness: 0.02 }),
+    silhouette: standard({
+      color: DESIGN_TOKENS.material.silhouette,
+      roughness: 1,
+      metalness: 0,
+    }),
+    book: standard({
+      color: DESIGN_TOKENS.material.textureNeutral,
+      roughness: 0.85,
+      metalness: 0.02,
+    }),
     // The 13 pickable post-bodies: per-INSTANCE color (setColorAt) tints the
     // diffuse; a faint uniform emissive gives every volume a warm library glow
     // (featured ones also read larger + brass/red via their instance color).
     bookHero: standard({
-      color: '#ffffff',
-      emissive: new THREE.Color('#6b3f16'),
+      color: DESIGN_TOKENS.material.textureNeutral,
+      emissive: new THREE.Color(DESIGN_TOKENS.material.bookHeroEmissive),
       emissiveIntensity: 0.32,
       roughness: 0.78,
       metalness: 0.04,
@@ -183,13 +206,17 @@ export function createRoomMaterials(
     // Shared spine atlas: commit 6 remaps each label quad into its own cell.
     bookAtlas: standard({
       map: textures.bookAtlas,
-      color: textures.bookAtlas ? '#ffffff' : PALETTE.bookCloth,
+      color: textures.bookAtlas
+        ? DESIGN_TOKENS.material.textureNeutral
+        : PALETTE.bookCloth,
       roughness: 0.85,
       metalness: 0.02,
     }),
     caseLabel: standard({
       map: textures.caseLabels,
-      color: textures.caseLabels ? '#ffffff' : PALETTE.p5White,
+      color: textures.caseLabels
+        ? DESIGN_TOKENS.material.textureNeutral
+        : PALETTE.p5White,
       roughness: 0.7,
       metalness: 0.05,
     }),

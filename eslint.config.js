@@ -6,6 +6,7 @@ import pluginTypeScript from '@typescript-eslint/eslint-plugin';
 import parserTypeScript from '@typescript-eslint/parser';
 import pluginPrettier from 'eslint-plugin-prettier';
 import configPrettier from 'eslint-config-prettier';
+import { noRawHex } from './scripts/eslint-no-raw-hex.mjs';
 
 export default [
   {
@@ -53,6 +54,7 @@ export default [
       'react-hooks': pluginReactHooks,
       '@typescript-eslint': pluginTypeScript,
       prettier: pluginPrettier,
+      local: { rules: { 'no-raw-hex': noRawHex } },
     },
     rules: {
       ...pluginJs.configs.recommended.rules,
@@ -73,6 +75,8 @@ export default [
       ],
       '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/no-require-imports': 'error',
+      // Palette drift guard: all colors must flow through design tokens.
+      'local/no-raw-hex': 'error',
     },
     settings: {
       react: {

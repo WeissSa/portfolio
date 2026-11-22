@@ -11,7 +11,7 @@
   max-width: 72rem;
   margin: 0 auto;
   padding: 1rem 1.25rem 3rem;
-  color: var(--p5-white, #fff);
+  color: var(--p5-white);
   font-family:
     system-ui,
     -apple-system,
@@ -28,13 +28,13 @@
   text-transform: uppercase;
   letter-spacing: 0.02em;
   line-height: 1.05;
-  color: var(--p5-white, #fff);
+  color: var(--p5-white);
 }
 
 .static-mirror h1 {
   margin: 0.25rem 0 0.5rem;
   font-size: clamp(2rem, 7vw, 3.5rem);
-  color: var(--p5-red, #ff2a1a);
+  color: var(--p5-red);
   transform: skewX(-6deg);
 }
 
@@ -42,13 +42,13 @@
   margin: 2rem 0 0.75rem;
   padding-left: 0.6rem;
   font-size: clamp(1.5rem, 4vw, 2.25rem);
-  border-left: 6px solid var(--p5-red, #ff2a1a);
+  border-left: 6px solid var(--p5-red);
 }
 
 .static-mirror h3 {
   margin: 1.25rem 0 0.4rem;
   font-size: 1.15rem;
-  color: var(--p5-yellow, #ffd400);
+  color: var(--p5-yellow);
 }
 
 .static-mirror p,
@@ -65,18 +65,18 @@
 }
 
 .static-mirror a {
-  color: #93c5fd;
+  color: var(--p5-link);
   font-weight: 700;
   text-decoration: underline;
 }
 
 .static-mirror a:visited {
-  color: #c4b5fd;
+  color: var(--p5-link-visited);
 }
 
 .static-mirror header {
   padding-bottom: 0.5rem;
-  border-bottom: 4px solid var(--p5-red, #ff2a1a);
+  border-bottom: 4px solid var(--p5-red);
 }
 
 .static-mirror nav ul {
@@ -91,12 +91,12 @@
 .static-mirror article {
   margin: 1rem 0;
   padding: 0.35rem 0.9rem;
-  background: var(--p5-ink, #16161a);
-  border-top: 3px solid var(--p5-red, #ff2a1a);
+  background: var(--p5-ink);
+  border-top: 3px solid var(--p5-red);
 }
 
 .static-mirror footer {
   margin-top: 2rem;
   padding-top: 0.5rem;
-  border-top: 4px solid var(--p5-red, #ff2a1a);
+  border-top: 4px solid var(--p5-red);
 }

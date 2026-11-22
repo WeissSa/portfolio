@@ -17,6 +17,7 @@ import * as THREE from 'three';
 import { Canvas } from '@react-three/fiber';
 import { POSTS, PROJECTS } from '../content/index';
 import { usePrefersReducedMotion } from '../lib/a11y';
+import { DESIGN_TOKENS } from '../styles/design-tokens';
 import { CameraRig } from './CameraRig';
 import { PainterlyPass } from './effects/PainterlyPass';
 import {
@@ -254,11 +255,11 @@ export function RoomScene({
   return (
     <PainterlyPass enabled={quality === 'desktop'}>
       {/* Base ambience: cool night fill + moonlight from the window. */}
-      <ambientLight intensity={0.5} color="#93a7bd" />
+      <ambientLight intensity={0.5} color={DESIGN_TOKENS.room.ambient} />
       <directionalLight
         position={[5.5, 3.2, 1.2]}
         intensity={0.45}
-        color="#7d99c9"
+        color={DESIGN_TOKENS.room.moonlight}
       />
       {/* Warm lamp pools (§3.5): floor lamp + desk glow + monitor spill. */}
       <pointLight
@@ -266,14 +267,14 @@ export function RoomScene({
         intensity={9}
         distance={7.5}
         decay={2}
-        color="#ffb45e"
+        color={DESIGN_TOKENS.room.lamp}
       />
       <pointLight
         position={deskLampLight}
         intensity={4}
         distance={4}
         decay={2}
-        color="#ffc978"
+        color={DESIGN_TOKENS.room.deskLamp}
       />
       <pointLight
         position={[
@@ -284,7 +285,7 @@ export function RoomScene({
         intensity={1.6}
         distance={2.6}
         decay={2}
-        color="#9fd8ff"
+        color={DESIGN_TOKENS.room.monitorSpill}
       />
 
       <group name="room-shell">
@@ -429,8 +430,8 @@ export default function Room({
       frameloop={hidden ? 'never' : 'demand'}
       aria-hidden="true"
     >
-      <color attach="background" args={['#0a0c10']} />
-      <fog attach="fog" args={['#0a0c10', 8, 16]} />
+      <color attach="background" args={[DESIGN_TOKENS.room.background]} />
+      <fog attach="fog" args={[DESIGN_TOKENS.room.background, 8, 16]} />
       <CameraRig instant={reducedMotion} paused={hidden} tier={quality} />
       <RoomScene
         seed={seed}

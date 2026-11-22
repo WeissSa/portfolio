@@ -38,15 +38,16 @@ import {
   heatmapSize,
   type HeatmapPalette,
 } from '../../lib/climate-draw';
+import { DESIGN_TOKENS } from '../../styles/design-tokens';
 import { usePortfolioStore } from '../../state/store';
 import type { RoomMaterials } from '../art/materials';
 
 export const PROJECTOR_TEXTURE_WIDTH = 1024;
 export const PROJECTOR_TEXTURE_HEIGHT = 576;
 
-const CLOTH = '#d9cdb2';
-const INK = '#161616';
-const RED = '#c8102e';
+const CLOTH = DESIGN_TOKENS.climate.projectorCloth;
+const INK = DESIGN_TOKENS.climate.projectorInk;
+const RED = DESIGN_TOKENS.climate.projectorRed;
 const DISPLAY_FONT = "'Anton', 'Arial Narrow', Haettenschweiler, sans-serif";
 
 /** Ink-on-cloth palette for the projected heatmap (DOM canvas uses the default). */
@@ -120,14 +121,14 @@ export function buildProjectorTexture(
   ctx.fillStyle = INK;
   ctx.fillRect(48, plaqueY, PROJECTOR_TEXTURE_WIDTH - 96, 66);
   ctx.textAlign = 'center';
-  ctx.fillStyle = '#f2e9d0';
+  ctx.fillStyle = DESIGN_TOKENS.climate.projectorPlaqueText;
   ctx.font = `bold 22px ${DISPLAY_FONT}`;
   ctx.fillText(
     'IS TODAY WEIRDLY HOT/COLD?',
     PROJECTOR_TEXTURE_WIDTH / 2,
     plaqueY + 8,
   );
-  ctx.fillStyle = '#ffffff';
+  ctx.fillStyle = DESIGN_TOKENS.climate.heatmapLabelText;
   ctx.font = 'bold 22px system-ui, sans-serif';
   ctx.fillText(todayLabel, PROJECTOR_TEXTURE_WIDTH / 2, plaqueY + 36);
 

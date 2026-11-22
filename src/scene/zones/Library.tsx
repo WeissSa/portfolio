@@ -14,6 +14,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { useThree, type ThreeEvent } from '@react-three/fiber';
 import { POSTS, postId } from '../../content/posts';
+import { DESIGN_TOKENS } from '../../styles/design-tokens';
 import { usePortfolioStore } from '../../state/store';
 import {
   bookAtlasRows,
@@ -78,7 +79,7 @@ export function LibraryZone({ cells, materials }: LibraryZoneProps) {
     const position = new THREE.Vector3();
     const scale = new THREE.Vector3();
     const color = new THREE.Color();
-    const highlight = new THREE.Color('#fff3d0');
+    const highlight = new THREE.Color(DESIGN_TOKENS.library.bookHighlight);
     books.forEach((book, index) => {
       position.set(...book.position);
       if (book.id === selectedPostId) position.z += PULL_OUT;

@@ -7,48 +7,44 @@
  * Pure functions — no three, no DOM.
  */
 
+import { DESIGN_TOKENS } from '../../styles/design-tokens';
+
+/**
+ * Named scene roles, all sourced from the canonical token store (commit 1a).
+ * The object shape and every value are unchanged from the pre-token palette.
+ */
 export const PALETTE = {
-  woodDark: '#2b1e14',
-  woodMid: '#4a3323',
-  woodWarm: '#6b4a2e',
-  woodGrain: '#3a281a',
-  plasterTeal: '#3f5a58',
-  plasterSepia: '#6d5b45',
-  plasterDark: '#2c3a3a',
-  brass: '#b08d4f',
-  brassLight: '#d4b06a',
-  brassDark: '#7c6234',
-  rugIndigo: '#2c3350',
-  rugRust: '#7a3b2e',
-  rugCream: '#c9b98f',
-  paper: '#d9cdb2',
-  paperDark: '#b7a98c',
-  ink: '#16161a',
-  metalDark: '#23262b',
-  p5Red: '#ff2a1a',
-  p5Yellow: '#ffd400',
-  p5White: '#f5f2ea',
-  lampWarm: '#ffb45e',
-  nightBlue: '#1b2a4a',
-  nightGlow: '#2e4a7d',
-  screenCloth: '#e8dfc8',
-  bookCloth: '#5a3a2a',
+  woodDark: DESIGN_TOKENS.scene.woodDark,
+  woodMid: DESIGN_TOKENS.scene.woodMid,
+  woodWarm: DESIGN_TOKENS.scene.woodWarm,
+  woodGrain: DESIGN_TOKENS.scene.woodGrain,
+  plasterTeal: DESIGN_TOKENS.scene.plasterTeal,
+  plasterSepia: DESIGN_TOKENS.scene.plasterSepia,
+  plasterDark: DESIGN_TOKENS.scene.plasterDark,
+  brass: DESIGN_TOKENS.scene.brass,
+  brassLight: DESIGN_TOKENS.scene.brassLight,
+  brassDark: DESIGN_TOKENS.scene.brassDark,
+  rugIndigo: DESIGN_TOKENS.scene.rugIndigo,
+  rugRust: DESIGN_TOKENS.scene.rugRust,
+  rugCream: DESIGN_TOKENS.scene.rugCream,
+  paper: DESIGN_TOKENS.scene.paper,
+  paperDark: DESIGN_TOKENS.scene.paperDark,
+  ink: DESIGN_TOKENS.scene.ink,
+  metalDark: DESIGN_TOKENS.scene.metalDark,
+  p5Red: DESIGN_TOKENS.scene.p5Red,
+  p5Yellow: DESIGN_TOKENS.scene.p5Yellow,
+  p5White: DESIGN_TOKENS.scene.p5White,
+  lampWarm: DESIGN_TOKENS.scene.lampWarm,
+  nightBlue: DESIGN_TOKENS.scene.nightBlue,
+  nightGlow: DESIGN_TOKENS.scene.nightGlow,
+  screenCloth: DESIGN_TOKENS.scene.screenCloth,
+  bookCloth: DESIGN_TOKENS.scene.bookCloth,
 } as const;
 
 export type PaletteKey = keyof typeof PALETTE;
 
 /** Hex colors used for book spines / game cases (muted + rare P5 accent). */
-export const BOOK_SPINE_COLORS: readonly string[] = [
-  '#4a3323',
-  '#2f4a45',
-  '#5a3a2a',
-  '#3c4a63',
-  '#6d5b45',
-  '#41324a',
-  '#2c3350',
-  '#59483a',
-  '#37514a',
-];
+export const BOOK_SPINE_COLORS: readonly string[] = DESIGN_TOKENS.bookSpines;
 
 function clamp255(value: number): number {
   return Math.max(0, Math.min(255, Math.round(value)));

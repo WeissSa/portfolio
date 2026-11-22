@@ -9,6 +9,7 @@
  * the projector paints ink-on-cloth (and adds a background fill), without
  * duplicating a single layout/color decision.
  */
+import { DESIGN_TOKENS } from '../styles/design-tokens';
 import { LEVEL_COLORS, type HeatmapCell } from './climate';
 
 export const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -45,7 +46,7 @@ export interface HeatmapPalette {
 /** The 2D widget's white-on-transparent palette (previous hard-coded look). */
 export const DEFAULT_HEATMAP_PALETTE: HeatmapPalette = {
   colors: LEVEL_COLORS,
-  text: '#ffffff',
+  text: DESIGN_TOKENS.climate.heatmapLabelText,
 };
 
 /** Jan 1's weekday drives the GitHub-style column layout. */

@@ -243,7 +243,7 @@ export function ClimateView({ idPrefix = '' }: { idPrefix?: string }) {
             href={CLIMATE_ATTRIBUTION.openMeteo.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="font-bold text-[#93c5fd] underline"
+            className="font-bold text-[color:var(--p5-link)] underline"
           >
             {CLIMATE_ATTRIBUTION.openMeteo.label}
           </a>{' '}
@@ -252,7 +252,7 @@ export function ClimateView({ idPrefix = '' }: { idPrefix?: string }) {
             href={CLIMATE_ATTRIBUTION.license.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="font-bold text-[#93c5fd] underline"
+            className="font-bold text-[color:var(--p5-link)] underline"
           >
             {CLIMATE_ATTRIBUTION.license.label}
           </a>
@@ -264,7 +264,7 @@ export function ClimateView({ idPrefix = '' }: { idPrefix?: string }) {
             href={CLIMATE_ATTRIBUTION.climateDefenseFund.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="font-bold text-[#93c5fd] underline"
+            className="font-bold text-[color:var(--p5-link)] underline"
           >
             {CLIMATE_ATTRIBUTION.climateDefenseFund.label}
           </a>
