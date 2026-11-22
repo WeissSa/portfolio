@@ -20,7 +20,9 @@ import {
  * (`the-room` in src/scene/Room.tsx), DPR and viewports are pinned below, so
  * successive runs produce comparable evidence. The full matrix has 27 shots
  * and 3 clips; SwiftShader software rendering is slow, so `workers: 1` in the
- * config avoids contention. See qa-evidence/REPORT.md for conditions/defects.
+ * config avoids contention. The fixed-pixel 3D picks (book/case/monitor) are
+ * intentional real-pick evidence but a KNOWN FRAGILITY: recalibrate their
+ * coordinates after any geometry/layout change (REPORT.md D4).
  */
 const SHOTS = resolve(process.cwd(), 'qa-evidence/screenshots');
 const CLIPS = resolve(process.cwd(), 'qa-evidence/recordings');
@@ -147,6 +149,23 @@ async function open(page: Page, route: string): Promise<void> {
   ).toBeVisible();
 }
 
+/**
+ * D6: detail/desktop dialogs call useInertBackground(true). A hash navigation
+ * does NOT unmount them, so the next pick/trigger stays inert and the combined
+ * dialog test used to time out at the projector trigger. Close every open
+ * dialog (Escape closes the top window first inside DesktopZoom) before moving
+ * on; assert it actually closed so a stale inert shell cannot poison the next
+ * step silently.
+ */
+async function closeDialogs(page: Page): Promise<void> {
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    if ((await page.getByRole('dialog').count()) === 0) return;
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(150);
+  }
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+}
+
 test.describe('key capture matrix (desktop / tablet / mobile)', () => {
   test('desktop 2D zones', async ({ browser }) => {
     const context = await newCaptureContext(browser, {
@@ -200,6 +219,7 @@ test.describe('key capture matrix (desktop / tablet / mobile)', () => {
     await page.screenshot({
       path: resolve(SHOTS, 'desktop_3d_book-detail.png'),
     });
+    await closeDialogs(page);
 
     await page.goto('#/projects');
     await page.locator('.scene-layer--ready').waitFor({ state: 'attached' });
@@ -212,6 +232,7 @@ test.describe('key capture matrix (desktop / tablet / mobile)', () => {
     await page.screenshot({
       path: resolve(SHOTS, 'desktop_3d_case-detail.png'),
     });
+    await closeDialogs(page);
 
     await page.goto('#/about');
     await page.locator('.scene-layer--ready').waitFor({ state: 'attached' });
@@ -219,22 +240,37 @@ test.describe('key capture matrix (desktop / tablet / mobile)', () => {
     await page.mouse.move(850, 350);
     await page.waitForTimeout(200);
     await page.mouse.click(850, 350);
-    await expect(page.getByRole('dialog')).toBeVisible();
+    // Assert the MONITOR dialog specifically — a generic dialog check let a
+    // stale/incorrect pick masquerade as a successful monitor capture (D6).
+    await expect(
+      page.getByRole('dialog', { name: 'About desktop — full screen' }),
+    ).toBeVisible();
     await page.waitForTimeout(400);
     await page.screenshot({
       path: resolve(SHOTS, 'desktop_3d_monitor-zoom.png'),
     });
+    await closeDialogs(page);
 
     await page.goto('#/climate');
     await page.locator('.scene-layer--ready').waitFor({ state: 'attached' });
     await page.waitForTimeout(SWIFT_SETTLE_MS);
+    await closeDialogs(page);
     await page
       .getByRole('button', { name: 'Open projector info panel' })
       .click();
-    await expect(page.getByRole('dialog')).toBeVisible();
-    await page.waitForTimeout(400);
+    const projectorDialog = page.getByRole('dialog');
+    await expect(projectorDialog).toBeVisible();
+    // Wait for CONTENT, not just the dialog shell: a fast screenshot caught
+    // the panels mid cut-in and produced empty dark boxes as false evidence.
+    await expect(
+      projectorDialog.getByText(/Is Today Weirdly Hot/i),
+    ).toBeVisible();
+    await page.waitForTimeout(600);
     await page.screenshot({
       path: resolve(SHOTS, 'desktop_3d_climate-projector-panel.png'),
+      // Finish the P5 cut-in (panels animate from opacity 0); without this the
+      // PNG can show empty dark boxes even though the content is in the DOM.
+      animations: 'disabled',
     });
     await context.close();
   });

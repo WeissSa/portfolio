@@ -1,17 +1,55 @@
 #!/usr/bin/env node
 /**
- * Legal gate B3: every font shipped in dist must have a reachable companion
- * license. `public/fonts/ANTON-OFL.txt` is copied into dist/fonts/ by Vite;
- * this check runs after `npm run build` in CI so a dropped/moved license (or
- * a new woff2 without one) fails the build.
+ * Legal gate B3: EVERY font shipped in dist must have its own companion
+ * license, unless it is in an explicitly-approved list covered by a shared
+ * license file. The previous implementation only required a sibling license
+ * when NO shared license was reachable — once dist/fonts/ANTON-OFL.txt existed
+ * that condition was always false, so a new unlicensed woff2 passed silently.
+ *
+ * `checkFontLicenses(distFiles)` is pure so tests can simulate extra fonts.
  */
-import { access, readdir } from 'node:fs/promises';
+import { readdir } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
 
 const DIST = new URL('../dist/', import.meta.url);
-const CANDIDATES = [
-  'fonts/ANTON-OFL.txt', // shared OFL for the Anton face
-  'fonts/OFL.txt',
+
+/** Shared license files that can cover only the explicitly-listed fonts below. */
+export const SHARED_LICENSE_FILES = ['fonts/ANTON-OFL.txt', 'fonts/OFL.txt'];
+
+/**
+ * The Anton face is the sole approved exception: its SIL OFL 1.1 text ships as
+ * dist/fonts/ANTON-OFL.txt. Vite hashes emitted asset filenames, so both the
+ * hashed (`assets/anton-latin-400-normal-<hash>.woff2`) and unhashed forms are
+ * listed. Any OTHER font needs its own sibling license.
+ */
+export const SHARED_OFL_APPROVED_FONTS = [
+  /^(?:assets|fonts)\/anton-latin-[^/]+\.woff2$/,
 ];
+
+/**
+ * @param {readonly string[]} files paths relative to dist/
+ * @returns {string[]} one message per unlicensed font (empty = pass)
+ */
+export function checkFontLicenses(files) {
+  const present = new Set(files);
+  const fonts = files.filter((file) => file.endsWith('.woff2'));
+  if (fonts.length === 0) return ['no woff2 found in dist/'];
+
+  const hasSharedOfl = SHARED_LICENSE_FILES.some((file) => present.has(file));
+  const problems = [];
+  for (const font of fonts) {
+    const stem = font.replace(/\.woff2$/, '');
+    const hasSibling =
+      present.has(`${stem}-OFL.txt`) || present.has(`${stem}/OFL.txt`);
+    const sharedApproved =
+      hasSharedOfl &&
+      SHARED_OFL_APPROVED_FONTS.some((pattern) => pattern.test(font));
+    if (!hasSibling && !sharedApproved) {
+      problems.push(`${font}: no companion license`);
+    }
+  }
+  return problems;
+}
 
 async function walk(dir, prefix = '') {
   let entries;
@@ -32,50 +70,14 @@ async function walk(dir, prefix = '') {
   return files.sort();
 }
 
-const files = await walk(DIST);
-const fonts = files.filter((file) => file.endsWith('.woff2'));
-if (fonts.length === 0) {
-  console.error('font license check FAILED: no woff2 found in dist/');
-  process.exit(1);
-}
-
-const reachable = [];
-for (const candidate of CANDIDATES) {
-  try {
-    await access(new URL(candidate, DIST));
-    reachable.push(candidate);
-  } catch {
-    // Not shipped under this name; try the next candidate.
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  const files = await walk(DIST);
+  const problems = checkFontLicenses(files);
+  if (problems.length > 0) {
+    console.error(`font license check FAILED:\n- ${problems.join('\n- ')}`);
+    process.exit(1);
   }
-}
-
-const problems = [];
-if (reachable.length === 0) {
-  problems.push('no font license found in dist/fonts/');
-}
-for (const font of fonts) {
-  const stem = font.replace(/\.woff2$/, '');
-  const siblings = [`${stem}-OFL.txt`, `${stem}/OFL.txt`];
-  const hasSibling = await Promise.all(
-    siblings.map(async (path) => {
-      try {
-        await access(new URL(path, DIST));
-        return true;
-      } catch {
-        return false;
-      }
-    }),
+  console.log(
+    `font license OK: ${files.filter((f) => f.endsWith('.woff2')).length} woff2 file(s), each with a sibling license or an approved shared OFL.`,
   );
-  if (!hasSibling.some(Boolean) && reachable.length === 0) {
-    problems.push(`${font}: no companion license`);
-  }
 }
-
-if (problems.length > 0) {
-  console.error(`font license check FAILED:\n- ${problems.join('\n- ')}`);
-  process.exit(1);
-}
-console.log(
-  `font license OK: ${fonts.length} woff2 file(s) with reachable license(s): ` +
-    reachable.join(', '),
-);

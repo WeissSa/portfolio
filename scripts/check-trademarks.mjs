@@ -2,7 +2,9 @@
 /**
  * Legal gate M4: franchise names may live only in gitignored docs and code
  * COMMENTS — never in index.html's head/SEO copy, README marketing copy,
- * src/content (all rendered copy/SEO constants), or public/404.html.
+ * src/content (all rendered copy/SEO constants), public/404.html, or any
+ * rendered string in src/ui / src/scene. Comments are stripped before
+ * scanning those source trees (they document the art direction, not copy).
  *
  * Internal CSS identifiers such as `--p5-red` are code, not marketing copy:
  * they are stripped from index.html together with <style>/<script> blocks.
@@ -39,22 +41,41 @@ function marketingText(text, isHtml) {
     .replace(/<script[\s\S]*?<\/script>/gi, '');
 }
 
+/** Drop // and /* *\/ comments so art-direction notes stay legal. */
+function stripSourceComments(text) {
+  return text
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/(^|[^:])\/\/.*$/gm, '$1');
+}
+
 const targets = [
-  { file: 'README.md', html: false },
-  { file: 'index.html', html: true },
-  { file: 'public/404.html', html: true },
+  { file: 'README.md', html: false, stripComments: false },
+  { file: 'index.html', html: true, stripComments: false },
+  { file: 'public/404.html', html: true, stripComments: false },
   ...(await filesIn(new URL('src/content/', ROOT))).map((file) => ({
     file: `src/content/${file}`,
     html: false,
+    stripComments: true,
+  })),
+  ...(await filesIn(new URL('src/ui/', ROOT))).map((file) => ({
+    file: `src/ui/${file}`,
+    html: false,
+    stripComments: true,
+  })),
+  ...(await filesIn(new URL('src/scene/', ROOT))).map((file) => ({
+    file: `src/scene/${file}`,
+    html: false,
+    stripComments: true,
   })),
 ];
 
 const problems = [];
 for (const target of targets) {
-  const text = marketingText(
+  let text = marketingText(
     await readFile(new URL(target.file, ROOT), 'utf8'),
     target.html,
   );
+  if (target.stripComments) text = stripSourceComments(text);
   for (const { label, pattern } of FORBIDDEN) {
     if (pattern.test(text)) {
       problems.push(

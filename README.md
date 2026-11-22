@@ -36,9 +36,11 @@ npm run size           # shell ≤120 KB + lazy 3D chunk ≤260 KB (brotli)
 
 `npm run build` copies `public/404.html` (legacy Next.js path → hash-route redirector) and a no-JS static mirror into `dist/`. `dist/index.html` carries exactly one inlined `<style>` and no dev-only critical-mirror block; CI asserts both.
 
-### Browser visual QA hooks (deferred to the owner's real-browser pass)
+### Browser visual QA (`npm run capture:qa`)
 
-The automated suite is headless (jsdom + `@react-three/test-renderer`): it verifies structure, state and a11y, **not pixels**. Playwright/Lighthouse tooling is intentionally not installed and no broken CI job was added; browser screenshots, the full device/viewport matrix and Lighthouse budgets remain a manual owner gate. For a headless-browser screenshot run:
+The unit suite is headless (jsdom + `@react-three/test-renderer`): it verifies structure, state and a11y, **not pixels**. Pixel evidence is produced by the committed Playwright harness: install Chromium once (`npx playwright install chromium`), then run `npm run capture:qa` (build → `vite preview` → deterministic capture matrix). It writes 27 screenshots and 3 recordings to `qa-evidence/`; `qa-evidence/REPORT.md` documents conditions, the device matrix and known defects. SwiftShader software WebGL is used headlessly, so judge real smoothness from frame-time metrics, not the clips. Owner visual gates remain part of the ladder.
+
+Manual browser hooks for inspection:
 
 - Force 3D without relying on GPU detection: set `localStorage.setItem('portfolio:mode', '3d')` (and clear `portfolio:3d-failed`) before loading the page. Clear the key (or click `Auto`) to return to automatic mode.
 - Routes (hash): `#/`, `#/about`, `#/experience`, `#/projects`, `#/climate`.
