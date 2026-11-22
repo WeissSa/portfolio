@@ -290,6 +290,21 @@ describe('keyboard-operable DOM equivalent (unchanged)', () => {
     expect(main.querySelector(`[data-project-id="${other}"]`)).not.toHaveClass(
       'p5-card--highlight',
     );
+
+    // A PICKED case drives the same highlight via selectedProjectId.
+    act(() =>
+      usePortfolioStore.setState({
+        hoveredProjectId: null,
+        selectedProjectId: firstId,
+      }),
+    );
+    expect(main.querySelector(`[data-project-id="${firstId}"]`)).toHaveClass(
+      'p5-card--highlight',
+    );
+    expect(main.querySelector(`[data-project-id="${other}"]`)).not.toHaveClass(
+      'p5-card--highlight',
+    );
+    act(() => usePortfolioStore.setState({ selectedProjectId: null }));
   });
 
   it('a DOM case toggle still expands details without the 3D scene', async () => {

@@ -118,12 +118,31 @@ describe('accessible DOM equivalent (never canvas-gated)', () => {
   it('highlights only the matching DOM card on book hover / selection', () => {
     usePortfolioStore.setState({ hoveredPostId: postId(first) });
     renderExperience();
+    // Scope to <main>: an open detail overlay ALSO renders a PostCard with the
+    // same data-post-id, outside the shell, after a selection is set.
+    const main = document.getElementById('main') as HTMLElement;
+    expect(main.querySelector(`[data-post-id="${postId(first)}"]`)).toHaveClass(
+      'p5-card--highlight',
+    );
     expect(
-      document.querySelector(`[data-post-id="${postId(first)}"]`),
-    ).toHaveClass('p5-card--highlight');
-    expect(
-      document.querySelector(`[data-post-id="${postId(second)}"]`),
+      main.querySelector(`[data-post-id="${postId(second)}"]`),
     ).not.toHaveClass('p5-card--highlight');
+
+    // A PICKED book drives the same highlight via selectedPostId (the 3D → DOM
+    // bridge), independently of hover.
+    act(() =>
+      usePortfolioStore.setState({
+        hoveredPostId: null,
+        selectedPostId: postId(first),
+      }),
+    );
+    expect(main.querySelector(`[data-post-id="${postId(first)}"]`)).toHaveClass(
+      'p5-card--highlight',
+    );
+    expect(
+      main.querySelector(`[data-post-id="${postId(second)}"]`),
+    ).not.toHaveClass('p5-card--highlight');
+    act(() => usePortfolioStore.setState({ selectedPostId: null }));
   });
 });
 
