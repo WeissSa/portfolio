@@ -14,6 +14,7 @@ import {
   disposeRoomMaterials,
 } from '../src/scene/art/materials';
 import {
+  choosePainterlyTargetType,
   createPainterlyUniforms,
   PAINTERLY_DEFAULTS,
   PAINTERLY_FRAGMENT_SHADER,
@@ -77,6 +78,13 @@ describe('painterly post pass (§3.5)', () => {
     expect(defaults.uTime.value).toBe(0);
     const custom = createPainterlyUniforms({ grain: 0.1 });
     expect(custom.uGrain.value).toBe(0.1);
+  });
+
+  it('falls back to an 8-bit target without EXT_color_buffer_float', () => {
+    // Half-float MSAA needs the float color-buffer extension; the pure chooser
+    // keeps the fallback decision testable without a GL context.
+    expect(choosePainterlyTargetType(true)).toBe(THREE.HalfFloatType);
+    expect(choosePainterlyTargetType(false)).toBe(THREE.UnsignedByteType);
   });
 
   it('shader sources carry the grain/vignette/grade pass', () => {

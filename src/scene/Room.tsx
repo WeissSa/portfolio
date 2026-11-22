@@ -420,7 +420,7 @@ export default function Room({
     >
       <color attach="background" args={['#0a0c10']} />
       <fog attach="fog" args={['#0a0c10', 8, 16]} />
-      <CameraRig instant={reducedMotion} paused={hidden} />
+      <CameraRig instant={reducedMotion} paused={hidden} tier={quality} />
       <RoomScene
         seed={seed}
         quality={quality}

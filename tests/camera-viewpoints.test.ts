@@ -62,4 +62,27 @@ describe('zone viewpoints', () => {
   it('falls back to home for an unknown route', () => {
     expect(getZoneViewpoint('#/nope' as Route)).toBe(HOME_VIEWPOINT);
   });
+
+  it('pulls the camera back for mobile portrait without moving the target', () => {
+    const landscape = getZoneViewpoint('/about');
+    const portrait = getZoneViewpoint('/about', {
+      portrait: true,
+      tier: 'mobile',
+    });
+    expect(portrait.target).toBe(landscape.target);
+    expect(portrait.position[2]).toBeGreaterThan(landscape.position[2]);
+    expect(portrait.position[1]).toBeGreaterThan(landscape.position[1]);
+    for (const value of portrait.position) {
+      expect(Number.isFinite(value)).toBe(true);
+    }
+  });
+
+  it('keeps the landscape framing outside the mobile-portrait variant', () => {
+    expect(
+      getZoneViewpoint('/climate', { portrait: true, tier: 'desktop' }),
+    ).toBe(getZoneViewpoint('/climate'));
+    expect(getZoneViewpoint('/', { portrait: false, tier: 'mobile' })).toBe(
+      HOME_VIEWPOINT,
+    );
+  });
 });

@@ -3,9 +3,10 @@
  *
  * React.lazy keeps three/R3F entirely out of the shell entry: the 2D shell,
  * menu and every content panel are mounted and usable before this import is
- * even requested. The Canvas renders behind the DOM shell (pointer-events:
- * none — zones are visual placeholders until commits 6–9) and fades in once
- * the lazy chunk has mounted.
+ * even requested. The Canvas renders behind the DOM shell and fades in once
+ * the lazy chunk has mounted. The loading cut-in is a SIBLING of the faded
+ * `.scene-layer` wrapper (not a child), so it stays visible at opacity 1 while
+ * the chunk downloads instead of being hidden by the wrapper's opacity:0.
  */
 import { lazy, Suspense, useCallback, useState } from 'react';
 import { usePortfolioStore } from '../state/store';
@@ -15,8 +16,10 @@ const Room = lazy(() => import('../scene/Room'));
 
 function LoadingCutIn() {
   return (
-    <div className="p5-panel p5-panel--red scene-loading">
-      <p className="p5-display text-lg text-p5-black">Loading the room…</p>
+    <div className="scene-loading-portal" aria-hidden="true">
+      <div className="p5-panel p5-panel--red scene-loading">
+        <p className="p5-display text-lg text-p5-black">Loading the room…</p>
+      </div>
     </div>
   );
 }
@@ -31,21 +34,21 @@ export function SceneLayer({ quality }: { quality: RoomQuality }) {
 
   return (
     <>
-      {/* Screen readers hear the load state; the visual indicator is inside
-          the aria-hidden layer below. */}
+      {/* Screen readers hear the load state; the visual indicator is the
+          Suspense fallback rendered OUTSIDE the opacity-faded layer below. */}
       <p role="status" aria-live="polite" className="sr-only">
         {ready ? '3D room ready' : 'Loading the 3D room'}
       </p>
-      <div
-        className={`scene-layer${ready ? ' scene-layer--ready' : ''}${
-          interactive ? ' scene-layer--interactive' : ''
-        }`}
-        aria-hidden="true"
-      >
-        <Suspense fallback={<LoadingCutIn />}>
+      <Suspense fallback={<LoadingCutIn />}>
+        <div
+          className={`scene-layer${ready ? ' scene-layer--ready' : ''}${
+            interactive ? ' scene-layer--interactive' : ''
+          }`}
+          aria-hidden="true"
+        >
           <Room quality={quality} className="scene-canvas" onReady={onReady} />
-        </Suspense>
-      </div>
+        </div>
+      </Suspense>
     </>
   );
 }

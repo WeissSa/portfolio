@@ -10,7 +10,9 @@
  *   reduced motion | save-data | no WebGL2 | very low-end  → auto 2D
  *   coarse pointer or ≤4 GB / ≤4 cores                    → mobile 3D
  *   otherwise                                             → desktop 3D
- * A persisted manual mode always beats the automatic decision.
+ * A persisted manual mode beats the automatic decision ONLY when no capability
+ * gate trips. Gates (no WebGL2 / save-data / reduced-motion / low tier) are
+ * authoritative: a stale "3d" override can never force a crashing Canvas.
  */
 import type { Mode } from '../state/store';
 
@@ -97,23 +99,42 @@ export function clearManualMode(): void {
   }
 }
 
-/** Combine hardware classification + manual override into one decision. */
+/**
+ * The first capability gate that forces 2D, or null when 3D is safe.
+ * Shared by `resolveMode` (authoritative gate) and the UI (disable 3D).
+ */
+export function capabilityGate(
+  caps: DeviceCapabilities,
+  tier: DeviceTier = classifyTier(caps),
+): Exclude<ModeReason, 'manual' | 'capable'> | null {
+  if (caps.reducedMotion) return 'reduced-motion';
+  if (caps.saveData) return 'save-data';
+  // three r187 has no WebGL1 fallback: no WebGL2 ⇒ the R3F Canvas throws on
+  // mount and (without a boundary) unmounts the whole 2D shell. Hard gate.
+  if (!caps.webgl2) return 'no-webgl2';
+  if (tier === 'low') return 'low-tier';
+  return null;
+}
+
+/**
+ * Combine hardware classification + manual override into one decision.
+ *
+ * SAFETY: capability gates win unconditionally. A stored "3d" override is
+ * honoured only on a device that can actually render it; otherwise the gate's
+ * reason is reported and the mode is forced to 2D (with the override left in
+ * storage for the user to clear via the toggle's "Auto" option).
+ */
 export function resolveMode(caps: DeviceCapabilities): ModeDecision {
   const tier = classifyTier(caps);
+  const gate = capabilityGate(caps, tier);
+  if (gate) {
+    return { mode: '2d', tier, source: 'auto', reason: gate };
+  }
   const manual = readManualMode();
   if (manual) {
     return { mode: manual, tier, source: 'manual', reason: 'manual' };
   }
-  const reason: ModeReason = caps.reducedMotion
-    ? 'reduced-motion'
-    : caps.saveData
-      ? 'save-data'
-      : !caps.webgl2
-        ? 'no-webgl2'
-        : tier === 'low'
-          ? 'low-tier'
-          : 'capable';
-  return { mode: recommendMode(caps), tier, source: 'auto', reason };
+  return { mode: '3d', tier, source: 'auto', reason: 'capable' };
 }
 
 function matches(query: string): boolean {
@@ -137,7 +158,13 @@ export function detectCapabilities(): DeviceCapabilities {
   let webgl2 = false;
   try {
     if (typeof document !== 'undefined') {
-      webgl2 = Boolean(document.createElement('canvas').getContext('webgl2'));
+      const probe = document.createElement('canvas');
+      const context = probe.getContext('webgl2');
+      webgl2 = Boolean(context);
+      // Release the probe context immediately: browsers cap live WebGL contexts
+      // per page (~8-16). Keeping this one alive can make the real R3F Canvas
+      // fail later with "too many active WebGL contexts" on starved devices.
+      context?.getExtension('WEBGL_lose_context')?.loseContext();
     }
   } catch {
     webgl2 = false;

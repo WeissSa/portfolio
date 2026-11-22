@@ -3,8 +3,9 @@
  * commit 5). All classifiers are pure; the storage helpers run against jsdom's
  * localStorage and are cleaned up by the shared afterEach in tests/setup.ts.
  */
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  capabilityGate,
   classifyTier,
   clearManualMode,
   detectCapabilities,
@@ -102,20 +103,60 @@ describe('manual mode persistence', () => {
     expect(readManualMode()).toBeNull();
   });
 
-  it('persisted manual mode beats the automatic decision', () => {
+  it('honours a persisted override only when 3D is safe', () => {
     writeManualMode('3d');
-    const decision = resolveMode(
-      withOverrides({ reducedMotion: true, webgl2: false }),
-    );
-    expect(decision).toMatchObject({
+    expect(resolveMode(capable)).toMatchObject({
       mode: '3d',
       source: 'manual',
       reason: 'manual',
-      tier: 'low',
     });
 
     writeManualMode('2d');
-    expect(resolveMode(capable).mode).toBe('2d');
+    expect(resolveMode(capable)).toMatchObject({
+      mode: '2d',
+      source: 'manual',
+      reason: 'manual',
+    });
+  });
+
+  // CRASH-ON-LOAD FIX: a stale "3d" override must never beat a capability gate.
+  it('forces 2D for webgl2:false + stored 3d', () => {
+    writeManualMode('3d');
+    expect(resolveMode(withOverrides({ webgl2: false }))).toMatchObject({
+      mode: '2d',
+      source: 'auto',
+      reason: 'no-webgl2',
+      tier: 'low',
+    });
+  });
+
+  it('forces 2D for saveData:true + stored 3d', () => {
+    writeManualMode('3d');
+    expect(resolveMode(withOverrides({ saveData: true }))).toMatchObject({
+      mode: '2d',
+      source: 'auto',
+      reason: 'save-data',
+    });
+  });
+
+  it('forces 2D for reduced-motion and very-low tier + stored 3d', () => {
+    writeManualMode('3d');
+    expect(resolveMode(withOverrides({ reducedMotion: true })).reason).toBe(
+      'reduced-motion',
+    );
+    expect(resolveMode(withOverrides({ reducedMotion: true })).mode).toBe('2d');
+    const low = withOverrides({ deviceMemory: 2 });
+    expect(resolveMode(low)).toMatchObject({ mode: '2d', reason: 'low-tier' });
+  });
+
+  it('exposes the first gate so the UI can disable the 3D option', () => {
+    expect(capabilityGate(capable)).toBeNull();
+    expect(capabilityGate(withOverrides({ webgl2: false }))).toBe('no-webgl2');
+    expect(capabilityGate(withOverrides({ saveData: true }))).toBe('save-data');
+    expect(capabilityGate(withOverrides({ reducedMotion: true }))).toBe(
+      'reduced-motion',
+    );
+    expect(capabilityGate(withOverrides({ deviceMemory: 2 }))).toBe('low-tier');
   });
 
   it('reports the reason for automatic decisions', () => {
@@ -152,5 +193,21 @@ describe('detectCapabilities', () => {
     ).toBe(true);
     // jsdom's getContext returns null → conservative 2D default.
     expect(recommendMode(caps)).toBe('2d');
+  });
+
+  it('releases the WebGL2 probe context so the real Canvas is not context-starved', () => {
+    const loseContext = vi.fn();
+    const getExtension = vi.fn(() => ({ loseContext }));
+    const fakeContext = { getExtension };
+    const spy = vi
+      .spyOn(HTMLCanvasElement.prototype, 'getContext')
+      .mockReturnValue(fakeContext as unknown as WebGL2RenderingContext);
+    try {
+      expect(detectCapabilities().webgl2).toBe(true);
+      expect(getExtension).toHaveBeenCalledWith('WEBGL_lose_context');
+      expect(loseContext).toHaveBeenCalledTimes(1);
+    } finally {
+      spy.mockRestore();
+    }
   });
 });

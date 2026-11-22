@@ -235,6 +235,19 @@
     8px 10px 0 0 rgba(255, 42, 26, 0.65);
 }
 
+/*
+ * Loading cut-in (crash-on-load fix): rendered as the Suspense fallback OUTSIDE
+ * .scene-layer, which is opacity:0 until the Canvas is ready. Its own fixed,
+ * above-the-shell wrapper keeps "Loading the room…" visible during the lazy
+ * download without ever inheriting the faded layer's opacity.
+ */
+.scene-loading-portal {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
 .scene-loading {
   position: absolute;
   left: 50%;

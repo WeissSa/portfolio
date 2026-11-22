@@ -23,6 +23,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
+import type { DeviceTier } from '../lib/device-tier';
 import { usePortfolioStore } from '../state/store';
 import { getZoneViewpoint, HOME_VIEWPOINT } from './viewpoints';
 
@@ -35,12 +36,20 @@ export interface CameraRigProps {
   instant?: boolean;
   /** Suppress invalidation while the tab is hidden. */
   paused?: boolean;
+  /** Render tier; mobile portrait gets a pulled-back framing (§3.6). */
+  tier?: DeviceTier;
 }
 
-export function CameraRig({ instant = false, paused = false }: CameraRigProps) {
+export function CameraRig({
+  instant = false,
+  paused = false,
+  tier,
+}: CameraRigProps) {
   const activeZone = usePortfolioStore((state) => state.activeZone);
   const camera = useThree((state) => state.camera);
   const invalidate = useThree((state) => state.invalidate);
+  const size = useThree((state) => state.size);
+  const portrait = size.height > size.width;
 
   // Preallocated scratch — useFrame never allocates.
   const desiredPosition = useMemo(() => new THREE.Vector3(), []);
@@ -50,7 +59,7 @@ export function CameraRig({ instant = false, paused = false }: CameraRigProps) {
   const mounted = useRef(false);
 
   useEffect(() => {
-    const viewpoint = getZoneViewpoint(activeZone);
+    const viewpoint = getZoneViewpoint(activeZone, { portrait, tier });
     desiredPosition.set(...viewpoint.position);
     desiredTarget.set(...viewpoint.target);
 
@@ -75,6 +84,8 @@ export function CameraRig({ instant = false, paused = false }: CameraRigProps) {
   }, [
     activeZone,
     instant,
+    portrait,
+    tier,
     camera,
     invalidate,
     desiredPosition,

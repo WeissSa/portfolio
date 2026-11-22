@@ -23,9 +23,16 @@ export interface ClimateState {
 export type AboutWindowId = 'bio' | 'now' | 'hobbies' | 'skills' | 'links';
 
 export interface PortfolioStore {
-  /** Rendering mode. Stage 1 ships 2D only; 3D lands with the room commits. */
+  /** Rendering mode. Starts in 2D; capability detection may opt into 3D. */
   mode: Mode;
   setMode: (mode: Mode) => void;
+  /**
+   * Capability-derived automatic mode (no manual override). The toggle's
+   * "Auto" option restores this after clearing a stuck override; safe default
+   * is 2D until App runs detection.
+   */
+  autoMode: Mode;
+  setAutoMode: (mode: Mode) => void;
 
   activeZone: Route;
   setActiveZone: (route: Route) => void;
@@ -83,6 +90,8 @@ const IDLE_CLIMATE: ClimateState = {
 export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
   mode: '2d',
   setMode: (mode) => set({ mode }),
+  autoMode: '2d',
+  setAutoMode: (autoMode) => set({ autoMode }),
 
   activeZone: '/',
   hasNavigated: false,

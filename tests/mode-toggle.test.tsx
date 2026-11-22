@@ -1,19 +1,23 @@
 /**
- * 2D/3D toggle behaviour (REWORK_PLAN §3.7, commit 5): keyboard-clickable
- * native button, aria-pressed state, persisted override, polite live
- * announcement, and the store's authoritative 2D default.
+ * Mode selector behaviour (REWORK_PLAN §3.7, commit 5): keyboard-clickable
+ * native buttons, aria-pressed state, persisted override, polite live
+ * announcement, an "Auto" recovery option and a capability-gated 3D option.
  */
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { MODE_STORAGE_KEY } from '../src/lib/device-tier';
 import { usePortfolioStore } from '../src/state/store';
 import { ModeToggle } from '../src/ui/ModeToggle';
 
 describe('ModeToggle', () => {
+  beforeEach(() => {
+    // Capable device by default so the 3D option is offered.
+    usePortfolioStore.setState({ mode: '2d', autoMode: '3d' });
+  });
+
   it('is a keyboard-operable pressed button that starts in 2D', async () => {
     const user = userEvent.setup();
-    usePortfolioStore.setState({ mode: '2d' });
     render(<ModeToggle />);
 
     const button = screen.getByRole('button', { name: '3D room mode' });
@@ -35,7 +39,6 @@ describe('ModeToggle', () => {
 
   it('writes an override that outlives the component', async () => {
     const user = userEvent.setup();
-    usePortfolioStore.setState({ mode: '2d' });
     const { unmount } = render(<ModeToggle />);
     await user.click(screen.getByRole('button', { name: '3D room mode' }));
     unmount();
@@ -43,5 +46,37 @@ describe('ModeToggle', () => {
     // Persistence is external to the store (survives remount/reload).
     expect(localStorage.getItem(MODE_STORAGE_KEY)).toBe('3d');
     expect(usePortfolioStore.getState().mode).toBe('3d');
+  });
+
+  it('offers Auto to clear a stuck override and restore the auto mode', async () => {
+    const user = userEvent.setup();
+    usePortfolioStore.setState({ mode: '3d', autoMode: '2d' });
+    localStorage.setItem(MODE_STORAGE_KEY, '3d');
+    render(<ModeToggle />);
+
+    await user.click(screen.getByRole('button', { name: 'Automatic mode' }));
+    expect(localStorage.getItem(MODE_STORAGE_KEY)).toBeNull();
+    expect(usePortfolioStore.getState().mode).toBe('2d');
+  });
+
+  it('disables 3D with an explanation when capabilities forbid it', async () => {
+    const user = userEvent.setup();
+    usePortfolioStore.setState({ mode: '2d', autoMode: '2d' });
+    render(<ModeToggle />);
+
+    const button = screen.getByRole('button', { name: '3D room mode' });
+    expect(button).toBeDisabled();
+    expect(button).toHaveAttribute('aria-describedby', 'mode-3d-unavailable');
+    expect(
+      screen.getByText(/3D mode is unavailable on this device/),
+    ).toBeInTheDocument();
+
+    await user.click(button);
+    expect(usePortfolioStore.getState().mode).toBe('2d');
+    expect(localStorage.getItem(MODE_STORAGE_KEY)).toBeNull();
+
+    // Auto still works and cannot re-enable 3D on an incapable device.
+    await user.click(screen.getByRole('button', { name: 'Automatic mode' }));
+    expect(usePortfolioStore.getState().mode).toBe('2d');
   });
 });

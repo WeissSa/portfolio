@@ -5,6 +5,7 @@
  * to the room layout moves the camera with it. Pure data + a lookup helper —
  * no three/R3F import — so viewpoint selection is unit-testable headlessly.
  */
+import type { DeviceTier } from '../lib/device-tier';
 import type { Route } from '../lib/router';
 import { DESK_TOP_HEIGHT, type Vec3 } from './art/geometry';
 import { DESK_POSITION, SCREEN_POSITION, SHELF_POSITION } from './placement';
@@ -62,7 +63,37 @@ export const ZONE_VIEWPOINTS: Record<Route, ZoneViewpoint> = {
   },
 };
 
+export interface ViewpointOptions {
+  /** True when the viewport is taller than wide (mobile portrait). */
+  portrait?: boolean;
+  /** Render tier; only the mobile tier uses the portrait variant (§3.6). */
+  tier?: DeviceTier;
+}
+
+/**
+ * Pull-back factor for mobile portrait. A tall/narrow frustum clips the
+ * landscape-composed room, so the camera retreats along its own view vector
+ * (and lifts slightly to keep the floor in frame) while still looking at the
+ * same zone target. Pure arithmetic — no three/DOM dependency.
+ */
+const PORTRAIT_PULLBACK = 1.32;
+const PORTRAIT_LIFT = 0.08;
+
 /** Safe lookup (unknown hashes are normalised to '/' by the router). */
-export function getZoneViewpoint(route: Route): ZoneViewpoint {
-  return ZONE_VIEWPOINTS[route] ?? HOME_VIEWPOINT;
+export function getZoneViewpoint(
+  route: Route,
+  options: ViewpointOptions = {},
+): ZoneViewpoint {
+  const base = ZONE_VIEWPOINTS[route] ?? HOME_VIEWPOINT;
+  if (!options.portrait || options.tier !== 'mobile') return base;
+  const [px, py, pz] = base.position;
+  const [tx, ty, tz] = base.target;
+  return {
+    position: [
+      tx + (px - tx) * PORTRAIT_PULLBACK,
+      ty + (py - ty) * PORTRAIT_PULLBACK + PORTRAIT_LIFT,
+      tz + (pz - tz) * PORTRAIT_PULLBACK,
+    ],
+    target: base.target,
+  };
 }

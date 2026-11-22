@@ -19,6 +19,12 @@
  * once. Without it the pass wrote linear values into an sRGB canvas (too dark,
  * wrong grade) and 8-bit linear storage banded badly in the shadows; the
  * half-float target removes that banding at negligible desktop cost.
+ *
+ * Robustness (crash-on-load follow-up): half-float render targets with MSAA
+ * require EXT_color_buffer_float. Contexts without it (older drivers,
+ * restricted/headless WebGL2) get an UnsignedByteType target instead — no
+ * throw, only slightly more shadow banding. The type decision is a pure helper
+ * so it is testable without a GL context.
  */
 import { useEffect, useMemo, useRef, type ReactNode } from 'react';
 import * as THREE from 'three';
@@ -105,6 +111,18 @@ export function createPainterlyUniforms(
   };
 }
 
+/**
+ * Pick the render-target type from float-color-buffer support. WebGL2
+ * half-float targets with MSAA need EXT_color_buffer_float; where it is absent
+ * an 8-bit linear target is a safe, universally supported fallback (a little
+ * more shadow banding). Pure + exported so it is testable without a GL context.
+ */
+export function choosePainterlyTargetType(
+  hasFloatColorBuffer: boolean,
+): THREE.TextureDataType {
+  return hasFloatColorBuffer ? THREE.HalfFloatType : THREE.UnsignedByteType;
+}
+
 export interface PainterlyPassProps {
   enabled: boolean;
   grain?: number;
@@ -151,11 +169,23 @@ function PainterlyPassInner({
     uniforms.uGrade.value = grade;
   }, [grain, vignette, grade, uniforms]);
 
+  // Half-float + MSAA needs EXT_color_buffer_float. Query the live context and
+  // default to the 8-bit fallback if the query is unavailable/throws (mock or
+  // restricted contexts). Documented at the top of this module.
+  const supportsFloatTargets = useMemo(() => {
+    try {
+      return Boolean(gl.getContext().getExtension('EXT_color_buffer_float'));
+    } catch {
+      return false;
+    }
+  }, [gl]);
+
   const rig = useMemo(() => {
-    // Keep the target linear (Texture.colorSpace defaults to NoColorSpace),
-    // half-float to avoid 8-bit linear banding. Desktop tier only.
+    // Keep the target linear (Texture.colorSpace defaults to NoColorSpace).
+    // Half-float avoids 8-bit linear banding where supported; otherwise fall
+    // back to unsigned byte instead of throwing on an unsupported attachment.
     const target = new THREE.WebGLRenderTarget(1, 1, {
-      type: THREE.HalfFloatType,
+      type: choosePainterlyTargetType(supportsFloatTargets),
       samples: 4, // WebGL2 MSAA; ignored where unavailable.
     });
     const quadScene = new THREE.Scene();
@@ -172,7 +202,7 @@ function PainterlyPassInner({
     quadScene.add(quad);
     uniforms.tDiffuse.value = target.texture;
     return { target, quadScene, quadCamera, material, quad };
-  }, [uniforms]);
+  }, [uniforms, supportsFloatTargets]);
 
   // Keep the target in sync with the drawing-buffer size.
   useEffect(() => {
