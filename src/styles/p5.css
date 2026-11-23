@@ -15,11 +15,37 @@
   --p5-link: #b39ddb;
   --p5-link-visited: #c4b5fd;
   --p5-cut: 10px;
+
+  /*
+   * Semantic groups exported from design-tokens.ts. Color aliases reference the
+   * canonical --p5-* declarations above (never a raw hex), so the hex guard and
+   * the :root parity tests keep their exact 8-color contract. Non-color scales
+   * mirror design-tokens.json verbatim.
+   */
+  --state-active-fg: var(--p5-black);
+  --state-active-bg: var(--p5-yellow);
+  --state-focus: var(--p5-yellow);
+  --state-visited: var(--p5-link-visited);
+  --border-panel: var(--p5-red);
+  --border-min-width: 1px;
+  --border-max-width: 2px;
+  --type-xs: 0.75rem;
+  --type-sm: 0.875rem;
+  --type-base: 1rem;
+  --type-lg: 1.15rem;
+  --type-xl: 1.5rem;
+  --type-2xl: 2.25rem;
+  --type-3xl: 3.5rem;
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
 }
 
-/* Visible P5-styled focus ring everywhere. */
+/* Visible P5-styled focus ring everywhere (state.focus = gold). */
 :focus-visible {
-  outline: 3px solid var(--p5-yellow);
+  outline: 3px solid var(--state-focus);
   outline-offset: 2px;
 }
 
@@ -36,6 +62,8 @@
   position: relative;
   background: var(--p5-ink);
   color: var(--p5-white);
+  /* Mandatory ungraded brass border, within border.minWidth/maxWidth (1–2px). */
+  border: var(--border-min-width) solid var(--border-panel);
   clip-path: polygon(
     0 var(--p5-cut),
     var(--p5-cut) 0,
@@ -46,7 +74,7 @@
     calc(2 * var(--p5-cut)) 100%,
     0 calc(100% - 2 * var(--p5-cut))
   );
-  padding: 1.25rem 1.5rem;
+  padding: 1.25rem var(--space-lg);
 }
 
 .p5-panel--red {
@@ -81,10 +109,10 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
+  gap: var(--space-sm);
   min-height: 44px;
   min-width: 44px;
-  padding: 0.5rem 1.25rem;
+  padding: var(--space-sm) 1.25rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -118,16 +146,17 @@
   color: var(--p5-white);
 }
 
+/* Ink-on-gold chip (state.activeBg/activeFg); gold-on-brass is forbidden. */
 .p5-btn[aria-current='page'],
 .p5-btn--active {
-  background: var(--p5-red);
-  color: var(--p5-black);
+  background: var(--state-active-bg);
+  color: var(--state-active-fg);
 }
 
 .p5-tag {
   display: inline-block;
   padding: 0.15rem 0.6rem;
-  font-size: 0.75rem;
+  font-size: var(--type-xs);
   font-weight: 700;
   text-transform: uppercase;
   background: var(--p5-white);
@@ -148,7 +177,7 @@
 }
 
 .p5-prose a:visited {
-  color: var(--p5-link-visited);
+  color: var(--state-visited);
 }
 
 /* Single cut-in transition, softened and reduced-motion-safe. */
@@ -248,7 +277,7 @@
 
 /* A hovered/selected 3D book highlights its accessible DOM twin. */
 .p5-panel.p5-card--highlight {
-  outline: 3px solid var(--p5-yellow);
+  outline: 3px solid var(--state-focus);
   outline-offset: 2px;
 }
 
@@ -263,7 +292,7 @@
   inset: 0;
   z-index: 10;
   overflow: auto;
-  padding: 1rem;
+  padding: var(--space-md);
   background: var(--p5-black);
   animation: desktop-zoom-in 320ms ease-out both;
 }
@@ -297,9 +326,10 @@
   background: color-mix(in srgb, var(--p5-black) 70%, transparent);
 }
 .post-detail-card {
+  /* Tokenized rust (p5.redDeep) at the old 65% alpha — no raw color literal. */
   box-shadow:
     0 0 0 3px var(--p5-ink),
-    8px 10px 0 0 rgba(255, 42, 26, 0.65);
+    8px 10px 0 0 color-mix(in srgb, var(--p5-red-deep) 65%, transparent);
 }
 
 /*

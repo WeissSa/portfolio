@@ -83,7 +83,8 @@ export default function PostBook({ post }: { post: Post }) {
       front: (
         <Face>
           {/* Trust boundary: post.descriptionHtml is trusted build-time content
-              (owner's B2 content gate), never user input — see data/posts.json. */}
+              (owner's B2 content gate), never user input — see
+              src/content/posts-data.ts. */}
           <div
             className="max-w-prose overflow-y-auto text-sm leading-relaxed"
             data-testid="post-description"

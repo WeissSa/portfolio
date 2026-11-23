@@ -4,3 +4,4 @@ export function findNonTokenRootHex(
   css: string,
   allowedValues: readonly string[],
 ): string[];
+export function canonicalValues(tokens: Record<string, unknown>): string[];

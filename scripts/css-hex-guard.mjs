@@ -49,19 +49,28 @@ export function findNonTokenRootHex(css, allowedValues) {
   return offenders;
 }
 
-function canonicalValues() {
+/** Parse the canonical token JSON — the raw source the CSS guard mirrors. */
+function readTokenJson() {
   const url = new URL('../src/styles/design-tokens.json', import.meta.url);
-  const tokens = JSON.parse(readFileSync(fileURLToPath(url), 'utf8'));
-  // Only string leaves are color values: skip anything else (numbers, nested
-  // objects, null) defensively so a future non-hex token group cannot turn
-  // `allowed` into Set{[object Object]} and silently pass every check.
+  return JSON.parse(readFileSync(fileURLToPath(url), 'utf8'));
+}
+
+/**
+ * Every leaf value from ALL token groups in the raw JSON (colors AND the
+ * width/size scales). Only string leaves are kept: numbers, nested objects and
+ * null are filtered out defensively so a future non-string group cannot turn
+ * `allowed` into Set{[object Object]} and silently pass every check. The raw
+ * parsed JSON is passed in (rather than read here) so the same pure helper
+ * serves both the Node guard and its Vitest fixture.
+ */
+export function canonicalValues(tokens) {
   return Object.values(tokens)
     .flatMap((group) => (Array.isArray(group) ? group : Object.values(group)))
     .filter((value) => typeof value === 'string');
 }
 
 function main() {
-  const allowed = canonicalValues();
+  const allowed = canonicalValues(readTokenJson());
   const stylesDir = fileURLToPath(new URL('../src/styles/', import.meta.url));
   const problems = [];
   for (const file of readdirSync(stylesDir).filter((f) => f.endsWith('.css'))) {

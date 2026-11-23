@@ -60,11 +60,10 @@ export function ClimateProjectorPanel() {
       closeOnEscape={false}
       centered
       size="min(96%, 64rem)"
-      title={
-        <p className="p5-display text-lg text-p5-red">
-          {CLIMATE_TITLE} — Projector Feed
-        </p>
-      }
+      // Mantine renders the title inside its OWN <h2> (aria-labelledby target);
+      // passing a <p> here nests block content in an h2 (invalid + React warning).
+      // The p5 display styling rides on the title via the Styles API instead.
+      title={`${CLIMATE_TITLE} — Projector Feed`}
       closeButtonProps={{
         'aria-label': 'Close climate panel',
         className: 'p5-btn p5-btn--red px-3 text-sm',
@@ -73,6 +72,7 @@ export function ClimateProjectorPanel() {
         root: 'climate-projector-overlay',
         overlay: 'post-detail-backdrop',
         content: 'p5-panel p5-panel--slashed',
+        title: 'p5-display text-lg text-p5-red',
       }}
       styles={{ content: { maxHeight: '90vh', overflowY: 'auto' } }}
     >

@@ -434,7 +434,7 @@ describe('per-background fg/bg contrast contract', () => {
     const roles = {
       black: TARGET.ink,
       ink: TARGET.panel,
-      red: TARGET.brass, // warm accent; danger uses redDeep/rust
+      red: TARGET.brass, // warm accent only; Mantine `danger` is redDeep/rust, not brass
       redDeep: TARGET.rust,
       white: TARGET.parchment,
       yellow: TARGET.gold,
@@ -443,6 +443,26 @@ describe('per-background fg/bg contrast contract', () => {
     } as const;
     for (const [role, value] of Object.entries(roles)) {
       expect(normalizeHex(p5[role as keyof typeof p5]), role).toBe(value);
+    }
+  });
+
+  it('pins the recolored scene/climate/material/room/library tokens to the unified roles', () => {
+    // TARGET is the canonical role table mirrored by design-tokens.json. The
+    // P5-only pin above leaves these recolored roles verified just indirectly
+    // (via duplicate-value checks), so assert their intended values directly.
+    const { scene, climate, material, room, library } = DESIGN_TOKENS;
+    const roles = {
+      'scene.plasterTeal': [scene.plasterTeal, TARGET.teal],
+      'scene.plasterSepia': [scene.plasterSepia, TARGET.sepia],
+      'climate.projectorRed': [climate.projectorRed, TARGET.rust],
+      'climate.projectorCloth': [climate.projectorCloth, TARGET.parchment],
+      'climate.heatmapLabelText': [climate.heatmapLabelText, TARGET.parchment],
+      'material.textureNeutral': [material.textureNeutral, TARGET.parchment],
+      'room.background': [room.background, TARGET.ink],
+      'library.bookHighlight': [library.bookHighlight, TARGET.gold],
+    } as const;
+    for (const [role, [value, target]] of Object.entries(roles)) {
+      expect(normalizeHex(value), role).toBe(target);
     }
   });
 

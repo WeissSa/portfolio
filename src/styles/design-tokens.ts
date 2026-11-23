@@ -32,6 +32,14 @@ export const DESIGN_TOKENS = {
   room: tokens.room,
   /** Miscellaneous UI-in-scene colors. */
   library: tokens.library,
+  /** Active / focus / visited semantic UI states. */
+  state: tokens.state,
+  /** Panel/card border color and its 1–2px width bounds. */
+  border: tokens.border,
+  /** Display/body stacks and the font-size scale. */
+  type: tokens.type,
+  /** Layout spacing scale. */
+  spacing: tokens.spacing,
 } as const;
 
 /**
@@ -59,7 +67,7 @@ export const MANTINE_THEME_ROLES = {
   brass: DESIGN_TOKENS.scene.brass,
   gold: DESIGN_TOKENS.scene.brassLight,
   purple: DESIGN_TOKENS.p5.linkVisited,
-  danger: DESIGN_TOKENS.p5.red,
+  danger: DESIGN_TOKENS.p5.redDeep,
   focus: DESIGN_TOKENS.p5.yellow,
 } as const;
 

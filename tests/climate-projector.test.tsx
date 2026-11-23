@@ -351,9 +351,10 @@ describe('ClimateProjectorPanel (accessible DOM equivalent)', () => {
     renderWithProviders(<ClimateProjectorPanel />);
     const dialog = screen.getByRole('dialog');
     expect(dialog).toHaveAttribute('aria-modal', 'true');
-    // The dialog's accessible name comes from the Modal's `title` prop
-    // (Mantine renders it as its own <h2> wired via aria-labelledby); the
-    // shared ClimateView heading remains inside as an <h3>.
+    // The dialog's accessible name comes from the Modal's `title` prop — a plain
+    // string Mantine renders in its OWN <h2> (aria-labelledby target). The
+    // shared ClimateView keeps its own <h2> title and <h3> widget headings as
+    // valid siblings; none is nested inside the title.
     expect(dialog).toHaveAccessibleName(`${CLIMATE_TITLE} — Projector Feed`);
     expect(
       document.getElementById('projector-panel-climate-heading'),
@@ -380,6 +381,30 @@ describe('ClimateProjectorPanel (accessible DOM equivalent)', () => {
         name: 'Climate Defense Fund of Ontario',
       }),
     ).toHaveAttribute('href', CLIMATE_ATTRIBUTION.climateDefenseFund.url);
+  });
+
+  it('renders one valid h2 from the title prop (no <p> or nested heading)', () => {
+    act(() =>
+      usePortfolioStore.setState({ climatePanelOpen: true, mode: '3d' }),
+    );
+    renderWithProviders(<ClimateProjectorPanel />);
+    const dialog = screen.getByRole('dialog');
+    const title = `${CLIMATE_TITLE} — Projector Feed`;
+    const titleHeadings = [...dialog.querySelectorAll('h2')].filter(
+      (heading) => heading.textContent?.trim() === title,
+    );
+    expect(titleHeadings).toHaveLength(1);
+    // p5-display styling survives via the Styles API `title` className.
+    expect(titleHeadings[0]!.className).toContain('p5-display');
+    expect(titleHeadings[0]!.className).toContain('text-p5-red');
+    // A <p> passed as the title used to land inside Mantine's h2 — invalid
+    // block-in-heading markup. The title h2 now holds plain text only.
+    expect(titleHeadings[0]!.querySelector('p')).toBeNull();
+    expect(
+      dialog.querySelector(
+        'h1 h1, h1 h2, h1 h3, h2 h1, h2 h2, h2 h3, h3 h1, h3 h2, h3 h3',
+      ),
+    ).toBeNull();
   });
 
   it('traps focus, closes on Esc and restores focus to the opener', async () => {

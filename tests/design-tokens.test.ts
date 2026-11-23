@@ -102,6 +102,8 @@ describe('canonical design tokens (commit 1a)', () => {
     expect(MANTINE_THEME_ROLES.background).toBe(DESIGN_TOKENS.p5.black);
     expect(MANTINE_THEME_ROLES.focus).toBe(DESIGN_TOKENS.p5.yellow);
     expect(MANTINE_THEME_ROLES.gold).toBe(DESIGN_TOKENS.scene.brassLight);
+    // Danger is rust (redDeep), never the brass/gold accent.
+    expect(MANTINE_THEME_ROLES.danger).toBe(DESIGN_TOKENS.p5.redDeep);
   });
 
   it('normalizes shorthand hex for mirror comparisons', () => {
