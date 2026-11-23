@@ -22,6 +22,9 @@
     "verify": "npm run typecheck && npm run lint && npm run format:check && npm run test && npm run build && npm run size"
   },
   "dependencies": {
+    "@gfazioli/mantine-book": "^1.0.17",
+    "@mantine/core": "^9.8.2",
+    "@mantine/hooks": "^9.8.2",
     "@react-three/drei": "^10.7.9",
     "@react-three/fiber": "^9.8.2",
     "react": "^19.1.0",
@@ -68,7 +71,7 @@
         "dist/assets/*.css",
         "dist/assets/*.woff2"
       ],
-      "limit": "120 KB"
+      "limit": "185 KB"
     }
   ]
 }

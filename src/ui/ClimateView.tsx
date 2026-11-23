@@ -1,4 +1,5 @@
 import { useEffect, useMemo } from 'react';
+import { NativeSelect } from '@mantine/core';
 import {
   CLIMATE_ATTRIBUTION,
   CLIMATE_STATEMENT,
@@ -187,24 +188,20 @@ export function ClimateView({ idPrefix = '' }: { idPrefix?: string }) {
           {HEATMAP_TITLE_PREFIX} {renderYear}
         </h3>
         <div className="mb-4 max-w-xs">
-          <label
-            htmlFor={yearSelectId}
-            className="mb-1 block text-sm font-bold"
-          >
-            {HEATMAP_YEAR_LABEL}
-          </label>
-          <select
+          <NativeSelect
             id={yearSelectId}
-            value={renderYear}
-            onChange={(event) => setSelectedYear(Number(event.target.value))}
-            className="min-h-[44px] w-full border-2 border-p5-black bg-white px-2 font-bold text-p5-black"
-          >
-            {years.map((year) => (
-              <option key={year} value={year}>
-                {year}
-              </option>
-            ))}
-          </select>
+            label={HEATMAP_YEAR_LABEL}
+            data={years.map((year) => String(year))}
+            value={String(renderYear)}
+            onChange={(event) =>
+              setSelectedYear(Number(event.currentTarget.value))
+            }
+            classNames={{
+              label: 'mb-1 block text-sm font-bold',
+              input:
+                'min-h-[44px] w-full border-2 border-p5-black bg-white px-2 font-bold text-p5-black',
+            }}
+          />
         </div>
 
         {loading && <p role="status">{TODAY_WIDGET_COPY.loading}</p>}

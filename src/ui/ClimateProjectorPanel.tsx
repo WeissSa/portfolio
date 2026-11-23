@@ -12,8 +12,9 @@
  * (shared dialog effects), and Escape defers to any sibling 3D modal.
  */
 import { useEffect } from 'react';
+import { Modal } from '@mantine/core';
 import { CLIMATE_TITLE } from '../content/climate';
-import { useFocusTrap } from '../lib/a11y';
+import { useFocusRestore } from '../lib/a11y';
 import { useClearSceneHover, useInertBackground } from '../lib/dialog-effects';
 import { usePortfolioStore } from '../state/store';
 import { ClimateView } from './ClimateView';
@@ -23,9 +24,9 @@ export function ClimateProjectorPanel() {
   const closeClimatePanel = usePortfolioStore(
     (state) => state.closeClimatePanel,
   );
-  const trapRef = useFocusTrap<HTMLDivElement>(open);
   useInertBackground(open);
   useClearSceneHover(open);
+  useFocusRestore(open);
 
   useEffect(() => {
     if (!open) return;
@@ -51,38 +52,34 @@ export function ClimateProjectorPanel() {
   if (!open) return null;
 
   return (
-    <div className="climate-projector-overlay fixed inset-0 z-30 flex items-center justify-center p-3">
-      <div
-        className="post-detail-backdrop absolute inset-0 bg-p5-black/70"
-        aria-hidden="true"
-        onClick={closeClimatePanel}
-      />
-      <div
-        ref={trapRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="projector-panel-climate-heading"
-        tabIndex={-1}
-        className="p5-panel p5-panel--slashed relative max-h-[90vh] w-[min(96%,64rem)] overflow-y-auto p-4"
-      >
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <p className="p5-display text-lg text-p5-red">
-            {CLIMATE_TITLE} — Projector Feed
-          </p>
-          <button
-            type="button"
-            onClick={closeClimatePanel}
-            aria-label="Close climate panel"
-            className="p5-btn p5-btn--red px-3 text-sm"
-          >
-            ✕
-          </button>
-        </div>
-        <ClimateView idPrefix="projector-panel" />
-        <p role="status" aria-live="polite" className="sr-only">
-          Climate projector panel opened
+    <Modal
+      opened
+      onClose={closeClimatePanel}
+      // The document-level handler above owns Escape (sibling-modal deferral);
+      // Mantine must not close on its own.
+      closeOnEscape={false}
+      centered
+      size="min(96%, 64rem)"
+      title={
+        <p className="p5-display text-lg text-p5-red">
+          {CLIMATE_TITLE} — Projector Feed
         </p>
-      </div>
-    </div>
+      }
+      closeButtonProps={{
+        'aria-label': 'Close climate panel',
+        className: 'p5-btn p5-btn--red px-3 text-sm',
+      }}
+      classNames={{
+        root: 'climate-projector-overlay',
+        overlay: 'post-detail-backdrop',
+        content: 'p5-panel p5-panel--slashed',
+      }}
+      styles={{ content: { maxHeight: '90vh', overflowY: 'auto' } }}
+    >
+      <ClimateView idPrefix="projector-panel" />
+      <p role="status" aria-live="polite" className="sr-only">
+        Climate projector panel opened
+      </p>
+    </Modal>
   );
 }

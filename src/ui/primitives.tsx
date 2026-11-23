@@ -1,4 +1,5 @@
 import type { HTMLAttributes, ReactNode } from 'react';
+import { Badge, Paper } from '@mantine/core';
 
 /** Resolve a public/ asset against the Vite base ('/portfolio/'). */
 export const assetUrl = (file: string): string =>
@@ -21,13 +22,16 @@ export function P5Panel({
       : variant === 'white'
         ? 'p5-panel--white'
         : '';
+  // Mantine Paper underneath; the unlayered p5-panel CSS keeps the diegetic
+  // jagged clip-path motifs authoritative over Mantine's layered defaults.
   return (
-    <div
+    <Paper
+      radius={0}
       className={`p5-panel ${variantClass} ${slashed ? 'p5-panel--slashed' : ''} ${className}`.trim()}
       {...rest}
     >
       {children}
-    </div>
+    </Paper>
   );
 }
 
@@ -49,7 +53,11 @@ export function DisplayTitle({
 }
 
 export function TagChip({ tag }: { tag: string }) {
-  return <li className="p5-tag">{tag}</li>;
+  return (
+    <Badge component="li" radius={0} className="p5-tag">
+      {tag}
+    </Badge>
+  );
 }
 
 export function StarMark({ label = 'Featured' }: { label?: string }) {

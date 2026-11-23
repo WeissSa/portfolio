@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
+import { renderWithProviders } from './helpers';
 import userEvent from '@testing-library/user-event';
 import { ClimateView } from '../src/ui/ClimateView';
 import { usePortfolioStore } from '../src/state/store';
@@ -36,7 +37,7 @@ describe('ClimateView (2D)', () => {
       'fetch',
       vi.fn(async () => new Promise(() => {})),
     ); // never resolves
-    render(<ClimateView />);
+    renderWithProviders(<ClimateView />);
     expect(
       screen.getByRole('heading', {
         level: 2,
@@ -91,7 +92,7 @@ describe('ClimateView (2D)', () => {
       }),
     );
 
-    render(<ClimateView />);
+    renderWithProviders(<ClimateView />);
     expect(
       await screen.findByText(/Current temperature in/),
     ).toBeInTheDocument();
@@ -129,7 +130,7 @@ describe('ClimateView (2D)', () => {
       }),
     );
 
-    render(<ClimateView />);
+    renderWithProviders(<ClimateView />);
     expect(
       await screen.findByText(/bundled historical snapshot/),
     ).toBeInTheDocument();
@@ -147,7 +148,7 @@ describe('ClimateView (2D)', () => {
       }),
     );
 
-    render(<ClimateView />);
+    renderWithProviders(<ClimateView />);
     const plaques = await screen.findAllByText(CLIMATE_UNAVAILABLE_MESSAGE);
     expect(plaques.length).toBeGreaterThanOrEqual(2); // widget + heatmap
     expect(screen.queryByRole('img')).not.toBeInTheDocument();
@@ -184,7 +185,7 @@ describe('ClimateView (2D)', () => {
       }),
     );
 
-    render(<ClimateView />);
+    renderWithProviders(<ClimateView />);
     const select = await screen.findByLabelText('Select Year');
     await waitFor(() => expect(select).toHaveValue('2024'));
     expect(
@@ -208,7 +209,7 @@ describe('ClimateView (2D)', () => {
       },
     });
 
-    render(<ClimateView />);
+    renderWithProviders(<ClimateView />);
     expect(screen.getByText(/Data source: local cache/)).toBeInTheDocument();
     expect(screen.getByText(/5 days ago/)).toBeInTheDocument();
     expect(screen.getByText(/stale/)).toBeInTheDocument();
@@ -228,7 +229,7 @@ describe('ClimateView (2D)', () => {
       },
     });
 
-    render(<ClimateView />);
+    renderWithProviders(<ClimateView />);
     expect(
       screen.getByText(/Data source: bundled snapshot \(age unknown\)/),
     ).toBeInTheDocument();
@@ -259,7 +260,7 @@ describe('ClimateView (2D)', () => {
       }),
     );
 
-    render(<ClimateView />);
+    renderWithProviders(<ClimateView />);
     const select = await screen.findByLabelText('Select Year');
     await user.selectOptions(select, '2024');
     expect(select).toHaveValue('2024');

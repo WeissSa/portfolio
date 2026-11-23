@@ -41,6 +41,29 @@ const FOCUSABLE_SELECTOR = [
 ].join(', ');
 
 /**
+ * Focus restore for Mantine-managed dialogs. Mantine's Modal traps Tab and
+ * moves focus INTO the dialog on open, but it never restores focus on close —
+ * dialogs are unmounted by store state, and the store flip must give focus
+ * back to whatever opened the dialog. Declared AFTER `useInertBackground` in
+ * the overlay components so the cleanup order is un-inert FIRST, restore
+ * SECOND (restoring into a still-inert shell would silently drop focus).
+ */
+export function useFocusRestore(active: boolean): void {
+  const saved = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    if (!active) return;
+    saved.current = document.activeElement as HTMLElement | null;
+    return () => {
+      const node = saved.current;
+      saved.current = null;
+      if (node && node.isConnected && typeof node.focus === 'function') {
+        node.focus({ preventScroll: true });
+      }
+    };
+  }, [active]);
+}
+
+/**
  * Focus trap for overlay windows (REWORK_PLAN §3.7): focuses the container
  * when activated, cycles Tab within it, and restores focus to the previously
  * focused element on deactivate.

@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { Button } from '@mantine/core';
 import {
   BIO_PARAGRAPH,
   HOBBIES_EXCERPT,
@@ -91,24 +92,28 @@ function WindowBody({ id }: { id: AboutWindowId }) {
           <h3 className="p5-display mb-2 text-lg">Links</h3>
           <ul className="flex flex-col gap-2">
             <li>
-              <a
+              <Button
+                component="a"
                 href={LINKS.github.url}
                 target="_blank"
                 rel="noopener noreferrer"
+                radius={0}
                 className="p5-btn text-sm"
               >
                 GitHub — WeissSa
-              </a>
+              </Button>
             </li>
             <li>
-              <a
+              <Button
+                component="a"
                 href={LINKS.linkedin.url}
                 target="_blank"
                 rel="noopener noreferrer"
+                radius={0}
                 className="p5-btn text-sm"
               >
                 LinkedIn — samuelbsweiss
-              </a>
+              </Button>
             </li>
           </ul>
         </>
@@ -151,14 +156,15 @@ function DesktopWindow({
         <p className="p5-display text-base">
           {spec.glyph} {spec.label}
         </p>
-        <button
+        <Button
           type="button"
           onClick={close}
           aria-label={`Close ${spec.label} window`}
+          radius={0}
           className="p5-btn p5-btn--red px-3 text-sm"
         >
           ✕
-        </button>
+        </Button>
       </div>
       <WindowBody id={spec.id} />
     </div>
@@ -210,18 +216,22 @@ export function AboutDesktop() {
         >
           {WINDOWS.map((spec) => (
             <li key={spec.id}>
-              <button
+              <Button
                 id={`about-icon-${spec.id}`}
                 type="button"
                 onClick={() => openWindow(spec.id)}
                 aria-expanded={openWindows.includes(spec.id)}
-                className="p5-btn flex min-h-[72px] w-full flex-col items-center gap-1 text-xs"
+                radius={0}
+                className="p5-btn min-h-[72px] w-full text-xs"
+                classNames={{
+                  label: 'flex flex-col items-center gap-1',
+                }}
               >
                 <span aria-hidden="true" className="text-2xl">
                   {spec.glyph}
                 </span>
                 <span>{spec.label}</span>
-              </button>
+              </Button>
             </li>
           ))}
         </ul>

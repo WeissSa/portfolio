@@ -3,7 +3,8 @@
  * native buttons, aria-pressed state, persisted override, polite live
  * announcement, an "Auto" recovery option and a capability-gated 3D option.
  */
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
+import { renderWithProviders } from './helpers';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { MODE_STORAGE_KEY } from '../src/lib/device-tier';
@@ -18,7 +19,7 @@ describe('ModeToggle', () => {
 
   it('is a keyboard-operable pressed button that starts in 2D', async () => {
     const user = userEvent.setup();
-    render(<ModeToggle />);
+    renderWithProviders(<ModeToggle />);
 
     const button = screen.getByRole('button', { name: '3D room mode' });
     expect(button).toHaveAttribute('aria-pressed', 'false');
@@ -39,7 +40,7 @@ describe('ModeToggle', () => {
 
   it('writes an override that outlives the component', async () => {
     const user = userEvent.setup();
-    const { unmount } = render(<ModeToggle />);
+    const { unmount } = renderWithProviders(<ModeToggle />);
     await user.click(screen.getByRole('button', { name: '3D room mode' }));
     unmount();
 
@@ -52,7 +53,7 @@ describe('ModeToggle', () => {
     const user = userEvent.setup();
     usePortfolioStore.setState({ mode: '3d', autoMode: '2d' });
     localStorage.setItem(MODE_STORAGE_KEY, '3d');
-    render(<ModeToggle />);
+    renderWithProviders(<ModeToggle />);
 
     await user.click(screen.getByRole('button', { name: 'Automatic mode' }));
     expect(localStorage.getItem(MODE_STORAGE_KEY)).toBeNull();
@@ -62,7 +63,7 @@ describe('ModeToggle', () => {
   it('disables 3D with an explanation when capabilities forbid it', async () => {
     const user = userEvent.setup();
     usePortfolioStore.setState({ mode: '2d', autoMode: '2d' });
-    render(<ModeToggle />);
+    renderWithProviders(<ModeToggle />);
 
     const button = screen.getByRole('button', { name: '3D room mode' });
     expect(button).toBeDisabled();

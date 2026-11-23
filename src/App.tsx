@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { Button, MantineProvider } from '@mantine/core';
+import { mantineTheme } from './styles/mantine-theme';
 import {
   clearManualMode,
   detectCapabilities,
@@ -117,72 +119,74 @@ export default function App() {
   }, [setMode, setAutoMode, setPointerFine]);
 
   return (
-    <div
-      className={`min-h-screen bg-p5-black text-white${
-        hasNavigated ? '' : ' app-initial'
-      }${mode === '3d' ? ' app-3d' : ''}`}
-    >
-      <a
-        href="#main"
-        className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:bg-p5-yellow focus:px-4 focus:py-2 focus:font-bold focus:text-p5-black"
+    <MantineProvider theme={mantineTheme} forceColorScheme="dark">
+      <div
+        className={`min-h-screen bg-p5-black text-white${
+          hasNavigated ? '' : ' app-initial'
+        }${mode === '3d' ? ' app-3d' : ''}`}
       >
-        Skip to content
-      </a>
+        <a
+          href="#main"
+          className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:bg-p5-yellow focus:px-4 focus:py-2 focus:font-bold focus:text-p5-black"
+        >
+          Skip to content
+        </a>
 
-      {/* Zone changes announced to screen readers (plan §3.3). */}
-      <p aria-live="polite" className="sr-only">
-        {ZONE_NAMES[route]} zone selected
-      </p>
+        {/* Zone changes announced to screen readers (plan §3.3). */}
+        <p aria-live="polite" className="sr-only">
+          {ZONE_NAMES[route]} zone selected
+        </p>
 
-      {/* Mounted ONLY in 3D. The lazy import never blocks the 2D shell above,
+        {/* Mounted ONLY in 3D. The lazy import never blocks the 2D shell above,
           and unmounting here tears down every GPU resource via Room's cleanup.
           The boundary keeps a Canvas-creation failure from unmounting the root. */}
-      {mode === '3d' && (
-        <SceneErrorBoundary onError={handleSceneError}>
-          <SceneLayer quality={tier} />
-        </SceneErrorBoundary>
-      )}
+        {mode === '3d' && (
+          <SceneErrorBoundary onError={handleSceneError}>
+            <SceneLayer quality={tier} />
+          </SceneErrorBoundary>
+        )}
 
-      {/* Shared DOM detail overlay for a picked 3D book (renders null when no
+        {/* Shared DOM detail overlay for a picked 3D book (renders null when no
           book is selected). Content lives here, never inside the canvas. */}
-      <PostDetailOverlay />
+        <PostDetailOverlay />
 
-      {/* Shared DOM detail dialog for a picked 3D game case (renders null when
+        {/* Shared DOM detail dialog for a picked 3D game case (renders null when
           no case is selected). Like the book overlay it sits outside the shell
           so 3D pointer gating never disables its links/buttons. */}
-      <ProjectDetailOverlay />
+        <ProjectDetailOverlay />
 
-      {/* Monitor zoom: full-screen DOM About desktop, shared with 2D mode.
+        {/* Monitor zoom: full-screen DOM About desktop, shared with 2D mode.
           Only in 3D — a stale flag can never double-render the 2D About zone. */}
-      {mode === '3d' && desktopOpen && <DesktopZoom />}
+        {mode === '3d' && desktopOpen && <DesktopZoom />}
 
-      {/* Climate projector dialog: the same ClimateView as the 2D route, in a
+        {/* Climate projector dialog: the same ClimateView as the 2D route, in a
           focus-managed panel on top of the canvas (every fact reachable in DOM). */}
-      {mode === '3d' && climatePanelOpen && <ClimateProjectorPanel />}
+        {mode === '3d' && climatePanelOpen && <ClimateProjectorPanel />}
 
-      <div className="app-shell mx-auto flex max-w-7xl flex-col gap-4 p-3 md:flex-row md:p-6">
-        <div className="md:w-64 md:shrink-0">
-          <MainMenu />
-        </div>
-        <main id="main" className="min-w-0 flex-1">
-          {/* Keyboard/SR equivalent of picking the 3D projector screen (§3.3).
+        <div className="app-shell mx-auto flex max-w-7xl flex-col gap-4 p-3 md:flex-row md:p-6">
+          <div className="md:w-64 md:shrink-0">
+            <MainMenu />
+          </div>
+          <main id="main" className="min-w-0 flex-1">
+            {/* Keyboard/SR equivalent of picking the 3D projector screen (§3.3).
               Only rendered in 3D; the 2D #/climate route is untouched. */}
-          {mode === '3d' && route === '/climate' && (
-            <button
-              type="button"
-              onClick={openClimatePanel}
-              aria-haspopup="dialog"
-              className="p5-btn p5-btn--red mb-3 min-h-[44px] px-4 font-bold"
-            >
-              Open projector info panel
-            </button>
-          )}
-          <ZoneContent
-            route={route}
-            suppressAbout={mode === '3d' && desktopOpen}
-          />
-        </main>
+            {mode === '3d' && route === '/climate' && (
+              <Button
+                type="button"
+                onClick={openClimatePanel}
+                aria-haspopup="dialog"
+                className="p5-btn p5-btn--red mb-3 min-h-[44px] px-4 font-bold"
+              >
+                Open projector info panel
+              </Button>
+            )}
+            <ZoneContent
+              route={route}
+              suppressAbout={mode === '3d' && desktopOpen}
+            />
+          </main>
+        </div>
       </div>
-    </div>
+    </MantineProvider>
   );
 }

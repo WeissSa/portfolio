@@ -1,8 +1,9 @@
 import { useId, useState } from 'react';
+import { ActionIcon, Button } from '@mantine/core';
 import { displayTags, postId, type Post } from '../content/posts';
 import { assetUrl, P5Panel, StarMark, TagChip, GitHubIcon } from './primitives';
 
-const NDA_NOTE = 'Repository is private — details under NDA.';
+export const NDA_NOTE = 'Repository is private — details under NDA.';
 
 /**
  * Expandable P5 panel for one post — the SAME component used by the 2D
@@ -47,22 +48,25 @@ export function PostCard({
         </h3>
         <div className="flex items-center gap-2">
           {post.repoUrl ? (
-            <a
+            <ActionIcon
+              component="a"
               href={post.repoUrl}
               target="_blank"
               rel="noopener noreferrer"
               aria-label={`Open repository for ${post.title} (opens in a new tab)`}
+              radius={0}
               className="p5-btn p5-btn--red px-3"
             >
               <GitHubIcon />
-            </a>
+            </ActionIcon>
           ) : null}
           {controlledExpanded === undefined && (
-            <button
+            <Button
               type="button"
               onClick={() => setInternalExpanded((open) => !open)}
               aria-expanded={expanded}
               aria-controls={descriptionId}
+              radius={0}
               className="p5-btn text-sm"
             >
               {expanded
@@ -70,7 +74,7 @@ export function PostCard({
                 : variant === 'case'
                   ? 'Open case'
                   : 'Details'}
-            </button>
+            </Button>
           )}
         </div>
       </div>

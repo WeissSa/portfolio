@@ -4,7 +4,8 @@
  * opacity:0 until the Canvas is ready, so it was invisible during the load it
  * was meant to announce. It must be a sibling of the faded wrapper.
  */
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
+import { renderWithProviders } from './helpers';
 import { describe, expect, it, vi } from 'vitest';
 import { SceneLayer } from '../src/ui/SceneLayer';
 
@@ -14,7 +15,7 @@ vi.mock('../src/scene/Room', () => new Promise(() => {}));
 
 describe('SceneLayer loading fallback', () => {
   it('renders the indicator visibly, outside the opacity-faded wrapper', () => {
-    render(<SceneLayer quality="mobile" />);
+    renderWithProviders(<SceneLayer quality="mobile" />);
 
     const loading = screen.getByText(/Loading the room/);
     expect(loading).toBeInTheDocument();

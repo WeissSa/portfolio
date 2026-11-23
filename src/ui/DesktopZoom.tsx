@@ -11,6 +11,7 @@
  * later Esc returns to the room. A polite live region announces the transition.
  */
 import { useEffect } from 'react';
+import { Button } from '@mantine/core';
 import { useFocusTrap } from '../lib/a11y';
 import { useClearSceneHover, useInertBackground } from '../lib/dialog-effects';
 import { usePortfolioStore } from '../state/store';
@@ -49,14 +50,15 @@ export function DesktopZoom() {
       <p role="status" aria-live="polite" className="sr-only">
         About desktop opened. Press Escape to return to the 3D room.
       </p>
-      <button
+      <Button
         type="button"
         onClick={closeDesktop}
         aria-label="Close desktop and return to the room"
+        radius={0}
         className="p5-btn p5-btn--red desktop-zoom__close"
       >
         ✕ Back to room
-      </button>
+      </Button>
       <AboutDesktop />
     </div>
   );

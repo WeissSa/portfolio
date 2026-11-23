@@ -8,7 +8,8 @@
  * screenshot review). jsdom has no 2D canvas, so a recording context is
  * injected via the zone's canvasFactory seam.
  */
-import { act, render, screen, waitFor, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
+import { renderWithProviders } from './helpers';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as THREE from 'three';
@@ -309,7 +310,7 @@ describe('ClimateProjector R3F zone (headless, structural)', () => {
     act(() => next.props.onClick({ stopPropagation: vi.fn() }));
     expect(usePortfolioStore.getState().selectedClimateYear).toBe(2025);
 
-    render(<ClimateView />);
+    renderWithProviders(<ClimateView />);
     expect(screen.getByLabelText('Select Year')).toHaveValue('2025');
 
     await renderer.unmount();
@@ -346,7 +347,7 @@ describe('ClimateProjectorPanel (accessible DOM equivalent)', () => {
     act(() =>
       usePortfolioStore.setState({ climatePanelOpen: true, mode: '3d' }),
     );
-    render(<ClimateProjectorPanel />);
+    renderWithProviders(<ClimateProjectorPanel />);
     const dialog = screen.getByRole('dialog');
     expect(dialog).toHaveAttribute('aria-modal', 'true');
     // aria-labelledby resolves to the shared ClimateView heading.
@@ -384,7 +385,7 @@ describe('ClimateProjectorPanel (accessible DOM equivalent)', () => {
     act(() =>
       usePortfolioStore.setState({ climatePanelOpen: true, mode: '3d' }),
     );
-    render(<ClimateProjectorPanel />);
+    renderWithProviders(<ClimateProjectorPanel />);
     const dialog = await screen.findByRole('dialog');
     await waitFor(() =>
       expect(dialog).toContainElement(document.activeElement as HTMLElement),
@@ -401,7 +402,7 @@ describe('ClimateProjectorPanel (accessible DOM equivalent)', () => {
     act(() =>
       usePortfolioStore.setState({ climatePanelOpen: true, mode: '3d' }),
     );
-    render(<ClimateProjectorPanel />);
+    renderWithProviders(<ClimateProjectorPanel />);
     await user.click(
       screen.getByRole('button', { name: 'Close climate panel' }),
     );
@@ -413,7 +414,7 @@ describe('ClimateProjectorPanel (accessible DOM equivalent)', () => {
     act(() =>
       usePortfolioStore.setState({ climatePanelOpen: true, mode: '3d' }),
     );
-    render(<ClimateProjectorPanel />);
+    renderWithProviders(<ClimateProjectorPanel />);
     await user.click(
       document.querySelector(
         '.climate-projector-overlay .post-detail-backdrop',
@@ -426,7 +427,7 @@ describe('ClimateProjectorPanel (accessible DOM equivalent)', () => {
     act(() =>
       usePortfolioStore.setState({ climatePanelOpen: true, mode: '3d' }),
     );
-    render(<ClimateProjectorPanel />);
+    renderWithProviders(<ClimateProjectorPanel />);
     await screen.findByRole('dialog');
 
     // Inject a sibling overlay flag directly (the open actions would clear the
@@ -445,7 +446,7 @@ describe('keyboard path in 3D + unchanged 2D route', () => {
   it('Tab/Enter on the projector trigger opens the dialog in 3D', async () => {
     const user = userEvent.setup();
     window.location.hash = '#/climate';
-    render(<App />); // mounts in 2D (jsdom has no WebGL2)
+    renderWithProviders(<App />); // mounts in 2D (jsdom has no WebGL2)
     act(() => usePortfolioStore.setState({ mode: '3d' }));
 
     const trigger = screen.getByRole('button', {
@@ -470,7 +471,7 @@ describe('keyboard path in 3D + unchanged 2D route', () => {
     act(() =>
       usePortfolioStore.setState({ mode: '2d', climatePanelOpen: false }),
     );
-    render(<ClimateView />);
+    renderWithProviders(<ClimateView />);
     expect(
       screen.getByRole('heading', {
         level: 2,

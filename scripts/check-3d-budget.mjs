@@ -39,6 +39,21 @@ const BUCKETS = [
     pattern: /^Room-[^/]*\.js$/,
     limit: `${LIMIT_BYTES / 1000} KB`,
   },
+  {
+    // Lazy flat-book detail (@gfazioli/mantine-book) — owner decision
+    // 2026-11-22: a separate chunk so the instant shell never pays for it.
+    name: 'book',
+    pattern: /^PostBook-[^/]*\.js$/,
+    limit: '16 KB',
+  },
+  {
+    // The book package's ROUNDED-variant WebGL curl + its snapshot dependency.
+    // Emitted as lazy chunks but NEVER fetched by this app: we render the flat
+    // (pure-DOM) variant only. Bucketed so the unbucketed-chunk guard stays on.
+    name: 'book-deferred-webgl',
+    pattern: /^(CurlWebglLayer|snapdom)-[^/]*\.js$/,
+    limit: '70 KB',
+  },
 ];
 
 let names = [];

@@ -6,7 +6,7 @@ A painterly 3D portfolio room built with **Vite + React 19 + TypeScript + react-
 
 - `src/content/` — typed single source of truth (13 posts, bio, links, SEO, climate copy). `climate-config.mjs` is shared by the browser client and the build-time snapshot script.
 - `src/state/store.ts` — zustand store: mode, active hash route, climate cache, About windows, 3D selection/hover, year.
-- `src/ui/` — the arcade-pop design system and every content panel: main menu, mode toggle, Experience/Projects/Climate views, desktop-OS About (`DesktopZoom` shares `AboutDesktop`), focus-managed detail dialogs, scene error boundary.
+- `src/ui/` — the arcade-pop design system and every content panel: main menu, mode toggle, Experience/Projects/Climate views, desktop-OS About (`DesktopZoom` shares `AboutDesktop`), focus-managed detail dialogs, scene error boundary. **Mantine-first (owner decision 2026-11-22):** buttons, panels, dialogs/modals, badges, selects, tooltips and icons are Mantine 9 components themed from the canonical design tokens (`src/styles/mantine-theme.ts` derives everything from `MANTINE_THEME_ROLES` — no raw hex); Mantine styles load as `styles.layer.css` (`@layer mantine`) so the unlayered custom P5 CSS — the diegetic jagged clip-path/skew motifs — always wins the cascade. The opened-book detail is the lazy pure-DOM **flat** `@gfazioli/mantine-book` (`src/ui/PostBook.tsx`), split into its own chunk.
 - `src/scene/` — procedural painterly room (canvas-generated textures, seeded geometry, one cheap painterly pass), `CameraRig`, and four `React.lazy` zones: Library (books), Desk (monitor), Game Cases, Projector.
 - `src/lib/` — hash router, device tiering, climate math/API, a11y/focus helpers. `scripts/` — climate snapshot fetch, static HTML mirror, budget checks.
 - **2D-first streaming:** the built HTML ships the full styled content mirror and critical CSS, so menu + all zone content paint instantly. Capable devices then opt into the lazily imported 3D chunk in a post-paint effect; the room fades in when ready. 3D never blocks content.
@@ -31,8 +31,19 @@ npm install
 npm run dev            # http://localhost:5173/portfolio/#/
 npm run verify         # typecheck → lint → format:check → test → build → size
 npm run format:check   # Prettier (also in the CI verify job)
-npm run size           # shell ≤120 KB + lazy 3D chunk ≤260 KB (brotli)
+npm run size           # shell ≤185 KB + lazy 3D chunk ≤260 KB + book chunk ≤16 KB (brotli)
 ```
+
+> **Shell budget note (Mantine-first commit, 2026-11-23):** the interactive
+> shell budget was raised from 120 KB to **185 KB brotli** (measured 177.34 KB
+> after adopting Mantine 9 as the primary UI library). This is an honest,
+> owner-prioritized trade: the static HTML mirror + inline critical CSS still
+> give an instant first paint with zero JS, and Mantine only hydrates the
+> interactive shell afterwards. The lazy 3D scene chunk keeps its ≤260 KB cap
+> (measured 217.67 KB), the flat-book detail is a separate ≤16 KB chunk
+> (measured 7.78 KB), and the book package's rounded-variant WebGL chunks are
+> emitted but **never fetched** by the flat integration (bucketed at ≤70 KB in
+> `scripts/check-3d-budget.mjs` to keep the unbucketed-chunk guard on).
 
 `npm run build` copies `public/404.html` (legacy Next.js path → hash-route redirector) and a no-JS static mirror into `dist/`. `dist/index.html` carries exactly one inlined `<style>` and no dev-only critical-mirror block; CI asserts both.
 

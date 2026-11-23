@@ -8,6 +8,7 @@
  * the control keyboard-operable; a polite live region announces changes.
  */
 import { useCallback } from 'react';
+import { Button } from '@mantine/core';
 import { clearManualMode, writeManualMode } from '../lib/device-tier';
 import { usePortfolioStore, type Mode } from '../state/store';
 
@@ -34,7 +35,7 @@ export function ModeToggle() {
   return (
     <>
       <div role="group" aria-label="Rendering mode" className="flex gap-2">
-        <button
+        <Button
           type="button"
           aria-label="3D room mode"
           aria-pressed={mode === '3d'}
@@ -46,18 +47,20 @@ export function ModeToggle() {
               : '3D is unavailable on this device (WebGL2, data-saver or motion restriction)'
           }
           onClick={toggle3d}
+          radius={0}
           className="p5-btn p5-btn--red px-3 disabled:cursor-not-allowed disabled:opacity-50"
         >
           <span aria-hidden="true">{mode === '3d' ? '3D ON' : '3D'}</span>
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
           aria-label="Automatic mode"
           onClick={useAuto}
+          radius={0}
           className="p5-btn p5-btn--red px-3"
         >
           <span aria-hidden="true">Auto</span>
-        </button>
+        </Button>
       </div>
       {!canUse3d && (
         <span id="mode-3d-unavailable" className="sr-only">

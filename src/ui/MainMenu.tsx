@@ -1,4 +1,5 @@
 import { createRef, useCallback, useMemo, type KeyboardEvent } from 'react';
+import { ActionIcon, Button, Tooltip } from '@mantine/core';
 import { LINKS } from '../content/links';
 import { HEADLINE, SITE_OWNER } from '../content/bio';
 import { Route, ROUTES, useRoute } from '../lib/router';
@@ -73,41 +74,51 @@ export function MainMenu() {
       <ul className="flex flex-row gap-2 overflow-x-auto md:flex-col md:overflow-visible">
         {ROUTES.map((r, index) => (
           <li key={r} className="shrink-0 md:shrink">
-            <a
+            <Button
+              component="a"
               ref={itemRefs[index]}
               data-index={index}
               href={`#${r}`}
               onKeyDown={onKeyDown}
               aria-current={route === r ? 'page' : undefined}
+              radius={0}
               className={`p5-btn w-full justify-start text-base ${
                 route === r ? 'p5-btn--active' : ''
               }`}
             >
               <span>{MENU_LABELS[r]}</span>
-            </a>
+            </Button>
           </li>
         ))}
       </ul>
       <div className="mt-4 flex gap-2 md:mt-6">
         <ModeToggle />
-        <a
-          href={LINKS.github.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label="GitHub (opens in a new tab)"
-          className="p5-btn p5-btn--red px-3"
-        >
-          <GitHubIcon />
-        </a>
-        <a
-          href={LINKS.linkedin.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label="LinkedIn (opens in a new tab)"
-          className="p5-btn p5-btn--red px-3"
-        >
-          <LinkedInIcon />
-        </a>
+        <Tooltip label="GitHub" withArrow>
+          <ActionIcon
+            component="a"
+            href={LINKS.github.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="GitHub (opens in a new tab)"
+            radius={0}
+            className="p5-btn p5-btn--red px-3"
+          >
+            <GitHubIcon />
+          </ActionIcon>
+        </Tooltip>
+        <Tooltip label="LinkedIn" withArrow>
+          <ActionIcon
+            component="a"
+            href={LINKS.linkedin.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="LinkedIn (opens in a new tab)"
+            radius={0}
+            className="p5-btn p5-btn--red px-3"
+          >
+            <LinkedInIcon />
+          </ActionIcon>
+        </Tooltip>
       </div>
     </nav>
   );

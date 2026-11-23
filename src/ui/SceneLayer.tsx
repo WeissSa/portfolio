@@ -9,6 +9,7 @@
  * the chunk downloads instead of being hidden by the wrapper's opacity:0.
  */
 import { lazy, Suspense, useCallback, useState } from 'react';
+import { Paper } from '@mantine/core';
 import { usePortfolioStore } from '../state/store';
 import type { RoomQuality } from '../scene/Room';
 
@@ -17,9 +18,9 @@ const Room = lazy(() => import('../scene/Room'));
 function LoadingCutIn() {
   return (
     <div className="scene-loading-portal" aria-hidden="true">
-      <div className="p5-panel p5-panel--red scene-loading">
+      <Paper radius={0} className="p5-panel p5-panel--red scene-loading">
         <p className="p5-display text-lg text-p5-black">Loading the room…</p>
-      </div>
+      </Paper>
     </div>
   );
 }
