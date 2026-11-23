@@ -32,6 +32,7 @@ import {
   withPulledOutLabel,
   type RoomPart,
 } from '../src/scene/art/geometry';
+import { PALETTE } from '../src/scene/art/palette';
 
 const partsFingerprint = (parts: readonly RoomPart[]): string =>
   parts
@@ -208,7 +209,7 @@ describe('library books (commit 6)', () => {
     );
   });
 
-  it('features are visibly larger and use a P5/brass accent color', () => {
+  it('features are visibly larger and use a tokenized accent color', () => {
     const featured = books.filter((book) => book.featured);
     const plain = books.filter((book) => !book.featured);
     expect(featured.length).toBeGreaterThan(0);
@@ -217,7 +218,9 @@ describe('library books (commit 6)', () => {
       Math.max(...plain.map((b) => b.scale[0])),
     );
     for (const book of featured) {
-      expect(['#ff2a1a', '#d4b06a']).toContain(book.color);
+      // Commit 2 recolors P5 red → brass and keeps brassLight → gold; both are
+      // read from the canonical tokens so the assertion follows the palette.
+      expect([PALETTE.p5Red, PALETTE.brassLight]).toContain(book.color);
     }
   });
 

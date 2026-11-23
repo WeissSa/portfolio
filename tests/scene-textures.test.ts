@@ -22,6 +22,7 @@ import {
   type TexturePlan,
 } from '../src/scene/art/textures';
 import { POSTS, PROJECTS } from '../src/content/index';
+import { PALETTE } from '../src/scene/art/palette';
 
 const fingerprint = (plan: TexturePlan): string => JSON.stringify(plan.ops);
 const textOps = (plan: TexturePlan): Extract<PaintOp, { kind: 'text' }>[] =>
@@ -147,9 +148,12 @@ describe('game case labels', () => {
     }
   });
 
-  it('uses the P5 red/black/white language', () => {
-    expect(JSON.stringify(plan.ops)).toContain('#ff2a1a');
-    expect(JSON.stringify(plan.ops)).toContain('#f5f2ea');
+  it('uses the tokenized P5 accent/parchment language', () => {
+    // Commit 2 recolors P5 red → brass and P5 white → parchment; assert the
+    // plan derives those colors from the canonical tokens rather than pinning
+    // the old hexes (a future palette change must not need a test edit).
+    expect(JSON.stringify(plan.ops)).toContain(PALETTE.p5Red);
+    expect(JSON.stringify(plan.ops)).toContain(PALETTE.p5White);
   });
 });
 

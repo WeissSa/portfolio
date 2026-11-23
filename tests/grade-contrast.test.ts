@@ -1,11 +1,11 @@
 /**
  * Deterministic computed-contrast contract (commit 1b).
  *
- * The fg/bg PAIR table below is the *commit-2 target palette* (ART_OVERHAUL_PLAN
- * §1). It is pinned here BEFORE any hex changes so we can prove the planned
- * recolor is WCAG-safe — and so commit 2 only has to move the canonical token
- * values, not invent new contrast rules. Current P5 pairs are checked too, to
- * keep commits 1a/1b provably zero-visual-change.
+ * The fg/bg PAIR table below is the unified commit-2 palette (ART_OVERHAUL_PLAN
+ * §1). Commit 2 moved the canonical token values onto these exact hexes; a
+ * guard below asserts DESIGN_TOKENS.p5 still equals each target role, so a
+ * later token drift cannot silently invalidate this contract. The recolored
+ * semantic P5 pairs are checked too, so every shipped role stays ≥4.5:1.
  *
  * Two contrast domains are distinguished:
  *   - DOM text is NOT rendered through the WebGL post pass → the pre-grade
@@ -18,12 +18,13 @@
  * the linear input, vignette is the shipped uVignette=0.55 sampled at vUv,
  * grain is uGrain=0.05 × a hash sample in [-0.5, 0.5]. A corner vignette
  * genuinely compresses contrast; the known sub-3 brass-border case there is
- * recorded (not hidden) below for commit 2/4 to address in DOM instead.
+ * recorded (not hidden) below — DOM borders stay ungraded and use the
+ * tokenized 1–2px brass panel border (ink/panel themselves are only 1.15:1).
  */
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { DESIGN_TOKENS } from '../src/styles/design-tokens';
+import { DESIGN_TOKENS, normalizeHex } from '../src/styles/design-tokens';
 import {
   GRADE_CONSTANTS,
   gradedHexContrast,
@@ -40,7 +41,7 @@ import { PAINTERLY_DEFAULTS } from '../src/scene/effects/PainterlyPass';
 const read = (relative: string): string =>
   readFileSync(fileURLToPath(new URL(relative, import.meta.url)), 'utf8');
 
-/** Commit-2 target roles (ART_OVERHAUL_PLAN §1) — NOT yet applied to tokens. */
+/** Unified commit-2 roles (ART_OVERHAUL_PLAN §1) — now applied to tokens. */
 const TARGET = {
   ink: '#10191a',
   panel: '#1c2626',
@@ -53,7 +54,7 @@ const TARGET = {
   lettering: '#f0e8d6',
   visited: '#c4b5fd',
   rust: '#e0703a',
-  link: '#93c5fd',
+  link: '#b39ddb',
 } as const;
 
 type Pair = {
@@ -397,11 +398,11 @@ describe('per-background fg/bg contrast contract', () => {
       expect(nominal, `${pair.id} nominal`).toBeGreaterThanOrEqual(4.5);
       // Measured worst cases across the whole lamp/vignette/grain grid, under
       // true WCAG (Rec.709) luminance: lettering/raised ≈ 3.92:1 and
-      // lettering/ink ≈ 4.23:1 (dim lamp + corner + positive grain). The
-      // corner vignette/grain floor is a real finding for commit 2/4: keep
-      // in-world lettering away from corners or soften the corner grade
-      // before relying on AA there. The 3.9 floor documents that corner
-      // reality honestly (nominal-center stays ≥4.5, asserted above).
+      // lettering/ink ≈ 4.23:1 (dim lamp + corner + positive grain). This is a
+      // documented recolor tradeoff: in-world lettering stays central on a
+      // dark inlay panel (#f0e8d6 on ink ≈ 14.6:1 pre-grade, never on brass),
+      // and the shipped corner vignette already holds the graded worst ≥3.9:1.
+      // The 3.9 floor records that corner reality honestly (center ≥4.5 above).
       expect(gradedWorst(pair), `${pair.id} worst`).toBeGreaterThanOrEqual(3.9);
     }
     const letteringOnInk = PAIR_TABLE.find((p) => p.id === 'lettering/ink');
@@ -421,22 +422,40 @@ describe('per-background fg/bg contrast contract', () => {
       expect(nominal, pair.id).toBeGreaterThanOrEqual(3);
     }
     // Known fragility (documented, not silently passing): the corner vignette
-    // multiplies both sides of a brass border and pulls it under 3:1. Commit 2
-    // must keep UI borders in the DOM (ungraded) or soften the corner vignette.
+    // multiplies both sides of a brass border and pulls it under 3:1. The
+    // tokenized 1–2px panel border is therefore a DOM (ungraded) rule — the
+    // graded in-world border case is intentionally not relied upon.
     const brassPanel = PAIR_TABLE.find((p) => p.id === 'brass-border/panel');
     expect(brassPanel && gradedWorst(brassPanel)).toBeLessThan(3);
   });
 
-  it('keeps the CURRENT P5 pairs ≥4.5:1 pre-grade (zero visual change in 1a/1b)', () => {
+  it('pins the canonical P5 tokens to the unified target roles', () => {
     const { p5 } = DESIGN_TOKENS;
-    const currentPairs = [
+    const roles = {
+      black: TARGET.ink,
+      ink: TARGET.panel,
+      red: TARGET.brass, // warm accent; danger uses redDeep/rust
+      redDeep: TARGET.rust,
+      white: TARGET.parchment,
+      yellow: TARGET.gold,
+      link: TARGET.link, // purple accent
+      linkVisited: TARGET.visited,
+    } as const;
+    for (const [role, value] of Object.entries(roles)) {
+      expect(normalizeHex(p5[role as keyof typeof p5]), role).toBe(value);
+    }
+  });
+
+  it('keeps every recolored semantic P5 pair ≥4.5:1 pre-grade', () => {
+    const { p5 } = DESIGN_TOKENS;
+    const recoloredPairs = [
       [p5.white, p5.ink],
       [p5.ink, p5.red],
       [p5.ink, p5.yellow],
       [p5.link, p5.ink],
       [p5.linkVisited, p5.ink],
     ] as const;
-    for (const [fg, bg] of currentPairs) {
+    for (const [fg, bg] of recoloredPairs) {
       expect(hexContrast(fg, bg), `${fg} on ${bg}`).toBeGreaterThanOrEqual(4.5);
     }
   });

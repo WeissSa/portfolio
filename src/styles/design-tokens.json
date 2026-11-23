@@ -1,12 +1,12 @@
 {
   "p5": {
-    "black": "#0a0a0a",
-    "ink": "#16161a",
-    "red": "#ff2a1a",
-    "redDeep": "#c81e10",
-    "white": "#ffffff",
-    "yellow": "#ffd400",
-    "link": "#93c5fd",
+    "black": "#10191a",
+    "ink": "#1c2626",
+    "red": "#b08d4f",
+    "redDeep": "#e0703a",
+    "white": "#e8e0cf",
+    "yellow": "#d4b06a",
+    "link": "#b39ddb",
     "linkVisited": "#c4b5fd"
   },
   "scene": {
@@ -14,7 +14,7 @@
     "woodMid": "#4a3323",
     "woodWarm": "#6b4a2e",
     "woodGrain": "#3a281a",
-    "plasterTeal": "#3f5a58",
+    "plasterTeal": "#5f9c95",
     "plasterSepia": "#6d5b45",
     "plasterDark": "#2c3a3a",
     "brass": "#b08d4f",
@@ -23,13 +23,13 @@
     "rugIndigo": "#2c3350",
     "rugRust": "#7a3b2e",
     "rugCream": "#c9b98f",
-    "paper": "#d9cdb2",
+    "paper": "#e8e0cf",
     "paperDark": "#b7a98c",
-    "ink": "#16161a",
+    "ink": "#1c2626",
     "metalDark": "#23262b",
-    "p5Red": "#ff2a1a",
-    "p5Yellow": "#ffd400",
-    "p5White": "#f5f2ea",
+    "p5Red": "#b08d4f",
+    "p5Yellow": "#d4b06a",
+    "p5White": "#e8e0cf",
     "lampWarm": "#ffb45e",
     "nightBlue": "#1b2a4a",
     "nightGlow": "#2e4a7d",
@@ -48,7 +48,7 @@
     "#37514a"
   ],
   "material": {
-    "textureNeutral": "#ffffff",
+    "textureNeutral": "#e8e0cf",
     "woodTint": "#9c8a76",
     "monitorBack": "#141a20",
     "monitorEmissive": "#8fb7d9",
@@ -59,18 +59,18 @@
     "bookHeroEmissive": "#6b3f16"
   },
   "texture": {
-    "paperLight": "#efe6cd",
-    "monitorFill": "#101418",
+    "paperLight": "#e8e0cf",
+    "monitorFill": "#10191a",
     "monitorWash": "#16222a",
     "monitorText": "#9aa3ad",
     "projectorCaption": "#4a4f57"
   },
   "climate": {
-    "projectorCloth": "#d9cdb2",
-    "projectorInk": "#161616",
-    "projectorRed": "#c8102e",
-    "projectorPlaqueText": "#f2e9d0",
-    "heatmapLabelText": "#ffffff"
+    "projectorCloth": "#e8e0cf",
+    "projectorInk": "#10191a",
+    "projectorRed": "#e0703a",
+    "projectorPlaqueText": "#f0e8d6",
+    "heatmapLabelText": "#e8e0cf"
   },
   "room": {
     "ambient": "#93a7bd",
@@ -78,9 +78,38 @@
     "lamp": "#ffb45e",
     "deskLamp": "#ffc978",
     "monitorSpill": "#9fd8ff",
-    "background": "#0a0c10"
+    "background": "#10191a"
   },
   "library": {
-    "bookHighlight": "#fff3d0"
+    "bookHighlight": "#d4b06a"
+  },
+  "state": {
+    "activeFg": "#10191a",
+    "activeBg": "#d4b06a",
+    "focus": "#d4b06a",
+    "visited": "#c4b5fd"
+  },
+  "border": {
+    "panel": "#b08d4f",
+    "minWidth": "1px",
+    "maxWidth": "2px"
+  },
+  "type": {
+    "display": "Anton, 'Arial Narrow', Haettenschweiler, sans-serif",
+    "body": "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+    "xs": "0.75rem",
+    "sm": "0.875rem",
+    "base": "1rem",
+    "lg": "1.15rem",
+    "xl": "1.5rem",
+    "2xl": "2.25rem",
+    "3xl": "3.5rem"
+  },
+  "spacing": {
+    "xs": "0.25rem",
+    "sm": "0.5rem",
+    "md": "1rem",
+    "lg": "1.5rem",
+    "xl": "2rem"
   }
 }

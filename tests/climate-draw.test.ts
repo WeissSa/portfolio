@@ -15,6 +15,7 @@ import {
   HEATMAP_TOP_LABELS,
   heatmapSize,
 } from '../src/lib/climate-draw';
+import { DESIGN_TOKENS } from '../src/styles/design-tokens';
 
 interface RecordedCall {
   method: string;
@@ -124,7 +125,10 @@ describe('drawHeatmap (pure, shared by 2D + 3D)', () => {
   it('uses the DOM palette by default and reports its native size', () => {
     const recorder = recordingContext();
     drawHeatmap(recorder.ctx, CELLS, 2024);
-    expect(DEFAULT_HEATMAP_PALETTE.text).toBe('#ffffff');
+    // Commit 2 recolors heatmap label text to parchment (token-derived).
+    expect(DEFAULT_HEATMAP_PALETTE.text).toBe(
+      DESIGN_TOKENS.climate.heatmapLabelText,
+    );
     const size = heatmapSize(CELLS, 2024);
     // Jan 1 2024 = Monday (1) → one week column for four sparse cells.
     expect(size).toEqual({

@@ -11,6 +11,7 @@ import {
   findRawHexOutsideRoot,
   stripCssComments,
 } from '../scripts/css-hex-guard.mjs';
+import { ALL_TOKEN_VALUES } from '../src/styles/design-tokens';
 
 const read = (relative: string): string =>
   readFileSync(fileURLToPath(new URL(relative, import.meta.url)), 'utf8');
@@ -42,16 +43,9 @@ describe('CSS color guard', () => {
   });
 
   it('finds no offenders in the real stylesheets', () => {
-    const allowed = [
-      '#0a0a0a',
-      '#16161a',
-      '#ff2a1a',
-      '#c81e10',
-      '#ffffff',
-      '#ffd400',
-      '#93c5fd',
-      '#c4b5fd',
-    ];
+    // Derive the allowlist from the canonical tokens: the commit-2 recolor
+    // changes every P5 :root hex, so a pinned fixture would go stale silently.
+    const allowed = ALL_TOKEN_VALUES;
     for (const file of ['p5.css', 'index.css', 'static-mirror.css']) {
       const css = read(`../src/styles/${file}`);
       expect(findRawHexOutsideRoot(css), file).toEqual([]);
