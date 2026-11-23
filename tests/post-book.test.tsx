@@ -145,6 +145,31 @@ describe('opened book — flat variant, lazy chunk', () => {
 });
 
 describe('opened book — dialog a11y model preserved', () => {
+  it('renders one valid h2 from the title prop (no nested headings) and keeps the diegetic class contract', async () => {
+    const { dialog } = await openBook();
+    // Mantine renders the title prop inside its OWN h2; passing an <h2> here
+    // used to nest h2-in-h2 (invalid HTML + React warning).
+    const headings = dialog.querySelectorAll('h2');
+    expect(headings).toHaveLength(1);
+    expect(headings[0]).toHaveTextContent(first.title);
+    // p5-display styling survives via the Styles API `title` className.
+    expect(headings[0]!.className).toContain('p5-display');
+    expect(headings[0]!.className).toContain('text-p5-red');
+    // No heading may nest inside another heading anywhere in the dialog.
+    expect(
+      dialog.querySelector(
+        'h1 h1, h1 h2, h1 h3, h2 h1, h2 h2, h2 h3, h3 h1, h3 h2, h3 h3',
+      ),
+    ).toBeNull();
+    // Diegetic parity: slashed panel card + the shared ink backdrop class
+    // (which also carries the 70% p5-black scrim rule in p5.css).
+    expect(dialog.className).toContain('p5-panel--slashed');
+    expect(dialog.className).toContain('post-detail-card');
+    expect(
+      document.querySelector('.post-detail-overlay .post-detail-backdrop'),
+    ).not.toBeNull();
+  });
+
   it('keeps ONE focus trap: focus lives in the dialog and returns to the opener on Esc', async () => {
     const { opener, dialog } = await openBook();
     await waitFor(() =>

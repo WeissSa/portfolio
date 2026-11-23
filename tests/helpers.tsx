@@ -1,8 +1,9 @@
 /**
- * Shared test helpers. Mantine v9 REQUIRES a MantineProvider in the tree
- * (components throw without one), so any test that renders a component
- * directly — instead of <App/>, which mounts the provider itself — renders
- * through `renderWithProviders` to get the same themed provider the app uses.
+ * Shared test helpers. Mantine components do NOT throw without a
+ * MantineProvider — but they render with the default (unthemed) theme, so any
+ * test that renders a component directly — instead of <App/>, which mounts the
+ * provider itself — renders through `renderWithProviders` for theme parity
+ * with the app (same themed provider, forced dark scheme).
  */
 import { render, type RenderOptions } from '@testing-library/react';
 import type { ReactElement } from 'react';

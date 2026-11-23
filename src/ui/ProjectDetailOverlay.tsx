@@ -55,9 +55,10 @@ export function ProjectDetailOverlay() {
       closeOnEscape={false}
       centered
       size="min(94%, 44rem)"
-      title={
-        <h2 className="p5-display text-lg text-p5-red">{project.title}</h2>
-      }
+      // Mantine renders the title inside its OWN <h2> (aria-labelledby target);
+      // passing a heading here would nest h2-in-h2 (invalid + React warning).
+      // The p5 display styling rides on the title via the Styles API instead.
+      title={project.title}
       closeButtonProps={{
         'aria-label': `Close details for ${project.title}`,
         className: 'p5-btn p5-btn--red px-3 text-sm',
@@ -66,6 +67,7 @@ export function ProjectDetailOverlay() {
         root: 'project-detail-overlay post-detail-overlay',
         overlay: 'post-detail-backdrop',
         content: 'p5-panel p5-panel--slashed post-detail-card',
+        title: 'p5-display text-lg text-p5-red',
       }}
       styles={{ content: { maxHeight: '90vh', overflowY: 'auto' } }}
     >

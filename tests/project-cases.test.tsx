@@ -195,6 +195,27 @@ describe('shared project detail dialog', () => {
     ).toBeInTheDocument();
   });
 
+  it('titles the dialog with one valid h2 (title prop, no nested headings)', async () => {
+    usePortfolioStore.setState({ selectedProjectId: postId(publicProject) });
+    renderProjects();
+
+    const dialog = screen.getByRole('dialog', {
+      name: new RegExp(publicProject.title),
+    });
+    // Mantine renders the title prop inside its OWN h2; passing an <h2> here
+    // used to nest h2-in-h2 (invalid HTML + React warning). The p5-display
+    // styling rides on the Styles API `title` className instead.
+    const headings = dialog.querySelectorAll('h2');
+    expect(headings).toHaveLength(1);
+    expect(headings[0]).toHaveTextContent(publicProject.title);
+    expect(headings[0]!.className).toContain('p5-display');
+    expect(
+      dialog.querySelector(
+        'h1 h1, h1 h2, h1 h3, h2 h1, h2 h2, h2 h3, h3 h1, h3 h2, h3 h3',
+      ),
+    ).toBeNull();
+  });
+
   it('only one modal dialog can own the screen', async () => {
     usePortfolioStore.setState({ selectedPostId: postId(PROJECTS[1]!) });
     act(() => usePortfolioStore.getState().selectProject(firstId));

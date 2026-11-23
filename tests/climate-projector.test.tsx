@@ -19,6 +19,7 @@ import {
   CLIMATE_ATTRIBUTION,
   CLIMATE_ATTRIBUTION_LINE,
   CLIMATE_STATEMENT,
+  CLIMATE_TITLE,
 } from '../src/content/climate';
 import { flatToHistorical, type HeatmapCell } from '../src/lib/climate';
 import { ClimateView } from '../src/ui/ClimateView';
@@ -350,7 +351,10 @@ describe('ClimateProjectorPanel (accessible DOM equivalent)', () => {
     renderWithProviders(<ClimateProjectorPanel />);
     const dialog = screen.getByRole('dialog');
     expect(dialog).toHaveAttribute('aria-modal', 'true');
-    // aria-labelledby resolves to the shared ClimateView heading.
+    // The dialog's accessible name comes from the Modal's `title` prop
+    // (Mantine renders it as its own <h2> wired via aria-labelledby); the
+    // shared ClimateView heading remains inside as an <h3>.
+    expect(dialog).toHaveAccessibleName(`${CLIMATE_TITLE} — Projector Feed`);
     expect(
       document.getElementById('projector-panel-climate-heading'),
     ).toBeInTheDocument();

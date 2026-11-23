@@ -290,6 +290,11 @@
 }
 .post-detail-backdrop {
   cursor: pointer;
+  /* Diegetic backdrop parity: the pre-Mantine dialogs used bg-p5-black/70;
+     Mantine's Overlay defaults to 60% pure black. The unlayered P5 rule wins
+     over the layered Mantine style, so all three modals keep the ink-black
+     70% scrim. */
+  background: color-mix(in srgb, var(--p5-black) 70%, transparent);
 }
 .post-detail-card {
   box-shadow:

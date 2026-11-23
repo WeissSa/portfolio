@@ -35,13 +35,13 @@ npm run size           # shell ≤185 KB + lazy 3D chunk ≤260 KB + book chunk 
 ```
 
 > **Shell budget note (Mantine-first commit, 2026-11-23):** the interactive
-> shell budget was raised from 120 KB to **185 KB brotli** (measured 177.34 KB
+> shell budget was raised from 120 KB to **185 KB brotli** (measured 177.3 KB
 > after adopting Mantine 9 as the primary UI library). This is an honest,
 > owner-prioritized trade: the static HTML mirror + inline critical CSS still
 > give an instant first paint with zero JS, and Mantine only hydrates the
 > interactive shell afterwards. The lazy 3D scene chunk keeps its ≤260 KB cap
-> (measured 217.67 KB), the flat-book detail is a separate ≤16 KB chunk
-> (measured 7.78 KB), and the book package's rounded-variant WebGL chunks are
+> (measured 217.59 KB), the flat-book detail is a separate ≤16 KB chunk
+> (measured 7.73 KB), and the book package's rounded-variant WebGL chunks are
 > emitted but **never fetched** by the flat integration (bucketed at ≤70 KB in
 > `scripts/check-3d-budget.mjs` to keep the unbucketed-chunk guard on).
 
