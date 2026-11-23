@@ -134,4 +134,37 @@ describe('critical-CSS parity (index.html ↔ static-mirror.css)', () => {
     }
     expect(declared.size).toBe(Object.keys(DESIGN_TOKENS.p5).length);
   });
+
+  it('design tokens match the critical-block :root hex in index.html', () => {
+    // Commit 2 recolors THREE hex sites: design-tokens.json, p5.css :root and
+    // the hand-authored index.html critical block. The p5.css pin above covers
+    // the second; this covers the third so the inline mirror cannot drift from
+    // the canonical tokens (a drift would show as a differently-colored first
+    // paint in dev/build that no other test catches).
+    const block = extractCriticalBlock(INDEX_HTML) ?? '';
+    const root = /:root\s*\{([\s\S]*?)\}/.exec(block)?.[1] ?? '';
+    const varName = (role: string): string =>
+      `--p5-${role.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`)}`;
+    const declared = new Map<string, string>();
+    for (const match of root.matchAll(/(--[\w-]+)\s*:\s*(#[0-9a-f]+)\s*;/gi)) {
+      declared.set(match[1] ?? '', normalizeHex(match[2] ?? ''));
+    }
+    expect(declared.size).toBeGreaterThan(0);
+    // Every declared var must be a real token role with the canonical value.
+    for (const [name, value] of declared) {
+      const role = Object.keys(DESIGN_TOKENS.p5).find(
+        (key) => varName(key) === name,
+      );
+      expect(role, `unknown critical-block var ${name}`).toBeDefined();
+      expect(value, name).toBe(normalizeHex(DESIGN_TOKENS.p5[role as never]));
+    }
+    // Every var() the critical block consumes must be defined by its own
+    // :root — the mirror rules use bare var(--p5-*) with no fallbacks.
+    const consumed = new Set(
+      [...block.matchAll(/var\((--p5-[\w-]+)\)/g)].map((m) => m[1] ?? ''),
+    );
+    for (const name of consumed) {
+      expect(declared.has(name), `${name} used but not declared`).toBe(true);
+    }
+  });
 });

@@ -17,7 +17,12 @@
 
 export type Rgb = readonly [number, number, number];
 
-/** Mirror of the GLSL numeric literals in PAINTERLY_FRAGMENT_SHADER. */
+/**
+ * Mirror of the GLSL numeric literals in PAINTERLY_FRAGMENT_SHADER. The
+ * shader's `luma` weights are Rec.601 — an artistic choice mirrored exactly
+ * here for gradeLinear(). They are NOT the WCAG luminance coefficients; see
+ * WCAG_LUMA below for contrast math.
+ */
 export const GRADE_CONSTANTS = {
   luma: [0.299, 0.587, 0.114] as const,
   shadowTint: [0.04, 0.09, 0.1] as const,
@@ -27,6 +32,15 @@ export const GRADE_CONSTANTS = {
   contrast: 1.06,
   vignetteScale: 1.9,
 } as const;
+
+/**
+ * WCAG 2.1 relative-luminance coefficients (Rec.709 / sRGB primaries). Kept
+ * separate from GRADE_CONSTANTS.luma on purpose: the grade mirrors the
+ * shader's Rec.601 luma, while every WCAG contrast computation below
+ * (relativeLuminance / contrastRatio / hexContrast / gradedHexContrast) MUST
+ * use Rec.709 weights per the WCAG 2.1 relative-luminance definition.
+ */
+export const WCAG_LUMA = [0.2126, 0.7152, 0.0722] as const;
 
 /**
  * Relative lamp illumination sampled by the contrast test (dim → bright).
@@ -136,9 +150,9 @@ export function gradeLinear(input: Rgb, params: GradeParams): Rgb {
   ];
 }
 
-/** WCAG 2.1 relative luminance of a LINEAR RGB color. */
+/** WCAG 2.1 relative luminance of a LINEAR RGB color (Rec.709 weights). */
 export function relativeLuminance(rgb: Rgb): number {
-  return dot(rgb, GRADE_CONSTANTS.luma);
+  return dot(rgb, WCAG_LUMA);
 }
 
 export function contrastRatio(luminanceA: number, luminanceB: number): number {

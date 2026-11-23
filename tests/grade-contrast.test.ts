@@ -33,7 +33,9 @@ import {
   LAMP_K,
   linearToSrgb,
   srgbToLinear,
+  WCAG_LUMA,
 } from '../src/scene/effects/grade-math';
+import { PAINTERLY_DEFAULTS } from '../src/scene/effects/PainterlyPass';
 
 const read = (relative: string): string =>
   readFileSync(fileURLToPath(new URL(relative, import.meta.url)), 'utf8');
@@ -340,12 +342,16 @@ describe('per-background fg/bg contrast contract', () => {
   });
 
   it('restricts teal/rust text to ink/panel (sub-AA on raised)', () => {
-    // Teal is clearly sub-AA on raised (4.08:1). Rust computes to 4.85:1 here
-    // (the plan quotes 4.20:1 — a formula/rounding difference), still too
-    // close to the 4.5 floor once the post-pass grade is applied, so BOTH are
-    // policy-restricted to ink/panel as text regardless of the raw number.
+    // Under true WCAG 2.1 luminance (Rec.709) teal computes to 4.28:1 and
+    // rust to 4.20:1 on raised — the plan's 4.20:1 for rust was right all
+    // along; the earlier 4.85:1 reading came from misusing the shader's
+    // Rec.601 luma weights for WCAG math (fixed in grade-math.ts). Both are
+    // under the 4.5 AA floor before the post-pass grade even applies, so the
+    // policy stands on the correct numbers: teal/rust are text-safe on
+    // ink/panel only, and decorative/non-text on raised.
     expect(hexContrast(TARGET.teal, TARGET.raised)).toBeLessThan(4.5);
-    expect(hexContrast(TARGET.rust, TARGET.raised)).toBeLessThan(5);
+    expect(hexContrast(TARGET.rust, TARGET.raised)).toBeLessThan(4.5);
+    expect(hexContrast(TARGET.rust, TARGET.raised)).toBeCloseTo(4.2, 1);
     expect(
       PAIR_TABLE.filter(
         (p) =>
@@ -389,15 +395,17 @@ describe('per-background fg/bg contrast contract', () => {
         grainSample: 0,
       });
       expect(nominal, `${pair.id} nominal`).toBeGreaterThanOrEqual(4.5);
-      // Measured worst cases across the whole lamp/vignette/grain grid are
-      // lettering/raised ≈ 3.98:1 and lettering/ink ≈ 4.28:1 (dim lamp +
-      // corner + positive grain). The corner vignette/grain floor is a real
-      // finding for commit 2/4: keep in-world lettering away from corners or
-      // soften the corner grade before relying on AA there.
+      // Measured worst cases across the whole lamp/vignette/grain grid, under
+      // true WCAG (Rec.709) luminance: lettering/raised ≈ 3.92:1 and
+      // lettering/ink ≈ 4.23:1 (dim lamp + corner + positive grain). The
+      // corner vignette/grain floor is a real finding for commit 2/4: keep
+      // in-world lettering away from corners or soften the corner grade
+      // before relying on AA there. The 3.9 floor documents that corner
+      // reality honestly (nominal-center stays ≥4.5, asserted above).
       expect(gradedWorst(pair), `${pair.id} worst`).toBeGreaterThanOrEqual(3.9);
     }
     const letteringOnInk = PAIR_TABLE.find((p) => p.id === 'lettering/ink');
-    expect(letteringOnInk && gradedWorst(letteringOnInk)).toBeGreaterThan(4.25);
+    expect(letteringOnInk && gradedWorst(letteringOnInk)).toBeGreaterThan(4.2);
   });
 
   it('keeps nominal-center in-world borders ≥3:1 and records the corner fragility', () => {
@@ -448,7 +456,6 @@ describe('grade math <-> GLSL shader parity', () => {
     ]);
     expect(shader).toContain('vec3(0.299, 0.587, 0.114)');
     expect(GRADE_CONSTANTS.luma).toEqual([0.299, 0.587, 0.114]);
-
     const base = /- ([\d.]+) \* color/.exec(shader)?.[1];
     expect(Number(base)).toBeCloseTo(GRADE_CONSTANTS.baseSubtract, 6);
     const desat = /graded, ([\d.]+)\)/.exec(shader)?.[1];
@@ -457,6 +464,24 @@ describe('grade math <-> GLSL shader parity', () => {
     expect(Number(curve)).toBeCloseTo(GRADE_CONSTANTS.contrast, 6);
     const vignette = /dot\(q, q\) \* ([\d.]+)/.exec(shader)?.[1];
     expect(Number(vignette)).toBeCloseTo(GRADE_CONSTANTS.vignetteScale, 6);
+  });
+
+  it('keeps WCAG luminance (Rec.709) separate from the shader luma (Rec.601)', () => {
+    // The shader grades with Rec.601 luma — an artistic choice mirrored
+    // exactly above. WCAG 2.1 relative luminance is defined with Rec.709
+    // coefficients; mixing them previously overstated contrast on warm
+    // colors (e.g. rust/raised read 4.85:1 instead of the true 4.20:1).
+    expect(WCAG_LUMA).toEqual([0.2126, 0.7152, 0.0722]);
+    expect(GRADE_CONSTANTS.luma).not.toEqual([...WCAG_LUMA]);
+    expect(shader).not.toContain('0.2126');
+  });
+
+  it('samples the grade at the shipped PAINTERLY_DEFAULTS (no drifted test rig)', () => {
+    expect(GRADE_DEFAULTS).toEqual({
+      grade: PAINTERLY_DEFAULTS.grade,
+      vignette: PAINTERLY_DEFAULTS.vignette,
+      grain: PAINTERLY_DEFAULTS.grain,
+    });
   });
 
   it('is deterministic, pure, and finite across the sampled grid', () => {

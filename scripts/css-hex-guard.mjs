@@ -11,6 +11,13 @@
  * The index.html `<style data-critical-mirror>` block is explicitly
  * allowlisted (it is the dev-only first-paint mirror, kept byte-stable and
  * parity-tested against static-mirror.css by tests/critical-css-parity.test.ts).
+ *
+ * Scope: this guard covers HEX literals only. `rgba()`/`hsl()`/named colors
+ * are NOT matched — the codebase convention (enforced by review + the
+ * token-derived CSS pipeline) is that every color is either a token hex in
+ * `:root` or a `var(--p5-*)` reference, so hex is the only smuggling vector
+ * that matters here. Extending the regexes to rgba()/named colors would also
+ * require canonicalizing alpha/notation, which no current stylesheet uses.
  */
 import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -45,9 +52,12 @@ export function findNonTokenRootHex(css, allowedValues) {
 function canonicalValues() {
   const url = new URL('../src/styles/design-tokens.json', import.meta.url);
   const tokens = JSON.parse(readFileSync(fileURLToPath(url), 'utf8'));
-  return Object.values(tokens).flatMap((group) =>
-    Array.isArray(group) ? group : Object.values(group),
-  );
+  // Only string leaves are color values: skip anything else (numbers, nested
+  // objects, null) defensively so a future non-hex token group cannot turn
+  // `allowed` into Set{[object Object]} and silently pass every check.
+  return Object.values(tokens)
+    .flatMap((group) => (Array.isArray(group) ? group : Object.values(group)))
+    .filter((value) => typeof value === 'string');
 }
 
 function main() {
