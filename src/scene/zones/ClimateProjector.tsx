@@ -16,7 +16,7 @@
  * keyboard/SR visitors always use the DOM equivalent. Headless R3F tests are
  * structural only; pixel-level appearance needs a browser screenshot review.
  */
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { useThree, type ThreeEvent } from '@react-three/fiber';
 import {
@@ -44,6 +44,8 @@ import type { RoomMaterials } from '../art/materials';
 
 export const PROJECTOR_TEXTURE_WIDTH = 1024;
 export const PROJECTOR_TEXTURE_HEIGHT = 576;
+/** 3c P7: at most ten painted years stay resident; LRU-ish FIFO eviction. */
+export const MAX_PROJECTOR_TEXTURE_CACHE = 10;
 
 const CLOTH = DESIGN_TOKENS.climate.projectorCloth;
 const INK = DESIGN_TOKENS.climate.projectorInk;
@@ -156,14 +158,21 @@ export interface ClimateProjectorProps {
   materials: RoomMaterials;
   /** Headless-test seam; defaults to a real browser canvas. */
   canvasFactory?: ClimateCanvasFactory;
+  /**
+   * 3c P7: mobile/low tiers skip the 1024×576 canvas upload until the visitor
+   * actually enters the climate zone. Desktop always paints immediately.
+   */
+  deferUntilZone?: boolean;
 }
 
 export function ClimateProjector({
   screenGeometry,
   materials,
   canvasFactory = browserClimateCanvas,
+  deferUntilZone = false,
 }: ClimateProjectorProps) {
   const climate = usePortfolioStore((state) => state.climate);
+  const activeZone = usePortfolioStore((state) => state.activeZone);
   const loadClimate = usePortfolioStore((state) => state.loadClimate);
   const selectedYear = usePortfolioStore((state) => state.selectedClimateYear);
   const setSelectedClimateYear = usePortfolioStore(
@@ -219,14 +228,64 @@ export function ClimateProjector({
     return `${climate.currentTemp.toFixed(1)}°C — ${Math.abs(comparison.difference).toFixed(1)}°C ${direction} THAN USUAL`;
   }, [climate.currentTemp, climate.historical]);
 
-  const texture = useMemo(
-    () => buildProjectorTexture(cells, renderYear, todayLabel, canvasFactory),
-    [cells, renderYear, todayLabel, canvasFactory],
+  // 3c P7: mobile/low tiers stay on the room's static screenFabric until the
+  // climate zone is entered (sticky — leaving the zone keeps the painted map).
+  const paintedRef = useRef(!deferUntilZone);
+  if (activeZone === '/climate') paintedRef.current = true;
+  const shouldPaint = paintedRef.current;
+
+  // A per-dataset cache removes the 1024×576 canvas repaint + GPU upload spike
+  // when the year dial is clicked back and forth. New data starts a new cache;
+  // the effect disposes every texture in the old one (no leak across toggles).
+  // The deps intentionally START A NEW CACHE (and dispose the old one) when the
+  // dataset/label/factory changes; the memo body itself needs no values.
+  const cache = useMemo(
+    () => new Map<string, THREE.CanvasTexture>(),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [climate.historical, climate.status, todayLabel, canvasFactory],
+  );
+  useEffect(
+    () => () => {
+      for (const cached of cache.values()) cached.dispose();
+      cache.clear();
+    },
+    [cache],
   );
 
-  // One owned material per texture; both are disposed when the year/data
-  // changes or the room unmounts on a mode toggle. Without a 2D context the
-  // room-owned screenFabric is borrowed (and left to Room's teardown).
+  const textureKey = `${renderYear}|${todayLabel}`;
+  const texture = useMemo(() => {
+    if (!shouldPaint) return null;
+    const cached = cache.get(textureKey);
+    if (cached) return cached;
+    const built = buildProjectorTexture(
+      cells,
+      renderYear,
+      todayLabel,
+      canvasFactory,
+    );
+    if (!built) return null;
+    cache.set(textureKey, built);
+    if (cache.size > MAX_PROJECTOR_TEXTURE_CACHE) {
+      const oldest = cache.keys().next().value;
+      if (oldest !== undefined) {
+        cache.get(oldest)?.dispose();
+        cache.delete(oldest);
+      }
+    }
+    return built;
+  }, [
+    cache,
+    cells,
+    renderYear,
+    todayLabel,
+    textureKey,
+    canvasFactory,
+    shouldPaint,
+  ]);
+
+  // One lightweight material per texture; the CACHED textures outlive material
+  // swaps and are disposed by the cache effect, never on a year change.
+  // Without a 2D context the room-owned screenFabric is borrowed.
   const material = useMemo(() => {
     if (!texture) return materials.screenFabric;
     return new THREE.MeshBasicMaterial({ map: texture, toneMapped: false });
@@ -237,9 +296,8 @@ export function ClimateProjector({
     invalidate();
     return () => {
       if (material !== materials.screenFabric) material.dispose();
-      texture?.dispose();
     };
-  }, [material, texture, materials.screenFabric, invalidate]);
+  }, [material, materials.screenFabric, invalidate]);
 
   // The dial's two meshes are owned by this zone (Room only owns the cloth).
   const prevGeometry = useMemo(

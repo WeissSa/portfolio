@@ -80,6 +80,15 @@ export default function App() {
   const openClimatePanel = usePortfolioStore((s) => s.openClimatePanel);
   const initialRouteSynced = useRef(false);
   const [tier, setTier] = useState<DeviceTier>('desktop');
+  // 3c P10 warm start: after the first 3D visit, DESKTOP keeps the Canvas
+  // mounted (frameloop='never' + hidden) so a 2D↔3D toggle costs no WebGL
+  // context/render-target rebuild. Mobile/low deliberately unmount: GPU memory
+  // matters more than one toggle there, and their tier can change on rotation.
+  const [sceneVisited, setSceneVisited] = useState(false);
+  useEffect(() => {
+    if (mode === '3d') setSceneVisited(true);
+  }, [mode]);
+  const sceneMounted = mode === '3d' || (sceneVisited && tier === 'desktop');
 
   // If the optional 3D layer ever throws, contain it: force the authoritative
   // 2D shell, clear the manual override AND persist a failure signal, so neither
@@ -137,12 +146,12 @@ export default function App() {
           {ZONE_NAMES[route]} zone selected
         </p>
 
-        {/* Mounted ONLY in 3D. The lazy import never blocks the 2D shell above,
-          and unmounting here tears down every GPU resource via Room's cleanup.
+        {/* 3c warm start: desktop keeps the lazy Canvas mounted after the first
+          visit (hidden + zero frames while in 2D); mobile/low unmount as before.
           The boundary keeps a Canvas-creation failure from unmounting the root. */}
-        {mode === '3d' && (
+        {sceneMounted && (
           <SceneErrorBoundary onError={handleSceneError}>
-            <SceneLayer quality={tier} />
+            <SceneLayer quality={tier} active={mode === '3d'} />
           </SceneErrorBoundary>
         )}
 

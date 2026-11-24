@@ -245,6 +245,17 @@
   opacity: 1;
 }
 
+/*
+ * 3c warm start: after a first 3D visit the desktop Canvas stays mounted but
+ * invisible and non-interactive while 2D is showing (Room gets
+ * frameloop='never'), so toggling back costs no WebGL context rebuild.
+ */
+.scene-layer--inactive,
+.scene-layer--inactive .scene-canvas {
+  visibility: hidden;
+  pointer-events: none;
+}
+
 .scene-canvas {
   display: block;
   width: 100%;

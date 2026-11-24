@@ -1,0 +1,124 @@
+{
+  "schema": 1,
+  "capturedAt": "2026-11-24T14:24:22.689Z",
+  "note": "Headless Chromium + SwiftShader; absolute 60/45fps requires owner hardware. Gate = relative p95 vs baseline.",
+  "gpuString": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+  "renderer": {
+    "calls": 21,
+    "programs": 7
+  },
+  "devices": {
+    "mobile": {
+      "flight-experience": {
+        "p50": 64.20000000000073,
+        "p95": 174.19999999702122,
+        "max": 174.19999999702122,
+        "longFrames": 12,
+        "rafP50": 83.39999999999418,
+        "rafP95": 233.29999999999927,
+        "gpuP95": null,
+        "p95Samples": [
+          174.19999999702122,
+          218.79999999701977,
+          135.30000000297878
+        ],
+        "histogram": [
+          1,
+          2,
+          2,
+          1,
+          11
+        ],
+        "env": "swiftshader"
+      },
+      "flight-projects": {
+        "p50": 77.60000000298169,
+        "p95": 190.19999999403808,
+        "max": 190.19999999403808,
+        "longFrames": 9,
+        "rafP50": 99.90000000000146,
+        "rafP95": 250,
+        "gpuP95": null,
+        "p95Samples": [
+          177.499999994041,
+          190.19999999403808,
+          240.40000000000146
+        ],
+        "histogram": [
+          2,
+          1,
+          1,
+          0,
+          10
+        ],
+        "env": "swiftshader"
+      },
+      "flight-climate": {
+        "p50": 111.39999999701831,
+        "p95": 277.40000000596046,
+        "max": 277.40000000596046,
+        "longFrames": 5,
+        "rafP50": 150,
+        "rafP95": 366.59999999999854,
+        "gpuP95": null,
+        "p95Samples": [
+          360.6999999940381,
+          277.40000000596046,
+          154.29999999701977
+        ],
+        "histogram": [
+          2,
+          1,
+          0,
+          2,
+          5
+        ],
+        "env": "swiftshader"
+      },
+      "mode-toggle": {
+        "p50": 14.600000002981687,
+        "p95": 118.39999999701831,
+        "max": 195.5,
+        "longFrames": 14,
+        "rafP50": 16.700000000000728,
+        "rafP95": 150,
+        "gpuP95": null,
+        "p95Samples": [
+          125.19999999702122,
+          108.89999999404245,
+          118.39999999701831
+        ],
+        "histogram": [
+          4,
+          41,
+          3,
+          1,
+          12
+        ],
+        "env": "swiftshader"
+      },
+      "dialog-open": {
+        "p50": 15.500000002983143,
+        "p95": 106.20000000596337,
+        "max": 106.20000000596337,
+        "longFrames": 7,
+        "rafP50": 16.700000000004366,
+        "rafP95": 133.39999999999782,
+        "gpuP95": null,
+        "p95Samples": [
+          118.40000000000146,
+          77.5,
+          106.20000000596337
+        ],
+        "histogram": [
+          1,
+          3,
+          0,
+          1,
+          7
+        ],
+        "env": "swiftshader"
+      }
+    }
+  }
+}

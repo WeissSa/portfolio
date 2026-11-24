@@ -94,11 +94,13 @@ describe('painterly post pass (§3.5)', () => {
     expect(custom.uGrain.value).toBe(0.1);
   });
 
-  it('falls back to an 8-bit target without EXT_color_buffer_float', () => {
-    // Half-float MSAA needs the float color-buffer extension; the pure chooser
-    // keeps the fallback decision testable without a GL context.
-    expect(choosePainterlyTargetType(true)).toBe(THREE.HalfFloatType);
+  it('ships an 8-bit target, with half-float strictly opt-in and gated', () => {
+    // 3c P4: byte is the default even on float-capable contexts (grain/stroke
+    // dither away banding); half-float needs BOTH the opt-in and the extension.
+    expect(choosePainterlyTargetType(true)).toBe(THREE.UnsignedByteType);
     expect(choosePainterlyTargetType(false)).toBe(THREE.UnsignedByteType);
+    expect(choosePainterlyTargetType(true, true)).toBe(THREE.HalfFloatType);
+    expect(choosePainterlyTargetType(false, true)).toBe(THREE.UnsignedByteType);
   });
 
   it('shader sources carry the grain/vignette/grade pass', () => {

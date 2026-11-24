@@ -205,7 +205,7 @@ describe('ClimateProjector R3F zone (headless, structural)', () => {
     screenGeometry.dispose();
   });
 
-  it('year dial → store change → texture redraw + old texture disposal', async () => {
+  it('year dial → store change → per-year texture cache (no repaint spike)', async () => {
     const { factory, calls } = recordingFactory();
     const renderer = await mount(factory);
     const firstTexture = (
@@ -223,7 +223,12 @@ describe('ClimateProjector R3F zone (headless, structural)', () => {
     // Years are newest-first [2025, 2024, 2023, 2020]; ▶ moves to 2025.
     expect(usePortfolioStore.getState().selectedClimateYear).toBe(2025);
     expect(stopPropagation).toHaveBeenCalledTimes(1);
-    expect(disposeFirst).toHaveBeenCalledTimes(1);
+    const secondTexture = (
+      screenMesh(renderer).material as THREE.MeshBasicMaterial
+    ).map as THREE.CanvasTexture;
+    expect(secondTexture).not.toBe(firstTexture);
+    // 3c P7: cached textures are NOT disposed on a dial switch.
+    expect(disposeFirst).not.toHaveBeenCalled();
     expect(
       calls
         .filter((call) => call.method === 'fillText')
@@ -231,26 +236,46 @@ describe('ClimateProjector R3F zone (headless, structural)', () => {
         .some((line) => line.includes('2025')),
     ).toBe(true);
 
-    // ◀ returns to 2024; the 2025 texture is disposed in turn.
-    const secondTexture = (
-      screenMesh(renderer).material as THREE.MeshBasicMaterial
-    ).map as THREE.CanvasTexture;
-    expect(secondTexture).not.toBe(firstTexture);
-    const disposeSecond = vi.spyOn(secondTexture, 'dispose');
+    // ◀ returns to 2024: the original CanvasTexture is reused (zero repaint).
+    calls.length = 0;
     const prev = renderer.scene.find(
       (node) => node.props.name === 'climate-year-prev',
     )!;
     act(() => prev.props.onClick({ stopPropagation: vi.fn() }));
     expect(usePortfolioStore.getState().selectedClimateYear).toBe(2024);
-    expect(disposeSecond).toHaveBeenCalledTimes(1);
+    const again = (screenMesh(renderer).material as THREE.MeshBasicMaterial)
+      .map as THREE.CanvasTexture;
+    expect(again).toBe(firstTexture);
+    expect(calls.filter((call) => call.method === 'fillText')).toHaveLength(0);
 
-    // Unmount disposes the last owned texture as well.
-    const lastTexture = (
-      screenMesh(renderer).material as THREE.MeshBasicMaterial
-    ).map as THREE.CanvasTexture;
-    const disposeLast = vi.spyOn(lastTexture, 'dispose');
+    // Unmount disposes every cached texture once.
+    const disposeSecond = vi.spyOn(secondTexture, 'dispose');
     await renderer.unmount();
-    expect(disposeLast).toHaveBeenCalledTimes(1);
+    expect(disposeFirst).toHaveBeenCalledTimes(1);
+    expect(disposeSecond).toHaveBeenCalledTimes(1);
+    disposeRoomMaterials(materials);
+    screenGeometry.dispose();
+  });
+
+  it('defers the painted texture until the climate zone is entered', async () => {
+    act(() => usePortfolioStore.setState({ activeZone: '/' }));
+    const { factory } = recordingFactory();
+    const renderer = await ReactThreeTestRenderer.create(
+      <ClimateProjector
+        screenGeometry={screenGeometry}
+        materials={materials}
+        canvasFactory={factory}
+        deferUntilZone
+      />,
+      { frameloop: 'never' },
+    );
+    expect(screenMesh(renderer).material).toBe(materials.screenFabric);
+    act(() => usePortfolioStore.setState({ activeZone: '/climate' }));
+    expect(
+      (screenMesh(renderer).material as THREE.MeshBasicMaterial).map,
+    ).toBeInstanceOf(THREE.CanvasTexture);
+    await renderer.unmount();
+    act(() => usePortfolioStore.setState({ activeZone: '/' }));
     disposeRoomMaterials(materials);
     screenGeometry.dispose();
   });

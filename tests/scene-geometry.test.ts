@@ -194,7 +194,7 @@ describe('geometry budgets (§4.3 draw-call/vertex discipline)', () => {
     expect(createRugGeometry().type).toBe('ExtrudeGeometry');
   });
 
-  it('room shell has floor, ceiling, three walls and skirting', () => {
+  it('room shell has floor, ceiling, three walls and merged skirting', () => {
     const ids = createRoomShell().map((p) => p.id);
     for (const expected of [
       'floor',
@@ -202,12 +202,31 @@ describe('geometry budgets (§4.3 draw-call/vertex discipline)', () => {
       'wall-back',
       'wall-left',
       'wall-right',
-      'skirt-back',
-      'skirt-left',
-      'skirt-right',
+      'skirting',
     ]) {
       expect(ids).toContain(expected);
     }
+    // 3c: three skirting boards are baked into one static draw call.
+    expect(ids).toHaveLength(6);
+  });
+
+  it('merges same-material static families without losing geometry', () => {
+    const tower = createPcTower('merge');
+    expect(tower.find((p) => p.id === 'tower-vents')?.material).toBe(
+      'metalDark',
+    );
+    expect(
+      tower
+        .find((p) => p.id === 'tower-vents')
+        ?.geometry.getAttribute('position')?.count,
+    ).toBeGreaterThan(24);
+    expect(tower.some((p) => p.id === 'tower-vent-0')).toBe(false);
+    expect(
+      createDesk('merge').find((p) => p.id === 'desk-pulls'),
+    ).toBeDefined();
+    const frame = createFramedSilhouette('merge', 0);
+    expect(frame.find((p) => p.id === 'frame-trim-0')?.material).toBe('wood');
+    expect(frame.some((p) => p.id === 'frame-top-0')).toBe(false);
   });
 
   it('disposeParts is safe to call on fresh geometry', () => {

@@ -95,6 +95,9 @@ export function LibraryZone({ cells, materials }: LibraryZoneProps) {
     });
     mesh.instanceMatrix.needsUpdate = true;
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+    // 3c P5: cull against the actual instance poses (including a pulled-out
+    // volume), not the unit box; recompute after every hover/selection change.
+    mesh.computeBoundingSphere();
     invalidate();
   }, [books, hoveredPostId, selectedPostId, invalidate]);
 
@@ -149,13 +152,8 @@ export function LibraryZone({ cells, materials }: LibraryZoneProps) {
         onClick={onClick}
         onPointerOver={onPointerOver}
         onPointerOut={onPointerOut}
-        frustumCulled={false}
       />
-      <mesh
-        geometry={labelsGeometry}
-        material={materials.bookAtlas}
-        frustumCulled={false}
-      />
+      <mesh geometry={labelsGeometry} material={materials.bookAtlas} />
     </group>
   );
 }

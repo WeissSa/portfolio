@@ -86,6 +86,62 @@ function part(
   return { id, geometry, material, position, rotation };
 }
 
+/**
+ * Bake a family of STATIC parts that share one material into a single geometry
+ * (art-overhaul commit 3c): N same-material meshes become ONE draw call. Local
+ * transforms are applied to cloned vertex data, the source geometries are
+ * disposed, and the returned part owns the merged geometry. Only use for parts
+ * with identical attribute sets (boxes/planes/extrudes: position/normal/uv) and
+ * no per-part picking or animation. Pure CPU math — testable without WebGL.
+ */
+export function mergeStaticParts(
+  id: string,
+  parts: readonly RoomPart[],
+): RoomPart {
+  const first = parts[0];
+  if (!first) throw new Error('mergeStaticParts: no parts to merge');
+  const positions: number[] = [];
+  const normals: number[] = [];
+  const uvs: number[] = [];
+  const matrix = new THREE.Matrix4();
+  const quaternion = new THREE.Quaternion();
+  const euler = new THREE.Euler();
+  const position = new THREE.Vector3();
+  const scale = new THREE.Vector3();
+  for (const item of parts) {
+    const geometry = item.geometry.index
+      ? item.geometry.toNonIndexed()
+      : item.geometry.clone();
+    euler.set(...(item.rotation ?? [0, 0, 0]));
+    quaternion.setFromEuler(euler);
+    position.set(...(item.position ?? [0, 0, 0]));
+    scale.set(...(item.scale ?? [1, 1, 1]));
+    geometry.applyMatrix4(matrix.compose(position, quaternion, scale));
+    const vertices = geometry.getAttribute('position');
+    const normal = geometry.getAttribute('normal');
+    const uv = geometry.getAttribute('uv');
+    if (!vertices || !normal || !uv) {
+      geometry.dispose();
+      throw new Error(`mergeStaticParts: ${item.id} lacks position/normal/uv`);
+    }
+    for (let i = 0; i < vertices.count; i += 1) {
+      positions.push(vertices.getX(i), vertices.getY(i), vertices.getZ(i));
+      normals.push(normal.getX(i), normal.getY(i), normal.getZ(i));
+      uvs.push(uv.getX(i), uv.getY(i));
+    }
+    geometry.dispose();
+    item.geometry.dispose(); // the merged part now owns the vertex data
+  }
+  const merged = new THREE.BufferGeometry();
+  merged.setAttribute(
+    'position',
+    new THREE.Float32BufferAttribute(positions, 3),
+  );
+  merged.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+  merged.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+  return { id, geometry: merged, material: first.material };
+}
+
 /* ---------------------------------------------------------------- shell -- */
 
 /**
@@ -177,23 +233,25 @@ export function createRoomShell(dims: RoomDims = ROOM_DIMS): RoomPart[] {
       [0, -Math.PI / 2, 0],
     ),
   ];
-  // Skirting boards along the three walls.
+  // Skirting boards along the three walls (3c: merged to ONE draw call).
   const skirtH = 0.12;
   parts.push(
-    part('skirt-back', box(w, skirtH, 0.03), 'woodDark', [
-      0,
-      skirtH / 2,
-      -d / 2 + 0.015,
-    ]),
-    part('skirt-left', box(0.03, skirtH, d), 'woodDark', [
-      -w / 2 + 0.015,
-      skirtH / 2,
-      0,
-    ]),
-    part('skirt-right', box(0.03, skirtH, d), 'woodDark', [
-      w / 2 - 0.015,
-      skirtH / 2,
-      0,
+    mergeStaticParts('skirting', [
+      part('skirt-back', box(w, skirtH, 0.03), 'woodDark', [
+        0,
+        skirtH / 2,
+        -d / 2 + 0.015,
+      ]),
+      part('skirt-left', box(0.03, skirtH, d), 'woodDark', [
+        -w / 2 + 0.015,
+        skirtH / 2,
+        0,
+      ]),
+      part('skirt-right', box(0.03, skirtH, d), 'woodDark', [
+        w / 2 - 0.015,
+        skirtH / 2,
+        0,
+      ]),
     ]),
   );
   return parts;
@@ -249,6 +307,7 @@ export function createDesk(seed: string | number): RoomPart[] {
       pedZ - 0.1,
     ]),
   );
+  const pulls: RoomPart[] = [];
   for (let d = 0; d < 2; d += 1) {
     const dy = pedH * (0.3 + d * 0.4);
     parts.push(
@@ -258,7 +317,7 @@ export function createDesk(seed: string | number): RoomPart[] {
         pedZ + 0.31,
       ]),
     );
-    parts.push(
+    pulls.push(
       part(`desk-pull-${d}`, box(0.12, 0.02, 0.03), 'brass', [
         pedX,
         dy - 0.06,
@@ -266,6 +325,8 @@ export function createDesk(seed: string | number): RoomPart[] {
       ]),
     );
   }
+  // Both brass pulls share a material and never move independently.
+  parts.push(mergeStaticParts('desk-pulls', pulls));
   return parts;
 }
 
@@ -336,8 +397,9 @@ export function createPcTower(seed: string | number): RoomPart[] {
       d / 2 + 0.008,
     ]),
   ];
+  const vents: RoomPart[] = [];
   for (let v = 0; v < 4; v += 1) {
-    parts.push(
+    vents.push(
       part(
         `tower-vent-${v}`,
         box(0.01, 0.014, d - 0.14),
@@ -347,6 +409,8 @@ export function createPcTower(seed: string | number): RoomPart[] {
       ),
     );
   }
+  // Four identical metalDark vents: one merged mesh, three fewer draw calls.
+  parts.push(mergeStaticParts('tower-vents', vents));
   return parts;
 }
 
@@ -1288,26 +1352,30 @@ export function createFramedSilhouette(
       [0, 0, 0.016],
     ),
   ];
+  // Four wooden trim rails share one material and never animate: bake to one
+  // mesh (commit 3c). The back, mat and bust stay separate (different materials).
   parts.push(
-    part(`frame-top-${variant}`, box(w, t, 0.05), 'wood', [
-      0,
-      h / 2 - t / 2,
-      0.005,
-    ]),
-    part(`frame-bottom-${variant}`, box(w, t, 0.05), 'wood', [
-      0,
-      -h / 2 + t / 2,
-      0.005,
-    ]),
-    part(`frame-left-${variant}`, box(t, h, 0.05), 'wood', [
-      -w / 2 + t / 2,
-      0,
-      0.005,
-    ]),
-    part(`frame-right-${variant}`, box(t, h, 0.05), 'wood', [
-      w / 2 - t / 2,
-      0,
-      0.005,
+    mergeStaticParts(`frame-trim-${variant}`, [
+      part(`frame-top-${variant}`, box(w, t, 0.05), 'wood', [
+        0,
+        h / 2 - t / 2,
+        0.005,
+      ]),
+      part(`frame-bottom-${variant}`, box(w, t, 0.05), 'wood', [
+        0,
+        -h / 2 + t / 2,
+        0.005,
+      ]),
+      part(`frame-left-${variant}`, box(t, h, 0.05), 'wood', [
+        -w / 2 + t / 2,
+        0,
+        0.005,
+      ]),
+      part(`frame-right-${variant}`, box(t, h, 0.05), 'wood', [
+        w / 2 - t / 2,
+        0,
+        0.005,
+      ]),
     ]),
   );
   // Bust silhouette: shoulders + head, via THREE.Shape (deterministic).

@@ -11,20 +11,20 @@
  * extra dependencies in the 260 KB lazy-chunk budget.
  *
  * Color space (commit 5 review fix A): the render target stays LINEAR
- * (NoColorSpace, half-float) because three renders the scene in the working
- * linear space when drawing to a target. The final ShaderMaterial therefore
- * ends with `#include <colorspace_fragment>` — three injects
- * `linearToOutputTexel()` into every non-raw ShaderMaterial — so the graded
- * linear color is encoded to the renderer's output color space (sRGB) exactly
- * once. Without it the pass wrote linear values into an sRGB canvas (too dark,
- * wrong grade) and 8-bit linear storage banded badly in the shadows; the
- * half-float target removes that banding at negligible desktop cost.
+ * (NoColorSpace) because three renders the scene in the working linear space
+ * when drawing to a target. The final ShaderMaterial therefore ends with
+ * `#include <colorspace_fragment>` — three injects `linearToOutputTexel()`
+ * into every non-raw ShaderMaterial — so the graded linear color is encoded to
+ * the renderer's output color space (sRGB) exactly once.
  *
- * Robustness (crash-on-load follow-up): half-float render targets with MSAA
- * require EXT_color_buffer_float. Contexts without it (older drivers,
- * restricted/headless WebGL2) get an UnsignedByteType target instead — no
- * throw, only slightly more shadow banding. The type decision is a pure helper
- * so it is testable without a GL context.
+ * Commit 3c perf audit (P3/P4): MSAA is 4→2 (the painted grain/stroke dithers
+ * edges) and the target is 8-bit UNSIGNED_BYTE by default — the grade shader
+ * clamps to [0,1] so no HDR range is needed, and the softened grain + 1/16
+ * posterization dither any 8-bit shadow banding. HalfFloat remains available
+ * ONLY behind EXT_color_buffer_float support via the pure chooser below; the
+ * default path allocates half the bandwidth. Grain uTime only advances on
+ * rendered frames: the demand frameloop emits no frames (and no grain churn)
+ * while idle, so no extra timer work is needed.
  */
 import { useEffect, useMemo, useRef, type ReactNode } from 'react';
 import * as THREE from 'three';
@@ -157,15 +157,19 @@ export function createPainterlyUniforms(
 }
 
 /**
- * Pick the render-target type from float-color-buffer support. WebGL2
- * half-float targets with MSAA need EXT_color_buffer_float; where it is absent
- * an 8-bit linear target is a safe, universally supported fallback (a little
- * more shadow banding). Pure + exported so it is testable without a GL context.
+ * Pick the render-target type. 3c P4: UNSIGNED_BYTE is the DEFAULT (half the
+ * bandwidth; the grain + stroke dither away 8-bit banding). HalfFloat is opt-in
+ * AND gated on EXT_color_buffer_float — it is never selected on an unsupported
+ * context, so the flag remains the hard fallback guard. Pure + exported so the
+ * decision is testable without a GL context.
  */
 export function choosePainterlyTargetType(
   hasFloatColorBuffer: boolean,
+  preferHalfFloat = false,
 ): THREE.TextureDataType {
-  return hasFloatColorBuffer ? THREE.HalfFloatType : THREE.UnsignedByteType;
+  return hasFloatColorBuffer && preferHalfFloat
+    ? THREE.HalfFloatType
+    : THREE.UnsignedByteType;
 }
 
 export interface PainterlyPassProps {
@@ -228,9 +232,9 @@ function PainterlyPassInner({
     uniforms.uStroke.value = stroke;
   }, [grain, vignette, grade, edge, stroke, uniforms]);
 
-  // Half-float + MSAA needs EXT_color_buffer_float. Query the live context and
-  // default to the 8-bit fallback if the query is unavailable/throws (mock or
-  // restricted contexts). Documented at the top of this module.
+  // Float attachments are queried as a SAFETY GATE: the shipped path is 8-bit,
+  // but any future half-float opt-in must still be gated on this extension.
+  // A missing/failed query (mock or restricted context) never throws.
   const supportsFloatTargets = useMemo(() => {
     try {
       return Boolean(gl.getContext().getExtension('EXT_color_buffer_float'));
@@ -240,12 +244,11 @@ function PainterlyPassInner({
   }, [gl]);
 
   const rig = useMemo(() => {
-    // Keep the target linear (Texture.colorSpace defaults to NoColorSpace).
-    // Half-float avoids 8-bit linear banding where supported; otherwise fall
-    // back to unsigned byte instead of throwing on an unsupported attachment.
+    // Linear 8-bit target; grain/stroke dither the banding, MSAA 4→2 because
+    // the painted grain already softens edges (commit 3c P3/P4).
     const target = new THREE.WebGLRenderTarget(1, 1, {
       type: choosePainterlyTargetType(supportsFloatTargets),
-      samples: 4, // WebGL2 MSAA; ignored where unavailable.
+      samples: 2, // WebGL2 MSAA; ignored where unavailable.
     });
     const quadScene = new THREE.Scene();
     const quadCamera = new THREE.Camera(); // Identity matrices + clip-space quad.

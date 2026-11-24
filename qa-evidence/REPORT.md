@@ -90,3 +90,43 @@ npm run capture:qa                # build → vite preview → 27 PNGs + 3 WebMs
 ```
 
 The command writes `qa-evidence/screenshots/` and `qa-evidence/recordings/` in place. Temporary Playwright artifacts go to the gitignored `qa-evidence/.artifacts/`. The 3D paths use the SwiftShader launch args in `playwright.config.ts`; to inspect manually, serve `npm run preview -- --host 127.0.0.1 --port 4173` and open `http://127.0.0.1:4173/portfolio/#/<route>` in Chromium with those args.
+
+## Smoothness / frame-time evidence (art-overhaul commit 3c, 2026-11-24)
+
+**Honest headline:** these numbers were captured on headless Chromium with `ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)` — **software WebGL**. They are valid as a _relative regression baseline_ and prove the harness works, but they **cannot validate the owner's absolute targets** (60fps desktop / ≥45-60fps capable mobile). `env=swiftshader` is recorded in every JSON artifact; absolute thresholds are only asserted when the harness runs on hardware WebGL. The 60/45fps acceptance remains an owner-real-hardware check.
+
+### Method
+
+- `src/lib/perf-probe.ts` is a dev/test-only sampler installed via Playwright `addInitScript` (transpiled with esbuild); **no app code imports it, so it ships zero production bytes**. `window.__perf.start(label)/stop()/report()` returns `{n,p50,p95,max,longFrames,raf:{...},gpu:{...},histogram,env}`.
+- Primary metric = per-frame **workload**: main-thread busy time between the previous frame's end (MessageChannel end-of-frame signal) and this frame's start, with async GPU time from `EXT_disjoint_timer_query_webgl2` where available. Raw **rAF deltas are reported separately** (`raf`), never used as the gate. `longFrames` = workload >34ms.
+- `scripts/qa/perf.spec.ts` warms up once, then drives 3 measured runs of three camera flights, a 2D↔3D toggle and dialog open/close on both viewports; reported values are the **median of the 3 runs**. Gate: p95 ≤ 110% of `qa-evidence/perf-baseline.json` **plus 2× the recorded run-to-run jitter** (SwiftShader p95 spread on identical runs reaches 40–100%; the 10% gate is the real rule on hardware, where jitter is small). Baseline promotion is improvement-only via `node scripts/qa/promote-perf-baseline.mjs` (needs `--force` with owner approval for regressions). This noise band is a deliberate deviation from the bare 10% gate in the plan — without it CI fails on SwiftShader jitter alone.
+- Command: `npm run build && npx playwright test scripts/qa/perf.spec.ts` → 2/2 passing against the committed baseline. Artifacts: `qa-evidence/perf/latest-desktop.json`, `latest-mobile.json`, `steady-desktop.png`, and `qa-evidence/perf-baseline.json`.
+
+### Measured p50 / p95 workload (ms, SwiftShader — informational, not fps)
+
+| Workload            | Desktop p50 / p95 | Mobile p50 / p95 |
+| ------------------- | ----------------: | ---------------: |
+| Flight → Experience |         272 / 372 |         64 / 174 |
+| Flight → Projects   |        349 / 1001 |         78 / 190 |
+| Flight → Climate    |         406 / 696 |        111 / 277 |
+| 2D↔3D toggle        |         296 / 528 |         15 / 118 |
+| Dialog open/close   |          89 / 358 |         16 / 106 |
+
+Per-frame GPU timer (SwiftShader): desktop p95 ≈ 330–550ms; mobile has no `EXT_disjoint_timer_query_webgl2`, so `gpu` is `null`. Raw rAF deltas and 5-bucket histograms are in the JSON artifacts. **Do not read these as real-device frame rates.**
+
+### Static budgets and leak check
+
+- `renderer.info` (whole-frame count, autoReset off in the QA hook): desktop **92 draw calls / 17 programs** (limits ≤100 / ≤25); mobile **21 calls / 7 programs**.
+- Merged static families (commit 3c P6): 3 skirting boards → 1, 4 tower vents → 1, 2 drawer pulls → 1, 4 frame trim rails per framed print → 1 (×3 prints): **21 meshes → 6, i.e. 15 fewer draw calls**, with transforms baked into vertex data and no per-frame work.
+- Five consecutive 2D↔3D toggles: no geometry or texture growth (`renderer.info.memory` asserted non-increasing). Desktop keeps the Canvas warm (`frameloop='never'` + hidden); mobile/low unmount to save GPU memory (conscious memory-vs-stall tradeoff).
+- Scene chunk: **221.12 kB brotli** (baseline 220.37 kB, Δ **+0.75 kB**; ≤8 kB commit budget, 260 kB hard limit). Sampler ships 0 bytes. `npm run verify` green: **427 tests** (43 files), typecheck/lint/format/build/size all pass.
+
+### Optimizations applied
+
+- P1 DPR caps desktop `[1,1.5]`, mobile `[1,1.25]`; mobile far plane 60→24.
+- P2 pointermove raycasts coalesced to ≤1/frame; hover/out picking disabled for coarse pointers by the existing fine-pointer-only interactive gate.
+- P3 MSAA samples 4→2; P4 UnsignedByte render target by default (grain/stroke dither banding), HalfFloat only opt-in behind `EXT_color_buffer_float`.
+- P5 frustum culling restored on all book/clutter InstancedMeshes with `computeBoundingSphere()` after matrices; grain `uTime` only advances on rendered frames (demand loop ⇒ paused when idle); no per-frame allocations added.
+- P6 merged static same-material families (above); P7 per-year CanvasTexture cache (FIFO 10) with mobile deferral until the climate zone is entered; P10 desktop warm-start mode toggle.
+- Mobile light budget: 1 point light (ambient + moon directional), key spot/monitor spill removed (existing emissive materials carry the glow); filler books 160→80.
+- Known limitation: SwiftShader screenshots/clips still show frame starvation; judge smoothness from the frame-time artifacts and owner hardware, not the recordings (see D5).

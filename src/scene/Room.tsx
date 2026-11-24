@@ -20,6 +20,7 @@ import { usePrefersReducedMotion } from '../lib/a11y';
 import { DESIGN_TOKENS } from '../styles/design-tokens';
 import { CameraRig } from './CameraRig';
 import { PainterlyPass } from './effects/PainterlyPass';
+import { createCoalescedPointerEvents } from './perf-events';
 import {
   CHAIR_POSITION,
   CHAIR_ROTATION,
@@ -157,9 +158,10 @@ function Books({
         });
         mesh.instanceMatrix.needsUpdate = true;
         if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+        // 3c P5: cull the filler books against their real instance bounds.
+        mesh.computeBoundingSphere();
       }}
       args={[geometry, material, books.length]}
-      frustumCulled={false}
     />
   );
 }
@@ -203,9 +205,10 @@ function ClutterFamily({
         });
         mesh.instanceMatrix.needsUpdate = true;
         if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+        // 3c P5: bounds follow the authored instances, not the unit geometry.
+        mesh.computeBoundingSphere();
       }}
       args={[geometry, material, instances.length]}
-      frustumCulled={false}
       castShadow={shadows}
       receiveShadow={shadows}
     />
@@ -232,6 +235,8 @@ export function RoomScene({
     const books = createBookInstances(seed, bookshelf.cells, {
       // Feature the shelf cells of ★ posts (rough mapping; commit 6 refines).
       featured: [0, 3, 6],
+      // 3c mobile: half the filler volumes, same shelf silhouette/anchor posts.
+      ...(quality === 'desktop' ? {} : { maxBooks: 80 }),
     });
     const lamp = createLamp(seed);
     const projector = createProjector(seed);
@@ -275,7 +280,7 @@ export function RoomScene({
       screenCloth,
       screenBar,
     };
-  }, [seed]);
+  }, [seed, quality]);
 
   const textures = useMemo(() => {
     const plans = createTexturePlans(seed, {
@@ -350,8 +355,11 @@ export function RoomScene({
         intensity={0.45}
         color={DESIGN_TOKENS.room.moonlight}
       />
-      {/* Warm lamp pools (§3.5): floor lamp + monitor spill. The desk pool is
-          now the shadow-casting key spot below. */}
+      {/* 3c mobile light budget: exactly ONE dynamic point light (the floor
+          lamp). The shadow key spot and monitor spill are desktop-only; the
+          bulb/shade, LED, monitor screen and night glass already carry their
+          own emissive material, so folding the removed lights into emissive
+          costs no extra shader or material. */}
       <pointLight
         position={lampLight}
         intensity={9}
@@ -359,43 +367,47 @@ export function RoomScene({
         decay={2}
         color={DESIGN_TOKENS.room.lamp}
       />
-      <spotLight
-        position={[
-          DESK_POSITION[0] - 0.2,
-          DESK_TOP_HEIGHT + 1.85,
-          DESK_POSITION[2] + 0.85,
-        ]}
-        angle={0.85}
-        penumbra={0.55}
-        intensity={24}
-        distance={6.5}
-        decay={2}
-        color={DESIGN_TOKENS.room.deskLamp}
-        castShadow={keyLight}
-        shadow-mapSize-width={1024}
-        shadow-mapSize-height={1024}
-        shadow-bias={-0.0006}
-        shadow-camera-near={0.4}
-        shadow-camera-far={7}
-        ref={(light) => {
-          if (!light) return;
-          // A SpotLight aims at its target's WORLD matrix; the default target
-          // is not in the scene graph, so position + refresh it directly.
-          light.target.position.set(...keyLightTarget);
-          light.target.updateMatrixWorld();
-        }}
-      />
-      <pointLight
-        position={[
-          DESK_POSITION[0],
-          DESK_TOP_HEIGHT + 0.6,
-          DESK_POSITION[2] + 0.2,
-        ]}
-        intensity={1.6}
-        distance={2.6}
-        decay={2}
-        color={DESIGN_TOKENS.room.monitorSpill}
-      />
+      {keyLight && (
+        <spotLight
+          position={[
+            DESK_POSITION[0] - 0.2,
+            DESK_TOP_HEIGHT + 1.85,
+            DESK_POSITION[2] + 0.85,
+          ]}
+          angle={0.85}
+          penumbra={0.55}
+          intensity={24}
+          distance={6.5}
+          decay={2}
+          color={DESIGN_TOKENS.room.deskLamp}
+          castShadow
+          shadow-mapSize-width={1024}
+          shadow-mapSize-height={1024}
+          shadow-bias={-0.0006}
+          shadow-camera-near={0.4}
+          shadow-camera-far={7}
+          ref={(light) => {
+            if (!light) return;
+            // A SpotLight aims at its target's WORLD matrix; the default target
+            // is not in the scene graph, so position + refresh it directly.
+            light.target.position.set(...keyLightTarget);
+            light.target.updateMatrixWorld();
+          }}
+        />
+      )}
+      {quality === 'desktop' && (
+        <pointLight
+          position={[
+            DESK_POSITION[0],
+            DESK_TOP_HEIGHT + 0.6,
+            DESK_POSITION[2] + 0.2,
+          ]}
+          intensity={1.6}
+          distance={2.6}
+          decay={2}
+          color={DESIGN_TOKENS.room.monitorSpill}
+        />
+      )}
 
       <group name="room-shell">
         <Parts
@@ -566,6 +578,7 @@ export function RoomScene({
         <ClimateProjector
           screenGeometry={furniture.screenCloth}
           materials={materials}
+          deferUntilZone={quality !== 'desktop'}
         />
         <mesh
           geometry={furniture.screenBar}
@@ -593,6 +606,12 @@ export interface RoomProps extends RoomSceneProps {
   className?: string;
   /** Called once the lazy chunk has mounted the Canvas (drives the fade-in). */
   onReady?: () => void;
+  /**
+   * 3c warm start: when false (2D mode after a first 3D visit) the desktop
+   * Canvas stays mounted but renders ZERO frames (frameloop='never'), avoiding
+   * the WebGL context/render-target rebuild stall on the next toggle.
+   */
+  active?: boolean;
 }
 
 /**
@@ -609,6 +628,7 @@ export default function Room({
   textureFactory,
   className,
   onReady,
+  active = true,
 }: RoomProps): JSX.Element {
   const reducedMotion = usePrefersReducedMotion();
   const [hidden, setHidden] = useState(() =>
@@ -625,24 +645,39 @@ export default function Room({
     onReady?.();
   }, [onReady]);
 
+  // 3c P1: pixel ratio caps. The scene is deliberately soft/painterly, so
+  // rendering 4× the pixels on a 2× phone buys nothing and costs ~3× fill.
   const dpr: number | [number, number] =
-    quality === 'desktop' ? [1, 2] : quality === 'mobile' ? [1, 1.5] : 1;
+    quality === 'desktop' ? [1, 1.5] : quality === 'mobile' ? [1, 1.25] : 1;
+  const mobile = quality !== 'desktop';
 
   return (
     <Canvas
       className={className}
-      camera={{ position: [0, 1.65, 4.8], fov: 50, near: 0.1, far: 60 }}
+      // 3c mobile: tighter far plane (room depth 7, fog ends at 16).
+      camera={{
+        position: [0, 1.65, 4.8],
+        fov: 50,
+        near: 0.1,
+        far: mobile ? 24 : 60,
+      }}
       dpr={dpr}
       // One 1024² shadow map for the warm desk key light — DESKTOP tier only;
       // mobile/low never allocate a shadow map (art-overhaul commit 3a).
       shadows={quality === 'desktop'}
       gl={{ antialias: false, powerPreference: 'high-performance' }}
-      frameloop={hidden ? 'never' : 'demand'}
+      // 3c P2: at most one raycast per frame during pointer movement.
+      events={createCoalescedPointerEvents}
+      frameloop={hidden || !active ? 'never' : 'demand'}
       aria-hidden="true"
     >
       <color attach="background" args={[DESIGN_TOKENS.room.background]} />
       <fog attach="fog" args={[DESIGN_TOKENS.room.background, 8, 16]} />
-      <CameraRig instant={reducedMotion} paused={hidden} tier={quality} />
+      <CameraRig
+        instant={reducedMotion}
+        paused={hidden || !active}
+        tier={quality}
+      />
       <RoomScene
         seed={seed}
         quality={quality}

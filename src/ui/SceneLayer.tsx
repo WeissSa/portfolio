@@ -25,7 +25,14 @@ function LoadingCutIn() {
   );
 }
 
-export function SceneLayer({ quality }: { quality: RoomQuality }) {
+export function SceneLayer({
+  quality,
+  active = true,
+}: {
+  quality: RoomQuality;
+  /** False while 2D is showing: keep the Canvas warm but render zero frames. */
+  active?: boolean;
+}) {
   const [ready, setReady] = useState(false);
   const onReady = useCallback(() => setReady(true), []);
   // Book picking needs real pointer input. The wrapper stays aria-hidden and
@@ -51,17 +58,22 @@ export function SceneLayer({ quality }: { quality: RoomQuality }) {
         <div
           className={`scene-layer${ready ? ' scene-layer--ready' : ''}${
             interactive ? ' scene-layer--interactive' : ''
-          }`}
+          }${active ? '' : ' scene-layer--inactive'}`}
           aria-hidden="true"
         >
-          <Room quality={quality} className="scene-canvas" onReady={onReady} />
+          <Room
+            quality={quality}
+            className="scene-canvas"
+            onReady={onReady}
+            active={active}
+          />
         </div>
       </Suspense>
       {needsCssGrade && (
         <div
           data-testid="scene-grade-overlay"
           className={`scene-grade-overlay${
-            ready ? ' scene-grade-overlay--ready' : ''
+            ready && active ? ' scene-grade-overlay--ready' : ''
           }`}
           aria-hidden="true"
         />
