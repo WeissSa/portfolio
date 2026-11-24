@@ -39,6 +39,43 @@ function box(w: number, h: number, d: number): THREE.BoxGeometry {
   return new THREE.BoxGeometry(w, h, d);
 }
 
+/**
+ * Chamfered box (art-overhaul commit 3a): an ExtrudeGeometry of the w×h
+ * cross-section with a single bevel segment, so every long edge AND both end
+ * faces catch the key light — an authored silhouette instead of a flat-shaded
+ * cuboid. ExtrudeGeometry's bevel GROWS the contour outward by bevelSize and
+ * adds bevelThickness on both ends, so the shape is inset by `b` and the
+ * extrusion shortened by 2b — the result has exactly the requested outer
+ * dimensions, centered on its bounding box: a drop-in replacement for box().
+ */
+export function beveledBox(
+  w: number,
+  h: number,
+  d: number,
+  bevel = 0.012,
+): THREE.BufferGeometry {
+  const b = Math.max(
+    0.002,
+    Math.min(bevel, w / 2 - 0.002, h / 2 - 0.002, d / 2 - 0.002),
+  );
+  const shape = new THREE.Shape();
+  shape.moveTo(-w / 2 + b, -h / 2 + b);
+  shape.lineTo(w / 2 - b, -h / 2 + b);
+  shape.lineTo(w / 2 - b, h / 2 - b);
+  shape.lineTo(-w / 2 + b, h / 2 - b);
+  shape.closePath();
+  const geometry = new THREE.ExtrudeGeometry(shape, {
+    depth: Math.max(0.002, d - 2 * b),
+    bevelEnabled: true,
+    bevelThickness: b,
+    bevelSize: b,
+    bevelSegments: 1,
+    curveSegments: 1,
+  });
+  geometry.center();
+  return geometry;
+}
+
 function part(
   id: string,
   geometry: THREE.BufferGeometry,
@@ -121,7 +158,11 @@ export function createDesk(seed: string | number): RoomPart[] {
   const topW = 2.4;
   const topD = 1.05;
   const parts: RoomPart[] = [
-    part('desk-top', box(topW, 0.07, topD), 'wood', [0, DESK_TOP_HEIGHT, 0]),
+    part('desk-top', beveledBox(topW, 0.07, topD, 0.014), 'wood', [
+      0,
+      DESK_TOP_HEIGHT,
+      0,
+    ]),
     part('desk-apron', box(topW - 0.14, 0.1, 0.04), 'woodDark', [
       0,
       DESK_TOP_HEIGHT - 0.09,
@@ -151,7 +192,7 @@ export function createDesk(seed: string | number): RoomPart[] {
   const pedX = topW / 2 - legInset - pedW / 2 + 0.05;
   const pedZ = topD / 2 - legInset - 0.14;
   parts.push(
-    part('desk-pedestal', box(pedW, pedH, 0.8), 'woodDark', [
+    part('desk-pedestal', beveledBox(pedW, pedH, 0.8, 0.01), 'woodDark', [
       pedX,
       pedH / 2,
       pedZ - 0.1,
@@ -200,7 +241,7 @@ export function createMonitor(seed: string | number): RoomPart[] {
     part('monitor-neck', box(0.07, 0.24, 0.07), 'metalDark', [0, 0.14, 0]),
     part(
       'monitor-bezel',
-      box(bezelW, bezelH, 0.05),
+      beveledBox(bezelW, bezelH, 0.05, 0.01),
       'metalDark',
       [0, 0.56, 0],
       [0, yaw, 0],
@@ -232,7 +273,7 @@ export function createPcTower(seed: string | number): RoomPart[] {
   const h = 0.52;
   const d = 0.48;
   const parts: RoomPart[] = [
-    part('tower-case', box(w, h, d), 'metalDark', [0, h / 2, 0]),
+    part('tower-case', beveledBox(w, h, d, 0.016), 'metalDark', [0, h / 2, 0]),
     part('tower-front', box(w - 0.05, h - 0.06, 0.012), 'woodDark', [
       0,
       h / 2,
@@ -256,6 +297,327 @@ export function createPcTower(seed: string | number): RoomPart[] {
     );
   }
   return parts;
+}
+
+/* --------------------------------------------------------------- chair -- */
+
+/**
+ * Author-written desk chair (art-overhaul commit 3a): beveled seat, a CURVED
+ * backrest shell (open partial cylinder — the silhouette reads as a bentwood
+ * throne, not a slab), a top rail and four slightly splayed turned legs.
+ * Origin at floor level, facing +z; Room.tsx rotates it toward the desk.
+ */
+export function createChair(seed: string | number): RoomPart[] {
+  const rng = createRng(
+    typeof seed === 'string' ? `${seed}:chair` : seed + 111,
+  );
+  const seatH = 0.44;
+  const seatW = 0.44;
+  const seatD = 0.42;
+  const backR = 0.27;
+  const backArc = 1.55; // radians of the wrap-around shell
+  const parts: RoomPart[] = [
+    part('chair-seat', beveledBox(seatW, 0.05, seatD, 0.012), 'wood', [
+      0,
+      seatH,
+      0,
+    ]),
+  ];
+  // Curved backrest: open cylinder arc centered on -z (theta=π faces -z).
+  const shell = new THREE.CylinderGeometry(
+    backR,
+    backR,
+    0.4,
+    14,
+    1,
+    true,
+    Math.PI - backArc / 2,
+    backArc,
+  );
+  parts.push(part('chair-back', shell, 'woodDark', [0, seatH + 0.26, 0.01]));
+  // Rails cap the shell top and bottom (thicker crown, thin lumbar band).
+  for (const [railY, railH, railR, key] of [
+    [seatH + 0.48, 0.055, backR + 0.006, 'chair-rail-top'],
+    [seatH + 0.09, 0.035, backR + 0.004, 'chair-rail-low'],
+  ] as [number, number, number, string][]) {
+    parts.push(
+      part(
+        key,
+        new THREE.CylinderGeometry(
+          railR,
+          railR,
+          railH,
+          14,
+          1,
+          true,
+          Math.PI - backArc / 2,
+          backArc,
+        ),
+        'wood',
+        [0, railY, 0.01],
+      ),
+    );
+  }
+  // Four turned legs, splayed a millimeter-scale amount (hand-made wobble).
+  const legInsetX = seatW / 2 - 0.055;
+  const legInsetZ = seatD / 2 - 0.055;
+  const legCorners: [number, number][] = [
+    [-legInsetX, -legInsetZ],
+    [legInsetX, -legInsetZ],
+    [-legInsetX, legInsetZ],
+    [legInsetX, legInsetZ],
+  ];
+  legCorners.forEach(([lx, lz], i) => {
+    const splayX = lx > 0 ? 0.055 : -0.055;
+    const splayZ = lz > 0 ? 0.05 : -0.05;
+    parts.push(
+      part(
+        `chair-leg-${i}`,
+        new THREE.CylinderGeometry(0.017, 0.023, seatH - 0.02, 8, 1, false),
+        'woodDark',
+        [lx, (seatH - 0.02) / 2, lz],
+        [splayZ + rng.range(-0.008, 0.008), 0, -splayX],
+      ),
+    );
+  });
+  return parts;
+}
+
+/* ---------------------------------------------------- narrative props -- */
+
+/**
+ * The curated 7-item narrative prop set (art-overhaul commit 3a). Each prop is
+ * authored with UNIQUE proportions — no instanced clones — and belongs to one
+ * placement subset so Room.tsx can parent it to the right group:
+ *
+ *   desk    (desk-group local):   mug under the lamp light pool, keyboard
+ *   monitor (monitor-offset grp): headphones draped over the bezel's top-right
+ *   floor   (world space):        paper stack + cable coil beside the tower
+ *   tower   (tower-group local):  two sticky notes on the front panel
+ *   shelf   (shelf-group local):  a glowing elixir flask on the crown
+ *
+ * Positions are SPECIFIED (see each comment) so the composition stays an art
+ * decision, not a scatter roll; the seed only drives millimeter jitter.
+ */
+export interface NarrativeProps {
+  desk: RoomPart[];
+  monitor: RoomPart[];
+  floor: RoomPart[];
+  tower: RoomPart[];
+  shelf: RoomPart[];
+}
+
+export const NARRATIVE_PROP_IDS = [
+  'prop-mug',
+  'prop-headphones',
+  'prop-paper-stack',
+  'prop-cable-coil',
+  'prop-sticky-notes',
+  'prop-keyboard',
+  'prop-flask',
+] as const;
+
+export function createNarrativeProps(seed: string | number): NarrativeProps {
+  const rng = createRng(
+    typeof seed === 'string' ? `${seed}:props` : seed + 123,
+  );
+
+  /* 1. Mug — desk local, directly under the desk-lamp light pool (the key
+   *    light aims at desk-local x≈-0.6, so the mug sits in the bright pool). */
+  const mugProfile = [
+    new THREE.Vector2(0, 0),
+    new THREE.Vector2(0.038, 0),
+    new THREE.Vector2(0.043, 0.008),
+    new THREE.Vector2(0.036, 0.055),
+    new THREE.Vector2(0.041, 0.088),
+    new THREE.Vector2(0.038, 0.092),
+  ];
+  const desk: RoomPart[] = [
+    part(
+      'prop-mug-body',
+      new THREE.LatheGeometry(mugProfile, 14),
+      'paper',
+      [-0.6, DESK_TOP_HEIGHT + 0.035, 0.14],
+      [0, rng.range(-0.4, 0.4), 0],
+    ),
+    part(
+      'prop-mug-handle',
+      new THREE.TorusGeometry(0.026, 0.006, 5, 10),
+      'paper',
+      [-0.553, DESK_TOP_HEIGHT + 0.035 + 0.05, 0.14],
+      [0, 0, 0.2],
+    ),
+  ];
+
+  /* 6. Keyboard — desk local, square with the monitor, yawed a few degrees
+   *    as if pushed aside after a long session. Base + key deck + row bars. */
+  const kbX = -0.3;
+  const kbY = DESK_TOP_HEIGHT + 0.035;
+  const kbZ = 0.2;
+  const kbYaw = -0.06 + rng.range(-0.02, 0.02);
+  desk.push(
+    part(
+      'prop-keyboard-base',
+      beveledBox(0.4, 0.014, 0.145, 0.004),
+      'metalDark',
+      [kbX, kbY + 0.007, kbZ],
+      [0, kbYaw, 0],
+    ),
+    part(
+      'prop-keyboard-keys',
+      box(0.37, 0.006, 0.1),
+      'silhouette',
+      [kbX, kbY + 0.017, kbZ - 0.01],
+      [0, kbYaw, 0],
+    ),
+    part(
+      'prop-keyboard-row-a',
+      box(0.35, 0.004, 0.018),
+      'metalDark',
+      [kbX, kbY + 0.022, kbZ - 0.045],
+      [0, kbYaw, 0],
+    ),
+    part(
+      'prop-keyboard-row-b',
+      box(0.35, 0.004, 0.018),
+      'metalDark',
+      [kbX, kbY + 0.022, kbZ - 0.005],
+      [0, kbYaw, 0],
+    ),
+  );
+
+  /* 2. Headphones — monitor-group local, draped over the bezel's top-right
+   *    corner: half-torus band arching front↔back over the edge, two cups. */
+  const hpX = 0.28;
+  const hpY = 0.86; // bezel top edge (center 0.56 + h/2)
+  const monitor: RoomPart[] = [
+    part(
+      'prop-headphones-band',
+      new THREE.TorusGeometry(0.075, 0.011, 6, 14, Math.PI),
+      'silhouette',
+      [hpX, hpY, 0],
+      [0, Math.PI / 2, 0],
+    ),
+    part(
+      'prop-headphones-cup-front',
+      new THREE.CylinderGeometry(0.042, 0.05, 0.028, 12),
+      'metalDark',
+      [hpX, hpY - 0.062, 0.075],
+      [Math.PI / 2 + 0.12, 0, 0],
+    ),
+    part(
+      'prop-headphones-cup-back',
+      new THREE.CylinderGeometry(0.042, 0.05, 0.028, 12),
+      'metalDark',
+      [hpX, hpY - 0.062, -0.075],
+      [Math.PI / 2 - 0.12, 0, 0],
+    ),
+  ];
+
+  /* 3. Paper stack — world space on the floor beside the PC tower
+   *    (tower stands at [3.3, 0, -2.9]); three sheets, each its own size. */
+  const stackX = 2.94;
+  const stackZ = -2.5;
+  const floor: RoomPart[] = [
+    part(
+      'prop-paper-stack-0',
+      box(0.24, 0.012, 0.33),
+      'paper',
+      [stackX, 0.006, stackZ],
+      [0, 0.07, 0],
+    ),
+    part(
+      'prop-paper-stack-1',
+      box(0.225, 0.011, 0.315),
+      'paper',
+      [stackX + 0.012, 0.0175, stackZ - 0.006],
+      [0, -0.11, 0],
+    ),
+    part(
+      'prop-paper-stack-2',
+      box(0.25, 0.01, 0.3),
+      'paper',
+      [stackX - 0.008, 0.028, stackZ + 0.01],
+      [0, 0.19, 0],
+    ),
+  ];
+
+  /* 4. Cable coil — world space on the floor between tower and desk: two
+   *    flat torus loops at different radii + a loose tail. */
+  const ccX = 2.6;
+  const ccZ = -2.16;
+  floor.push(
+    part(
+      'prop-cable-coil-loop-a',
+      new THREE.TorusGeometry(0.135, 0.011, 5, 20),
+      'silhouette',
+      [ccX, 0.012, ccZ],
+      [Math.PI / 2, 0, 0],
+    ),
+    part(
+      'prop-cable-coil-loop-b',
+      new THREE.TorusGeometry(0.1, 0.011, 5, 20),
+      'silhouette',
+      [ccX + 0.008, 0.036, ccZ - 0.004],
+      [Math.PI / 2 + 0.09, 0.3, 0],
+    ),
+    part(
+      'prop-cable-coil-tail',
+      new THREE.CylinderGeometry(0.009, 0.007, 0.24, 6),
+      'silhouette',
+      [ccX + 0.14, 0.01, ccZ + 0.13],
+      [Math.PI / 2 - 0.15, 0.7, 0],
+    ),
+  );
+
+  /* 5. Sticky notes — tower-group local, on the front panel (z = +0.24):
+   *    two squares, different sizes and tilts, like sprint reminders. */
+  const tower: RoomPart[] = [
+    part(
+      'prop-sticky-note-a',
+      new THREE.PlaneGeometry(0.075, 0.075),
+      'paper',
+      [-0.05, 0.35, 0.247],
+      [0, 0, 0.09],
+    ),
+    part(
+      'prop-sticky-note-b',
+      new THREE.PlaneGeometry(0.06, 0.06),
+      'paper',
+      [0.052, 0.255, 0.247],
+      [0, 0, -0.14],
+    ),
+  ];
+
+  /* 7. Flask — shelf-group local, on the crown board left of the projector
+   *    (crown top ≈ y 2.26): lathe body in the warm lampshade glaze + cork. */
+  const flaskProfile = [
+    new THREE.Vector2(0, 0),
+    new THREE.Vector2(0.05, 0),
+    new THREE.Vector2(0.056, 0.012),
+    new THREE.Vector2(0.06, 0.05),
+    new THREE.Vector2(0.048, 0.088),
+    new THREE.Vector2(0.019, 0.115),
+    new THREE.Vector2(0.017, 0.155),
+    new THREE.Vector2(0.021, 0.163),
+  ];
+  const shelf: RoomPart[] = [
+    part(
+      'prop-flask-body',
+      new THREE.LatheGeometry(flaskProfile, 14),
+      'lampShade',
+      [-1.05, 2.295, 0.02],
+      [0, rng.range(0, Math.PI * 2), 0],
+    ),
+    part(
+      'prop-flask-cork',
+      new THREE.CylinderGeometry(0.018, 0.021, 0.026, 8),
+      'wood',
+      [-1.05, 2.295 + 0.172, 0.02],
+    ),
+  ];
+
+  return { desk, monitor, floor, tower, shelf };
 }
 
 /* ------------------------------------------------------------ bookshelf -- */
@@ -305,11 +667,12 @@ export function createBookshelf(
       height / 2,
       -depth / 2 + 0.01,
     ]),
-    part('shelf-crown', box(width + 0.08, 0.07, depth + 0.06), 'wood', [
-      0,
-      height + 0.02,
-      0,
-    ]),
+    part(
+      'shelf-crown',
+      beveledBox(width + 0.08, 0.07, depth + 0.06, 0.012),
+      'wood',
+      [0, height + 0.02, 0],
+    ),
     part('shelf-crown-trim', box(width + 0.1, 0.015, depth + 0.08), 'brass', [
       0,
       height + 0.06,
@@ -335,7 +698,7 @@ export function createBookshelf(
       parts.push(
         part(
           `shelf-board-${shelf}`,
-          box(width - sideT, boardT, depth - 0.02),
+          beveledBox(width - sideT, boardT, depth - 0.02, 0.006),
           'wood',
           [0, y + boardT / 2, 0],
         ),
@@ -658,29 +1021,29 @@ export function createLamp(seed: string | number): RoomPart[] {
   return [
     part(
       'lamp-base',
-      new THREE.LatheGeometry(baseProfile, 14),
+      new THREE.LatheGeometry(baseProfile, 24),
       'metalDark',
       [0, 0, 0],
     ),
     part(
       'lamp-pole',
-      new THREE.CylinderGeometry(0.022, 0.026, poleH, 8),
+      new THREE.CylinderGeometry(0.022, 0.026, poleH, 12),
       'brass',
       [0, poleH / 2 + 0.06, 0],
       [0, 0, tilt],
     ),
     part(
       'lamp-shade',
-      new THREE.LatheGeometry(shadeProfile, 16, 0, Math.PI * 2),
+      new THREE.LatheGeometry(shadeProfile, 28, 0, Math.PI * 2),
       'lampShade',
       [0, shadeY, 0],
     ),
-    part('lamp-bulb', new THREE.SphereGeometry(0.05, 10, 8), 'bulb', [
+    part('lamp-bulb', new THREE.SphereGeometry(0.05, 14, 10), 'bulb', [
       0,
       shadeY + 0.1,
       0,
     ]),
-    part('lamp-finial', new THREE.SphereGeometry(0.02, 8, 6), 'brass', [
+    part('lamp-finial', new THREE.SphereGeometry(0.02, 10, 8), 'brass', [
       0,
       shadeY + 0.31,
       0,
@@ -725,7 +1088,7 @@ export function createProjector(seed: string | number): RoomPart[] {
     ),
     part(
       'projector-lens',
-      new THREE.LatheGeometry(lensProfile, 14),
+      new THREE.LatheGeometry(lensProfile, 24),
       'brass',
       [0, 0.075, -0.14],
       [Math.PI / 2, 0, 0],

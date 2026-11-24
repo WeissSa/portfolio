@@ -21,6 +21,8 @@ import { DESIGN_TOKENS } from '../styles/design-tokens';
 import { CameraRig } from './CameraRig';
 import { PainterlyPass } from './effects/PainterlyPass';
 import {
+  CHAIR_POSITION,
+  CHAIR_ROTATION,
   DESK_POSITION,
   FRAME_POSITIONS,
   LAMP_POSITION,
@@ -31,18 +33,22 @@ import {
   SCREEN_POSITION,
   SHELF_POSITION,
   SHELF_ROTATION,
+  TOWER_POSITION,
+  TOWER_ROTATION,
   WINDOW_POSITION,
   WINDOW_ROTATION,
 } from './placement';
 import {
   createBookInstances,
   createBookshelf,
+  createChair,
   createDesk,
   createFramedSilhouette,
   createGameCases,
   createLamp,
   createLightCone,
   createMonitor,
+  createNarrativeProps,
   createPcTower,
   createProjector,
   createRoomShell,
@@ -89,9 +95,12 @@ export interface RoomSceneProps {
 function Parts({
   parts,
   materials,
+  shadows = false,
 }: {
   parts: readonly RoomPart[];
   materials: RoomMaterials;
+  /** Desktop tier only: meshes cast/receive the one shadow-map key light. */
+  shadows?: boolean;
 }): JSX.Element {
   return (
     <>
@@ -103,6 +112,8 @@ function Parts({
           position={part.position}
           rotation={part.rotation}
           scale={part.scale}
+          castShadow={shadows}
+          receiveShadow={shadows}
         />
       ))}
     </>
@@ -176,6 +187,8 @@ export function RoomScene({
     const projector = createProjector(seed);
     const beam = createLightCone(3.85, 0.62);
     const windowParts = createWindow();
+    const chair = createChair(seed);
+    const props = createNarrativeProps(seed);
     const frames = FRAME_POSITIONS.map(([pos, variant]) => ({
       position: pos,
       parts: createFramedSilhouette(seed, variant),
@@ -195,6 +208,8 @@ export function RoomScene({
       projector,
       beam,
       windowParts,
+      chair,
+      props,
       frames,
       rugGeometry,
       cases,
@@ -230,6 +245,12 @@ export function RoomScene({
         ...furniture.projector,
         furniture.beam,
         ...furniture.windowParts,
+        ...furniture.chair,
+        ...furniture.props.desk,
+        ...furniture.props.monitor,
+        ...furniture.props.floor,
+        ...furniture.props.tower,
+        ...furniture.props.shelf,
         ...furniture.frames.flatMap((frame) => frame.parts),
         ...furniture.cases,
       ]);
@@ -246,22 +267,30 @@ export function RoomScene({
     LAMP_BULB_LOCAL[1],
     LAMP_POSITION[2] + LAMP_BULB_LOCAL[2],
   ];
-  const deskLampLight: Vec3 = [
-    DESK_POSITION[0] - 0.6,
-    DESK_TOP_HEIGHT + 0.55,
-    DESK_POSITION[2] + 0.1,
+
+  // Chiaroscuro key light (commit 3a): ONE warm shadow-casting spot over the
+  // desk replaces the old shadowless desk-lamp point light, so the total light
+  // count stays ≤5. Desktop tier only — mobile gets the same warm pool without
+  // a shadow map (castShadow=false, Canvas shadows disabled).
+  const keyLight = quality === 'desktop';
+  const keyLightTarget: Vec3 = [
+    DESK_POSITION[0] - 0.45,
+    DESK_TOP_HEIGHT,
+    DESK_POSITION[2] + 0.05,
   ];
 
   return (
     <PainterlyPass enabled={quality === 'desktop'}>
-      {/* Base ambience: cool night fill + moonlight from the window. */}
-      <ambientLight intensity={0.5} color={DESIGN_TOKENS.room.ambient} />
+      {/* Base ambience: cool night fill + moonlight from the window. The
+          ambient is dimmed (0.5 → 0.36) so the warm key light reads. */}
+      <ambientLight intensity={0.36} color={DESIGN_TOKENS.room.ambient} />
       <directionalLight
         position={[5.5, 3.2, 1.2]}
         intensity={0.45}
         color={DESIGN_TOKENS.room.moonlight}
       />
-      {/* Warm lamp pools (§3.5): floor lamp + desk glow + monitor spill. */}
+      {/* Warm lamp pools (§3.5): floor lamp + monitor spill. The desk pool is
+          now the shadow-casting key spot below. */}
       <pointLight
         position={lampLight}
         intensity={9}
@@ -269,12 +298,31 @@ export function RoomScene({
         decay={2}
         color={DESIGN_TOKENS.room.lamp}
       />
-      <pointLight
-        position={deskLampLight}
-        intensity={4}
-        distance={4}
+      <spotLight
+        position={[
+          DESK_POSITION[0] - 0.2,
+          DESK_TOP_HEIGHT + 1.85,
+          DESK_POSITION[2] + 0.85,
+        ]}
+        angle={0.85}
+        penumbra={0.55}
+        intensity={24}
+        distance={6.5}
         decay={2}
         color={DESIGN_TOKENS.room.deskLamp}
+        castShadow={keyLight}
+        shadow-mapSize-width={1024}
+        shadow-mapSize-height={1024}
+        shadow-bias={-0.0006}
+        shadow-camera-near={0.4}
+        shadow-camera-far={7}
+        ref={(light) => {
+          if (!light) return;
+          // A SpotLight aims at its target's WORLD matrix; the default target
+          // is not in the scene graph, so position + refresh it directly.
+          light.target.position.set(...keyLightTarget);
+          light.target.updateMatrixWorld();
+        }}
       />
       <pointLight
         position={[
@@ -289,19 +337,46 @@ export function RoomScene({
       />
 
       <group name="room-shell">
-        <Parts parts={furniture.shell} materials={materials} />
+        <Parts
+          parts={furniture.shell}
+          materials={materials}
+          shadows={keyLight}
+        />
       </group>
 
       <group name="rug" position={RUG_POSITION}>
-        <mesh geometry={furniture.rugGeometry} material={materials.rug} />
+        <mesh
+          geometry={furniture.rugGeometry}
+          material={materials.rug}
+          receiveShadow={keyLight}
+        />
       </group>
 
       <group name="desk" position={DESK_POSITION}>
-        <Parts parts={furniture.desk} materials={materials} />
+        <Parts
+          parts={furniture.desk}
+          materials={materials}
+          shadows={keyLight}
+        />
+        {/* Narrative props (3a): mug in the lamp pool + the askew keyboard. */}
+        <Parts
+          parts={furniture.props.desk}
+          materials={materials}
+          shadows={keyLight}
+        />
         {/* Pickable monitor (commit 7): offset from the desk via the same
             constant the desktop-zoom camera derives its close-up from. */}
         <group position={MONITOR_DESK_OFFSET}>
           <DeskZone monitor={furniture.monitor} materials={materials} />
+        </group>
+        {/* Headphones draped on the bezel — sibling of the pickable monitor
+            group so the prop never swallows the About-desktop pick. */}
+        <group name="prop-headphones" position={MONITOR_DESK_OFFSET}>
+          <Parts
+            parts={furniture.props.monitor}
+            materials={materials}
+            shadows={keyLight}
+          />
         </group>
         {/* Pickable game cases (commit 8): the same RoomParts, now wrapped as
             five individually clickable groups with an open/flip lid animation. */}
@@ -310,8 +385,39 @@ export function RoomScene({
         </group>
       </group>
 
-      <group name="pc-tower" position={[3.3, 0, -2.9]} rotation={[0, -0.35, 0]}>
-        <Parts parts={furniture.tower} materials={materials} />
+      <group name="chair" position={CHAIR_POSITION} rotation={CHAIR_ROTATION}>
+        <Parts
+          parts={furniture.chair}
+          materials={materials}
+          shadows={keyLight}
+        />
+      </group>
+
+      <group
+        name="pc-tower"
+        position={TOWER_POSITION}
+        rotation={TOWER_ROTATION}
+      >
+        <Parts
+          parts={furniture.tower}
+          materials={materials}
+          shadows={keyLight}
+        />
+        {/* Sticky notes live in tower-local space so they ride the yaw. */}
+        <Parts
+          parts={furniture.props.tower}
+          materials={materials}
+          shadows={keyLight}
+        />
+      </group>
+
+      {/* Floor-level narrative props (world space): paper stack + cable coil. */}
+      <group name="floor-props">
+        <Parts
+          parts={furniture.props.floor}
+          materials={materials}
+          shadows={keyLight}
+        />
       </group>
 
       <group
@@ -319,14 +425,28 @@ export function RoomScene({
         position={SHELF_POSITION}
         rotation={SHELF_ROTATION}
       >
-        <Parts parts={furniture.bookshelf.parts} materials={materials} />
+        <Parts
+          parts={furniture.bookshelf.parts}
+          materials={materials}
+          shadows={keyLight}
+        />
         {/* Decorative filler volumes behind the 13 pickable post-books. */}
         <Books books={furniture.books} material={materials.book} />
         <LibraryZone cells={furniture.bookshelf.cells} materials={materials} />
+        {/* The elixir flask on the crown, left of the projector. */}
+        <Parts
+          parts={furniture.props.shelf}
+          materials={materials}
+          shadows={keyLight}
+        />
       </group>
 
       <group name="floor-lamp" position={LAMP_POSITION}>
-        <Parts parts={furniture.lamp} materials={materials} />
+        <Parts
+          parts={furniture.lamp}
+          materials={materials}
+          shadows={keyLight}
+        />
       </group>
 
       <group
@@ -334,7 +454,11 @@ export function RoomScene({
         position={WINDOW_POSITION}
         rotation={WINDOW_ROTATION}
       >
-        <Parts parts={furniture.windowParts} materials={materials} />
+        <Parts
+          parts={furniture.windowParts}
+          materials={materials}
+          shadows={keyLight}
+        />
       </group>
 
       <group
@@ -342,7 +466,11 @@ export function RoomScene({
         position={PROJECTOR_POSITION}
         rotation={PROJECTOR_ROTATION}
       >
-        <Parts parts={furniture.projector} materials={materials} />
+        <Parts
+          parts={furniture.projector}
+          materials={materials}
+          shadows={keyLight}
+        />
         {/* Additive light cone from the lens toward the screen. */}
         <group position={[0, 0.075, -0.2]}>
           <mesh
@@ -373,7 +501,7 @@ export function RoomScene({
           name={`frame-${index}`}
           position={position}
         >
-          <Parts parts={parts} materials={materials} />
+          <Parts parts={parts} materials={materials} shadows={keyLight} />
         </group>
       ))}
     </PainterlyPass>
@@ -426,6 +554,9 @@ export default function Room({
       className={className}
       camera={{ position: [0, 1.65, 4.8], fov: 50, near: 0.1, far: 60 }}
       dpr={dpr}
+      // One 1024² shadow map for the warm desk key light — DESKTOP tier only;
+      // mobile/low never allocate a shadow map (art-overhaul commit 3a).
+      shadows={quality === 'desktop'}
       gl={{ antialias: false, powerPreference: 'high-performance' }}
       frameloop={hidden ? 'never' : 'demand'}
       aria-hidden="true"

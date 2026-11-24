@@ -123,8 +123,23 @@ describe('RoomScene headless render', () => {
     );
     const meshes = renderer.scene.findAll((node) => node.type === 'Mesh');
     // Shell + desk + monitor + tower + shelf + lamp + projector + window +
-    // frames + cases + screen: comfortably more than 40 meshes.
+    // frames + cases + screen + chair + narrative props: comfortably more
+    // than 40 meshes.
     expect(meshes.length).toBeGreaterThan(40);
+    // Upper bound (art-overhaul commit 3a): draw-call discipline — the whole
+    // authored room must stay well under 200 meshes.
+    expect(meshes.length).toBeLessThan(200);
+
+    // Light budget: ambient + moon + lamp point + monitor spill + the warm
+    // key spot = 5, never more. Mobile carries NO shadow-casting light.
+    const lights = renderer.scene.findAll((node) =>
+      Boolean((node.instance as THREE.Light | undefined)?.isLight),
+    );
+    expect(lights.length).toBeLessThanOrEqual(5);
+    expect(lights.length).toBeGreaterThan(0);
+    for (const light of lights) {
+      expect((light.instance as THREE.Light).castShadow).toBe(false);
+    }
 
     // THREE.InstancedMesh keeps .type === 'Mesh'; detect via the flag. Two:
     // decorative filler books + the 13 pickable Library post-books (commit 6).
@@ -151,7 +166,9 @@ describe('RoomScene headless render', () => {
       'room-shell',
       'rug',
       'desk',
+      'chair',
       'pc-tower',
+      'floor-props',
       'bookshelf',
       'library-books',
       'floor-lamp',
@@ -176,6 +193,21 @@ describe('RoomScene headless render', () => {
     );
     const meshes = renderer.scene.findAll((node) => node.type === 'Mesh');
     expect(meshes.length).toBeGreaterThan(40);
+    expect(meshes.length).toBeLessThan(200);
+
+    // Chiaroscuro contract (commit 3a): EXACTLY ONE shadow-casting light —
+    // the warm desk key spot — with a 1024² shadow map, and ≤5 lights total.
+    const lights = renderer.scene
+      .findAll((node) => Boolean((node.instance as THREE.Light)?.isLight))
+      .map((node) => node.instance as THREE.Light);
+    expect(lights.length).toBeLessThanOrEqual(5);
+    const shadowCasters = lights.filter((light) => light.castShadow);
+    expect(shadowCasters).toHaveLength(1);
+    expect(shadowCasters[0]?.type).toBe('SpotLight');
+    const keySpot = shadowCasters[0] as THREE.SpotLight;
+    expect(keySpot.shadow.mapSize.width).toBe(1024);
+    expect(keySpot.shadow.mapSize.height).toBe(1024);
+
     await renderer.unmount();
   });
 });

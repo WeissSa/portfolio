@@ -45,6 +45,27 @@ export type PaintOp =
       alpha?: number;
     }
   | {
+      /**
+       * Curved brush stroke (art-overhaul commit 3a): a quadratic Bézier from
+       * (x1,y1) through control (cx1,cy1) to (x2,y2). Supply cx2/cy2 to
+       * upgrade it to a cubic Bézier (bezierCurveTo). Round caps keep the ends
+       * brush-like. This is the op plans use for painterly curved strokes —
+       * sagging cable shadows, worn brass arcs, swirling plaster trowel marks.
+       */
+      kind: 'curve';
+      x1: number;
+      y1: number;
+      cx1: number;
+      cy1: number;
+      cx2?: number;
+      cy2?: number;
+      x2: number;
+      y2: number;
+      width: number;
+      color: string;
+      alpha?: number;
+    }
+  | {
       kind: 'polygon';
       points: [number, number][];
       color: string;
@@ -988,6 +1009,19 @@ function paintOp(ctx: CanvasRenderingContext2D, op: PaintOp): void {
       ctx.beginPath();
       ctx.moveTo(op.x1, op.y1);
       ctx.lineTo(op.x2, op.y2);
+      ctx.stroke();
+      break;
+    case 'curve':
+      ctx.strokeStyle = op.color;
+      ctx.lineWidth = op.width;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(op.x1, op.y1);
+      if (op.cx2 !== undefined && op.cy2 !== undefined) {
+        ctx.bezierCurveTo(op.cx1, op.cy1, op.cx2, op.cy2, op.x2, op.y2);
+      } else {
+        ctx.quadraticCurveTo(op.cx1, op.cy1, op.x2, op.y2);
+      }
       ctx.stroke();
       break;
     case 'polygon':

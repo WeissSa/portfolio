@@ -4,14 +4,17 @@
  * assertions run headlessly in node/jsdom.
  */
 import { describe, expect, it } from 'vitest';
+import * as THREE from 'three';
 import { POSTS, postId } from '../src/content/posts';
 import {
   atlasCellUV,
+  beveledBox,
   bookAtlasRows,
   BOOK_ATLAS_COLUMNS,
   countVertices,
   createBookInstances,
   createBookshelf,
+  createChair,
   createLibraryBooks,
   createDesk,
   createFramedSilhouette,
@@ -19,15 +22,18 @@ import {
   createLamp,
   createLightCone,
   createMonitor,
+  createNarrativeProps,
   createPcTower,
   createProjector,
   createRoomShell,
   createRugGeometry,
   createSpineLabelsGeometry,
   createWindow,
+  DESK_TOP_HEIGHT,
   disposeParts,
   geometryChecksum,
   MAX_BOOK_INSTANCES,
+  NARRATIVE_PROP_IDS,
   SPINE_LABEL_VERTICES,
   withPulledOutLabel,
   type RoomPart,
@@ -42,6 +48,17 @@ const partsFingerprint = (parts: readonly RoomPart[]): string =>
     )
     .join(';');
 
+const allProps = (seed = 'geo') => {
+  const props = createNarrativeProps(seed);
+  return [
+    ...props.desk,
+    ...props.monitor,
+    ...props.floor,
+    ...props.tower,
+    ...props.shelf,
+  ];
+};
+
 const allRoomParts = (seed = 'geo'): RoomPart[] => {
   const shelf = createBookshelf(seed);
   return [
@@ -54,6 +71,8 @@ const allRoomParts = (seed = 'geo'): RoomPart[] => {
     ...createProjector(seed),
     createLightCone(),
     ...createWindow(),
+    ...createChair(seed),
+    ...allProps(seed),
     ...createFramedSilhouette(seed, 0),
     ...createGameCases(seed, 5),
   ];
@@ -75,6 +94,12 @@ describe('geometry determinism', () => {
     );
     expect(partsFingerprint(createProjector('a'))).toBe(
       partsFingerprint(createProjector('a')),
+    );
+    expect(partsFingerprint(createChair('a'))).toBe(
+      partsFingerprint(createChair('a')),
+    );
+    expect(partsFingerprint(allProps('a'))).toBe(
+      partsFingerprint(allProps('a')),
     );
     expect(partsFingerprint(createFramedSilhouette('a', 2))).toBe(
       partsFingerprint(createFramedSilhouette('a', 2)),
@@ -185,6 +210,159 @@ describe('geometry budgets (§4.3 draw-call/vertex discipline)', () => {
   it('disposeParts is safe to call on fresh geometry', () => {
     const parts = createDesk('dispose-me');
     expect(() => disposeParts(parts)).not.toThrow();
+  });
+});
+
+describe('authored silhouettes (art-overhaul commit 3a)', () => {
+  it('beveledBox keeps outer dimensions and beats a plain box in vertices', () => {
+    const geometry = beveledBox(0.5, 0.2, 0.3, 0.015);
+    expect(geometry.type).toBe('ExtrudeGeometry');
+    geometry.computeBoundingBox();
+    const size = new THREE.Box3().setFromBufferAttribute(
+      geometry.getAttribute('position') as THREE.BufferAttribute,
+    );
+    const dims = size.getSize(new THREE.Vector3());
+    expect(dims.x).toBeCloseTo(0.5, 5);
+    expect(dims.y).toBeCloseTo(0.2, 5);
+    expect(dims.z).toBeCloseTo(0.3, 5);
+    expect(geometry.getAttribute('position')?.count ?? 0).toBeGreaterThan(24);
+    // Degenerate dimensions clamp the bevel instead of exploding.
+    const thin = beveledBox(0.4, 0.01, 0.3, 0.05);
+    thin.computeBoundingBox();
+    expect(thin.getAttribute('position')).toBeDefined();
+    geometry.dispose();
+    thin.dispose();
+  });
+
+  it('bevels the major furniture: desk, shelf, tower, monitor', () => {
+    const desk = createDesk('bvl');
+    expect(desk.find((p) => p.id === 'desk-top')?.geometry.type).toBe(
+      'ExtrudeGeometry',
+    );
+    expect(desk.find((p) => p.id === 'desk-pedestal')?.geometry.type).toBe(
+      'ExtrudeGeometry',
+    );
+    const shelf = createBookshelf('bvl');
+    expect(shelf.parts.find((p) => p.id === 'shelf-crown')?.geometry.type).toBe(
+      'ExtrudeGeometry',
+    );
+    expect(
+      shelf.parts.find((p) => p.id === 'shelf-board-1')?.geometry.type,
+    ).toBe('ExtrudeGeometry');
+    expect(
+      createPcTower('bvl').find((p) => p.id === 'tower-case')?.geometry.type,
+    ).toBe('ExtrudeGeometry');
+    expect(
+      createMonitor('bvl').find((p) => p.id === 'monitor-bezel')?.geometry.type,
+    ).toBe('ExtrudeGeometry');
+  });
+
+  it('spins higher-segment lathes for the lamp and projector lens', () => {
+    const lampBase = createLamp('seg').find((p) => p.id === 'lamp-base');
+    // 24 radial segments × 6 profile points, pole vertex merged → 125 vertices
+    // (the old 14-segment lathe had 75).
+    expect(lampBase?.geometry.type).toBe('LatheGeometry');
+    expect(
+      lampBase?.geometry.getAttribute('position')?.count ?? 0,
+    ).toBeGreaterThanOrEqual(125);
+    const shade = createLamp('seg').find((p) => p.id === 'lamp-shade');
+    expect(
+      shade?.geometry.getAttribute('position')?.count ?? 0,
+    ).toBeGreaterThanOrEqual(58);
+    const lens = createProjector('seg').find((p) => p.id === 'projector-lens');
+    expect(lens?.geometry.type).toBe('LatheGeometry');
+    expect(
+      lens?.geometry.getAttribute('position')?.count ?? 0,
+    ).toBeGreaterThanOrEqual(100);
+  });
+
+  it('createChair: seat, curved open-ended back shell, rails, four legs', () => {
+    const chair = createChair('chair');
+    const ids = chair.map((p) => p.id);
+    for (const expected of [
+      'chair-seat',
+      'chair-back',
+      'chair-rail-top',
+      'chair-rail-low',
+      'chair-leg-0',
+      'chair-leg-1',
+      'chair-leg-2',
+      'chair-leg-3',
+    ]) {
+      expect(ids, expected).toContain(expected);
+    }
+    const back = chair.find((p) => p.id === 'chair-back');
+    const params = (back?.geometry as THREE.CylinderGeometry)
+      .parameters as unknown as {
+      openEnded: boolean;
+      thetaLength: number;
+    };
+    expect(back?.geometry.type).toBe('CylinderGeometry');
+    expect(params.openEnded).toBe(true);
+    // A curved ARC, never a full tube — the silhouette reads as a bent back.
+    expect(params.thetaLength).toBeGreaterThan(0.5);
+    expect(params.thetaLength).toBeLessThan(Math.PI * 2);
+  });
+
+  it('the 7 narrative props exist with specified anchors and unique proportions', () => {
+    const props = createNarrativeProps('story');
+    const all = allProps('story');
+    // Every prop family id prefix is present exactly once in the union.
+    const prefixes = NARRATIVE_PROP_IDS.map(
+      (id) => id.replace(/^prop-/, '').split('-')[0],
+    );
+    expect(prefixes).toHaveLength(7);
+    for (const prefix of prefixes) {
+      expect(
+        all.filter((p) => p.id.startsWith(`prop-${prefix}`)).length,
+        prefix,
+      ).toBeGreaterThan(0);
+    }
+
+    // Specified anchors (art-direction, not scatter):
+    //  - mug sits in the desk-group lamp pool at x ≈ -0.6 on the desk surface;
+    const mug = props.desk.find((p) => p.id === 'prop-mug-body');
+    expect(mug?.position?.[0]).toBeCloseTo(-0.6, 5);
+    expect(mug?.position?.[1]).toBeCloseTo(DESK_TOP_HEIGHT + 0.035, 5);
+    //  - headphones hang on the monitor bezel's top edge (y = 0.86);
+    const band = props.monitor.find((p) => p.id === 'prop-headphones-band');
+    expect(band?.position?.[1]).toBeCloseTo(0.86, 5);
+    //  - the paper stack + cable coil are floor-level world-space props;
+    expect(props.floor.every((p) => (p.position?.[1] ?? 1) < 0.1)).toBe(true);
+    //  - sticky notes ride the tower front panel (z > tower depth/2 = 0.24);
+    expect(props.tower.every((p) => (p.position?.[2] ?? 0) > 0.24)).toBe(true);
+    //  - the flask stands on the shelf crown (y ≈ 2.295).
+    const flask = props.shelf.find((p) => p.id === 'prop-flask-body');
+    expect(flask?.position?.[1]).toBeCloseTo(2.295, 5);
+
+    // UNIQUE proportions: no prop family shares a bounding envelope with
+    // another (they are authored items, never instanced clones of one mesh).
+    const familyPrefixes = [
+      'prop-mug',
+      'prop-headphones',
+      'prop-paper-stack',
+      'prop-cable-coil',
+      'prop-sticky',
+      'prop-keyboard',
+      'prop-flask',
+    ];
+    const envelopeOf = (prefix: string): string => {
+      const box3 = new THREE.Box3();
+      for (const part of all.filter((p) => p.id.startsWith(prefix))) {
+        part.geometry.computeBoundingBox();
+        const local = part.geometry.boundingBox?.clone() ?? new THREE.Box3();
+        local.translate(new THREE.Vector3(...(part.position ?? [0, 0, 0])));
+        box3.union(local);
+      }
+      const size = box3.getSize(new THREE.Vector3());
+      const center = box3.getCenter(new THREE.Vector3());
+      return [size, center]
+        .flatMap((v) => [v.x, v.y, v.z])
+        .map((n) => n.toFixed(3))
+        .join(',');
+    };
+    const envelopes = familyPrefixes.map(envelopeOf);
+    expect(new Set(envelopes).size).toBe(7);
   });
 });
 

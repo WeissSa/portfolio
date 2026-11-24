@@ -9,6 +9,7 @@ import {
   createTexturePlans,
   MAX_TEXTURE_OPS,
   MAX_TEXTURE_SIZE,
+  paintPlanToCanvas,
   planBookSpineAtlas,
   planBrass,
   planCaseLabels,
@@ -84,6 +85,17 @@ describe('texture budgets (§3.8/§4.3)', () => {
       expect(plan.ops.length).toBeGreaterThan(0);
       expect(plan.ops.length).toBeLessThanOrEqual(MAX_TEXTURE_OPS);
     }
+  });
+
+  it('total texture pixels stay under the scene GPU-memory cap (3a)', () => {
+    // Nine plans at ≤512px each: the SUM is capped so a future plan cannot
+    // sneak a second 512² atlas in under the per-texture size limit.
+    let totalPixels = 0;
+    for (const plan of Object.values(plans)) {
+      totalPixels += plan.width * plan.height;
+    }
+    expect(totalPixels).toBeGreaterThan(0);
+    expect(totalPixels).toBeLessThanOrEqual(1_800_000);
   });
 
   it('painterly surfaces bake in edge darkening (§3.5)', () => {
@@ -169,5 +181,94 @@ describe('monitor + projector screens', () => {
     expect(labels).toContain('OUR CLIMATE,');
     expect(labels).toContain('OUR FUTURE');
     expect(labels.some((text) => text.includes('open-meteo.com'))).toBe(true);
+  });
+});
+
+describe('curve paint op (art-overhaul commit 3a)', () => {
+  /**
+   * paintPlanToCanvas needs a 2D context; jsdom has none. The op execution is
+   * verified against a recording stub so the quadratic-vs-cubic branch is
+   * covered headlessly (pixel fidelity stays a browser/QA concern).
+   */
+  function recordingCanvas() {
+    const calls: Array<[string, ...number[]]> = [];
+    const record =
+      (name: string) =>
+      (...args: number[]) =>
+        calls.push([name, ...args]);
+    const ctx = {
+      save: record('save') as () => void,
+      restore: record('restore') as () => void,
+      beginPath: record('beginPath') as () => void,
+      moveTo: record('moveTo'),
+      lineTo: record('lineTo'),
+      quadraticCurveTo: record('quadraticCurveTo'),
+      bezierCurveTo: record('bezierCurveTo'),
+      stroke: record('stroke') as () => void,
+      fill: record('fill') as () => void,
+      fillRect: record('fillRect'),
+      strokeStyle: '',
+      fillStyle: '',
+      lineWidth: 1,
+      lineCap: 'butt',
+      globalAlpha: 1,
+    };
+    const canvas = {
+      width: 0,
+      height: 0,
+      getContext: () => ctx,
+    } as unknown as HTMLCanvasElement;
+    return { canvas, calls };
+  }
+
+  const planWith = (op: PaintOp): TexturePlan => ({
+    name: 'curve-test',
+    width: 8,
+    height: 8,
+    ops: [op],
+  });
+
+  it('paints a quadratic stroke with one control point', () => {
+    const { canvas, calls } = recordingCanvas();
+    paintPlanToCanvas(
+      planWith({
+        kind: 'curve',
+        x1: 1,
+        y1: 2,
+        cx1: 3,
+        cy1: 4,
+        x2: 5,
+        y2: 6,
+        width: 2,
+        color: PALETTE.brass,
+      }),
+      canvas,
+    );
+    expect(calls).toContainEqual(['moveTo', 1, 2]);
+    expect(calls).toContainEqual(['quadraticCurveTo', 3, 4, 5, 6]);
+    expect(calls.some(([name]) => name === 'bezierCurveTo')).toBe(false);
+    expect(calls.some(([name]) => name === 'stroke')).toBe(true);
+  });
+
+  it('upgrades to a cubic Bézier when both control points are given', () => {
+    const { canvas, calls } = recordingCanvas();
+    paintPlanToCanvas(
+      planWith({
+        kind: 'curve',
+        x1: 0,
+        y1: 0,
+        cx1: 1,
+        cy1: 2,
+        cx2: 3,
+        cy2: 4,
+        x2: 5,
+        y2: 5,
+        width: 1.5,
+        color: PALETTE.woodGrain,
+      }),
+      canvas,
+    );
+    expect(calls).toContainEqual(['bezierCurveTo', 1, 2, 3, 4, 5, 5]);
+    expect(calls.some(([name]) => name === 'quadraticCurveTo')).toBe(false);
   });
 });
