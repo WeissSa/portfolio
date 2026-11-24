@@ -74,6 +74,9 @@ export default function App() {
   const setAutoMode = usePortfolioStore((s) => s.setAutoMode);
   const setPointerFine = usePortfolioStore((s) => s.setPointerFine);
   const pointerFine = usePortfolioStore((s) => s.pointerFine);
+  const sceneReady = usePortfolioStore((s) => s.sceneReady);
+  /** True only when WebGL actually drew a frame — never a bare mode flag. */
+  const sceneLive = mode === '3d' && sceneReady;
   // Monitor desktop zoom (commit 7): 3D-only. 2D #/about keeps rendering
   // AboutDesktop through ZoneContent below, unaffected by this flag.
   const desktopOpen = usePortfolioStore((s) => s.desktopOpen);
@@ -87,7 +90,7 @@ export default function App() {
   );
   const prefersReducedMotion = usePrefersReducedMotion();
   /** 3D while reduced motion is active: static cuts + HUD + frozen grain. */
-  const static3d = mode === '3d' && prefersReducedMotion;
+  const static3d = sceneLive && prefersReducedMotion;
   const initialRouteSynced = useRef(false);
   const [tier, setTier] = useState<DeviceTier>('desktop');
   // 3c P10 warm start: after the first 3D visit, DESKTOP keeps the Canvas
@@ -95,6 +98,8 @@ export default function App() {
   // context/render-target rebuild. Mobile/low deliberately unmount: GPU memory
   // matters more than one toggle there, and their tier can change on rotation.
   const [sceneVisited, setSceneVisited] = useState(false);
+  /** Transient "no scene" signal (not the sticky crash flag). */
+  const [sceneUnavailable, setSceneUnavailable] = useState(false);
   useEffect(() => {
     if (mode === '3d') setSceneVisited(true);
   }, [mode]);
@@ -108,7 +113,26 @@ export default function App() {
     clearManualMode();
     setAutoMode('2d');
     setMode('2d');
+    setSceneUnavailable(true);
   }, [setAutoMode, setMode]);
+
+  // A Canvas that mounts but never issues a frame (dev context failure, lazy
+  // chunk stall) must not leave the visitor in a half-3D shell. Fall back to
+  // clean full-width 2D after a generous grace period, WITHOUT writing the
+  // sticky crash flag (a slow first compile must not permanently disable 3D).
+  useEffect(() => {
+    if (mode !== '3d' || sceneReady) {
+      if (mode === '3d') setSceneUnavailable(false);
+      return;
+    }
+    const timer = setTimeout(() => {
+      if (!usePortfolioStore.getState().sceneReady) {
+        setSceneUnavailable(true);
+        setMode('2d');
+      }
+    }, 6000);
+    return () => clearTimeout(timer);
+  }, [mode, sceneReady, setMode]);
 
   useEffect(() => {
     if (!initialRouteSynced.current) {
@@ -160,7 +184,9 @@ export default function App() {
           hasNavigated ? '' : ' app-initial'
         }${mode === '3d' ? ' app-3d' : ''}${
           pointerFine ? ' app-fine-pointer' : ''
-        }${static3d ? ' app-static-3d' : ''}`}
+        }${static3d ? ' app-static-3d' : ''}${
+          sceneLive ? ' app-scene-live' : ''
+        }`}
       >
         <a
           href="#main"
@@ -168,6 +194,12 @@ export default function App() {
         >
           Skip to content
         </a>
+
+        {sceneUnavailable && mode === '2d' && (
+          <p className="scene-unavailable-notice" role="status">
+            3D unavailable — showing 2D
+          </p>
+        )}
 
         {/* Zone changes announced to screen readers (plan §3.3). */}
         <p aria-live="polite" className="sr-only">

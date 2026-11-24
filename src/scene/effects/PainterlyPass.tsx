@@ -29,6 +29,7 @@
 import { useEffect, useMemo, useRef, type ReactNode } from 'react';
 import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
+import { useDeferredDispose } from '../../lib/deferred-dispose';
 
 export const PAINTERLY_VERTEX_SHADER = /* glsl */ `
 varying vec2 vUv;
@@ -172,6 +173,19 @@ export function choosePainterlyTargetType(
     : THREE.UnsignedByteType;
 }
 
+/**
+ * Rebind the fullscreen sampler to the CURRENT render target. StrictMode's
+ * dev double-render can leave the memoized uniform object and the memoized rig
+ * from different generations; without this the blit samples a stale target
+ * and the room disappears behind flat grain (owner bug 2026-11-24).
+ */
+export function bindPainterlyDiffuse(
+  uniforms: PainterlyUniforms,
+  target: THREE.WebGLRenderTarget,
+): void {
+  uniforms.tDiffuse.value = target.texture;
+}
+
 /** Pure grain-clock step: reduced-motion 3D holds uTime at a fixed value. */
 export function advancePainterlyTime(
   current: number,
@@ -276,7 +290,7 @@ function PainterlyPassInner({
     const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), material);
     quad.frustumCulled = false;
     quadScene.add(quad);
-    uniforms.tDiffuse.value = target.texture;
+    bindPainterlyDiffuse(uniforms, target);
     return { target, quadScene, quadCamera, material, quad };
   }, [uniforms, supportsFloatTargets]);
 
@@ -289,17 +303,19 @@ function PainterlyPassInner({
     uniforms.uResolution.value.set(width, height);
   }, [gl, size, rig, uniforms]);
 
-  // Dispose GPU resources on unmount.
-  useEffect(() => {
-    return () => {
-      rig.target.dispose();
-      rig.material.dispose();
-      rig.quad.geometry.dispose();
-    };
+  // Dispose GPU resources on REAL unmount — deferred for StrictMode safety.
+  useDeferredDispose(() => {
+    rig.target.dispose();
+    rig.material.dispose();
+    rig.quad.geometry.dispose();
   }, [rig]);
 
   const time = useRef(0);
   useFrame((_state, delta) => {
+    // StrictMode (dev) can re-create the memoized rig WITHOUT re-creating the
+    // memoized uniform object (or vice versa). Rebind the sampler every frame
+    // so the blit can never read a stale/disposed render-target texture.
+    bindPainterlyDiffuse(uniforms, rig.target);
     time.current = advancePainterlyTime(time.current, delta, freezeTime);
     uniforms.uTime.value = time.current;
     // QA hook (commit 4): expose the ACTUAL shader clock so the Playwright

@@ -28,7 +28,9 @@ Requires **Node 22** in CI (Node 21 works locally via the ESM alias in `vite.con
 
 ```bash
 npm install
-npm run dev            # http://localhost:5173/portfolio/#/
+npm run dev            # fast iteration (HMR) at http://localhost:5173/portfolio/#/; 3D works after the StrictMode-safe disposal fix
+npm run dev:build      # build + `vite preview --host`: use this to test 3D if `npm run dev` shows the 2D fallback
+npm run preview        # preview the existing build only (no rebuild)
 npm run verify         # typecheck → lint → format:check → test → build → size
 npm run format:check   # Prettier (also in the CI verify job)
 npm run size           # shell ≤185 KB + lazy 3D chunk ≤260 KB + book chunk ≤16 KB (brotli)

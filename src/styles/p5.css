@@ -241,7 +241,7 @@
   transition: opacity 520ms ease-out;
 }
 
-.scene-layer--ready {
+.app-scene-live .scene-layer--ready {
   opacity: 1;
 }
 
@@ -269,7 +269,7 @@
  * grade mood on the canvas layer: a warm hue wash from above, a purple-tinted
  * corner vignette (owner palette), matching the GLSL shadow/highlight tints.
  * It is pointer-transparent, aria-hidden, sits above the canvas (later in DOM
- * at equal z-index) and below the DOM shell (.app-3d .app-shell z-index:1),
+ * at equal z-index) and below the DOM shell (.app-scene-live .app-shell z-index:1),
  * and fades in together with the scene layer.
  */
 .scene-grade-overlay {
@@ -293,7 +293,7 @@
     );
 }
 
-.scene-grade-overlay--ready {
+.app-scene-live .scene-grade-overlay--ready {
   opacity: 1;
 }
 
@@ -315,28 +315,28 @@
  * on empty / canvas areas reach the scene. 2D mode is untouched: every rule is
  * scoped under `.app-3d`, which App only adds in 3D mode.
  */
-.app-3d .app-shell {
+.app-scene-live .app-shell {
   position: relative;
   z-index: 1;
   pointer-events: none;
 }
 
-.app-3d .app-shell a,
-.app-3d .app-shell button,
-.app-3d .app-shell input,
-.app-3d .app-shell select,
-.app-3d .app-shell textarea,
-.app-3d .app-shell label,
-.app-3d .app-shell summary,
-.app-3d .app-shell [contenteditable],
-.app-3d .app-shell [role='button'],
-.app-3d .app-shell [role='dialog'],
-.app-3d .app-shell [role='group'],
-.app-3d .app-shell [role='link'],
-.app-3d .app-shell [role='checkbox'],
-.app-3d .app-shell [role='switch'],
-.app-3d .app-shell [role='tab'],
-.app-3d .app-shell [tabindex]:not([tabindex='-1']) {
+.app-scene-live .app-shell a,
+.app-scene-live .app-shell button,
+.app-scene-live .app-shell input,
+.app-scene-live .app-shell select,
+.app-scene-live .app-shell textarea,
+.app-scene-live .app-shell label,
+.app-scene-live .app-shell summary,
+.app-scene-live .app-shell [contenteditable],
+.app-scene-live .app-shell [role='button'],
+.app-scene-live .app-shell [role='dialog'],
+.app-scene-live .app-shell [role='group'],
+.app-scene-live .app-shell [role='link'],
+.app-scene-live .app-shell [role='checkbox'],
+.app-scene-live .app-shell [role='switch'],
+.app-scene-live .app-shell [role='tab'],
+.app-scene-live .app-shell [tabindex]:not([tabindex='-1']) {
   pointer-events: auto;
 }
 
@@ -440,7 +440,7 @@
   border: 2px solid var(--border-panel);
 }
 
-.app-3d.app-fine-pointer .main-menu {
+.app-scene-live.app-fine-pointer .main-menu {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -451,7 +451,7 @@
   white-space: nowrap;
 }
 
-.app-3d.app-fine-pointer .main-menu:focus-within {
+.app-scene-live.app-fine-pointer .main-menu:focus-within {
   position: fixed;
   left: 1.5rem;
   bottom: 1.5rem;
@@ -470,7 +470,9 @@
   pointer-events: auto;
 }
 
-.app-3d.app-fine-pointer .main-menu:focus-within .main-menu__focus-chip {
+.app-scene-live.app-fine-pointer
+  .main-menu:focus-within
+  .main-menu__focus-chip {
   display: block;
   margin-bottom: var(--space-sm);
   color: var(--state-focus);
@@ -480,16 +482,16 @@
 @media (min-width: 1024px) {
   /* Left ~50% stays clear for the room + wall plaque; zone content is pushed
      into the right column. The QA harness measures real DOM opacity overlap. */
-  .app-3d.app-fine-pointer .app-shell {
+  .app-scene-live.app-fine-pointer .app-shell {
     max-width: none;
     padding: 0;
   }
-  .app-3d.app-fine-pointer .app-shell > div:first-of-type {
+  .app-scene-live.app-fine-pointer .app-shell > div:first-of-type {
     position: absolute;
     width: 1px;
     height: 1px;
   }
-  .app-3d.app-fine-pointer main {
+  .app-scene-live.app-fine-pointer main {
     /* flex-basis must be set too: Tailwind's flex-1 uses basis 0%. */
     flex: 0 0 50%;
     width: 50%;
@@ -498,6 +500,20 @@
     overflow-y: auto;
     padding: var(--space-lg) var(--space-xl) var(--space-lg) var(--space-lg);
   }
+}
+
+/* Intentional fallback notice — never an empty purple field. */
+.scene-unavailable-notice {
+  position: relative;
+  z-index: 2;
+  margin: var(--space-sm) var(--space-md) 0;
+  padding: var(--space-xs) var(--space-sm);
+  width: fit-content;
+  color: var(--p5-black);
+  background: var(--p5-yellow);
+  border: 1px solid var(--border-panel);
+  font-size: var(--type-sm);
+  font-weight: 700;
 }
 
 /* Reduced-motion 3D opt-in: static cuts need a visible navigation cue. */

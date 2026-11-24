@@ -11,6 +11,7 @@
 import { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import { useThree, type ThreeEvent } from '@react-three/fiber';
+import { useDeferredDispose } from '../../lib/deferred-dispose';
 import { navigate, type Route } from '../../lib/router';
 import { DESIGN_TOKENS } from '../../styles/design-tokens';
 import { usePortfolioStore } from '../../state/store';
@@ -72,16 +73,13 @@ export function WallPlaque({ parts, materials }: WallPlaqueProps) {
       }),
     [],
   );
-  useEffect(
-    () => () => {
-      hitGeometry.dispose();
-      highlightGeometry.dispose();
-      highlightMaterial.dispose();
-      hitMaterial.dispose();
-      document.body.style.cursor = '';
-    },
-    [hitGeometry, highlightGeometry, highlightMaterial, hitMaterial],
-  );
+  useDeferredDispose(() => {
+    hitGeometry.dispose();
+    highlightGeometry.dispose();
+    highlightMaterial.dispose();
+    hitMaterial.dispose();
+  }, [hitGeometry, highlightGeometry, highlightMaterial, hitMaterial]);
+  useEffect(() => () => void (document.body.style.cursor = ''), []);
 
   // Highlight precedence: DOM keyboard focus > pointer hover. The plaque is
   // NOT lit while the monitor close-up owns the canonical highlight (4b).

@@ -6,6 +6,7 @@
   "homepage": "https://weisssa.github.io/portfolio/",
   "scripts": {
     "dev": "vite",
+    "dev:build": "npm run build && vite preview --host",
     "climate:snapshot": "node scripts/fetch-climate-snapshot.mjs",
     "prebuild": "npm run climate:snapshot",
     "build": "vite build",

@@ -150,6 +150,15 @@ export interface PortfolioStore {
   /** Reduced motion is the only gate — the informed opt-in can be offered. */
   reducedMotionOptInAvailable: boolean;
   setReducedMotionOptInAvailable: (value: boolean) => void;
+
+  /**
+   * True only after the R3F Canvas has drawn its FIRST frame (and false again
+   * on context loss / unmount). The 3D-only layout, sr-only menu and CSS grade
+   * overlay are gated on this, so a WebGL failure can never leave an empty
+   * purple field beside a crammed right-hand column (2026-11-24 bug).
+   */
+  sceneReady: boolean;
+  setSceneReady: (ready: boolean) => void;
 }
 
 const IDLE_CLIMATE: ClimateState = {
@@ -182,6 +191,7 @@ const CLEARED_3D_UI = {
   hoveredProjectId: null,
   menuHoverRoute: null,
   menuFocusRoute: null,
+  sceneReady: false,
 };
 
 export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
@@ -350,4 +360,7 @@ export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
   reducedMotionOptInAvailable: false,
   setReducedMotionOptInAvailable: (reducedMotionOptInAvailable) =>
     set({ reducedMotionOptInAvailable }),
+
+  sceneReady: false,
+  setSceneReady: (sceneReady) => set({ sceneReady }),
 }));

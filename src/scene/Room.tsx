@@ -12,11 +12,12 @@
  * so unit tests can render <RoomScene/> with @react-three/test-renderer
  * without a 2D canvas. Visual verification needs a real browser.
  */
-import { useEffect, useMemo, useState, type JSX } from 'react';
+import { useEffect, useMemo, useRef, useState, type JSX } from 'react';
 import * as THREE from 'three';
-import { Canvas } from '@react-three/fiber';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { POSTS, PROJECTS } from '../content/index';
 import { usePrefersReducedMotion } from '../lib/a11y';
+import { useDeferredDispose } from '../lib/deferred-dispose';
 import { DESIGN_TOKENS } from '../styles/design-tokens';
 import { CameraRig } from './CameraRig';
 import { PLAQUE } from './diegetic';
@@ -149,9 +150,7 @@ function Books({
   material: THREE.Material;
 }): JSX.Element | null {
   const geometry = useMemo(() => new THREE.BoxGeometry(1, 1, 1), []);
-  useEffect(() => {
-    return () => geometry.dispose();
-  }, [geometry]);
+  useDeferredDispose(() => geometry.dispose(), [geometry]);
   if (books.length === 0) return null;
   return (
     <instancedMesh
@@ -315,38 +314,37 @@ export function RoomScene({
 
   const materials = useMemo(() => createRoomMaterials(textures), [textures]);
 
-  // Full teardown on unmount (or seed/factory change): geometries, textures,
-  // materials. The lazy chunk may mount/unmount as the visitor toggles modes.
-  useEffect(() => {
-    return () => {
-      disposeParts([
-        ...furniture.shell,
-        ...furniture.desk,
-        ...furniture.monitor,
-        ...furniture.tower,
-        ...furniture.bookshelf.parts,
-        ...furniture.lamp,
-        ...furniture.projector,
-        furniture.beam,
-        ...furniture.windowParts,
-        ...furniture.chair,
-        ...furniture.props.desk,
-        ...furniture.props.monitor,
-        ...furniture.props.floor,
-        ...furniture.props.tower,
-        ...furniture.props.shelf,
-        ...furniture.frames.flatMap((frame) => frame.parts),
-        ...furniture.cases,
-        ...furniture.plaque,
-      ]);
-      furniture.rugGeometry.dispose();
-      furniture.screenCloth.dispose();
-      furniture.screenBar.dispose();
-      furniture.clutterGeometries.pencil.dispose();
-      furniture.clutterGeometries.tin.dispose();
-      disposeTextures(textures);
-      disposeRoomMaterials(materials);
-    };
+  // Full teardown on REAL unmount (or seed/factory change): geometries,
+  // textures, materials. Deferred so StrictMode's dev-only simulated unmount
+  // cannot dispose resources that useMemo will still hand to the remount.
+  useDeferredDispose(() => {
+    disposeParts([
+      ...furniture.shell,
+      ...furniture.desk,
+      ...furniture.monitor,
+      ...furniture.tower,
+      ...furniture.bookshelf.parts,
+      ...furniture.lamp,
+      ...furniture.projector,
+      furniture.beam,
+      ...furniture.windowParts,
+      ...furniture.chair,
+      ...furniture.props.desk,
+      ...furniture.props.monitor,
+      ...furniture.props.floor,
+      ...furniture.props.tower,
+      ...furniture.props.shelf,
+      ...furniture.frames.flatMap((frame) => frame.parts),
+      ...furniture.cases,
+      ...furniture.plaque,
+    ]);
+    furniture.rugGeometry.dispose();
+    furniture.screenCloth.dispose();
+    furniture.screenBar.dispose();
+    furniture.clutterGeometries.pencil.dispose();
+    furniture.clutterGeometries.tin.dispose();
+    disposeTextures(textures);
+    disposeRoomMaterials(materials);
   }, [furniture, textures, materials]);
 
   const lampLight: Vec3 = [
@@ -626,12 +624,43 @@ export function RoomScene({
   );
 }
 
+/**
+ * Reports a genuinely rendering scene. A WebGL2 probe passing is NOT enough:
+ * a context can be created and then fail to draw, leaving the DOM shell in a
+ * 3D layout over an empty canvas (owner bug 2026-11-24). The first useFrame
+ * tick proves at least one frame was issued; context loss revokes the signal.
+ */
+function SceneReadySignal({ onReady }: { onReady?: (ready: boolean) => void }) {
+  const gl = useThree((state) => state.gl);
+  const fired = useRef(false);
+  useFrame(() => {
+    if (fired.current) return;
+    fired.current = true;
+    onReady?.(true);
+  });
+  useEffect(() => {
+    const canvas = gl.domElement;
+    const onLost = (event: Event) => {
+      event.preventDefault();
+      fired.current = false;
+      onReady?.(false);
+    };
+    canvas.addEventListener('webglcontextlost', onLost);
+    return () => canvas.removeEventListener('webglcontextlost', onLost);
+  }, [gl, onReady]);
+  return null;
+}
+
 /* ---------------------------------------------------------------- canvas -- */
 
 export interface RoomProps extends RoomSceneProps {
   className?: string;
-  /** Called once the lazy chunk has mounted the Canvas (drives the fade-in). */
-  onReady?: () => void;
+  /**
+   * Called after the FIRST DRAWN FRAME (not merely after Canvas mount) and
+   * again with false on WebGL context loss. The shell gates its 3D-only layout
+   * on this so a blank/failed Canvas always falls back to full-width 2D.
+   */
+  onReady?: (ready: boolean) => void;
   /**
    * 3c warm start: when false (2D mode after a first 3D visit) the desktop
    * Canvas stays mounted but renders ZERO frames (frameloop='never'), avoiding
@@ -667,10 +696,6 @@ export default function Room({
     return () => document.removeEventListener('visibilitychange', onVisibility);
   }, []);
 
-  useEffect(() => {
-    onReady?.();
-  }, [onReady]);
-
   // 3c P1: pixel ratio caps. The scene is deliberately soft/painterly, so
   // rendering 4× the pixels on a 2× phone buys nothing and costs ~3× fill.
   const dpr: number | [number, number] =
@@ -704,6 +729,7 @@ export default function Room({
         paused={hidden || !active}
         tier={quality}
       />
+      <SceneReadySignal onReady={onReady} />
       <RoomScene
         seed={seed}
         quality={quality}

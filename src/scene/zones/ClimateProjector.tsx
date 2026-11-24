@@ -38,6 +38,7 @@ import {
   heatmapSize,
   type HeatmapPalette,
 } from '../../lib/climate-draw';
+import { useDeferredDispose } from '../../lib/deferred-dispose';
 import { DESIGN_TOKENS } from '../../styles/design-tokens';
 import { usePortfolioStore } from '../../state/store';
 import type { RoomMaterials } from '../art/materials';
@@ -244,13 +245,10 @@ export function ClimateProjector({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [climate.historical, climate.status, todayLabel, canvasFactory],
   );
-  useEffect(
-    () => () => {
-      for (const cached of cache.values()) cached.dispose();
-      cache.clear();
-    },
-    [cache],
-  );
+  useDeferredDispose(() => {
+    for (const cached of cache.values()) cached.dispose();
+    cache.clear();
+  }, [cache]);
 
   const textureKey = `${renderYear}|${todayLabel}`;
   const texture = useMemo(() => {
@@ -294,10 +292,10 @@ export function ClimateProjector({
   useEffect(() => {
     // Demand frameloop: redraw once when the projected data/year changes.
     invalidate();
-    return () => {
-      if (material !== materials.screenFabric) material.dispose();
-    };
   }, [material, materials.screenFabric, invalidate]);
+  useDeferredDispose(() => {
+    if (material !== materials.screenFabric) material.dispose();
+  }, [material, materials.screenFabric]);
 
   // The dial's two meshes are owned by this zone (Room only owns the cloth).
   const prevGeometry = useMemo(
@@ -308,14 +306,11 @@ export function ClimateProjector({
     () => new THREE.BoxGeometry(0.13, 0.13, 0.04),
     [],
   );
-  useEffect(
-    () => () => {
-      prevGeometry.dispose();
-      nextGeometry.dispose();
-      document.body.style.cursor = '';
-    },
-    [prevGeometry, nextGeometry],
-  );
+  useDeferredDispose(() => {
+    prevGeometry.dispose();
+    nextGeometry.dispose();
+  }, [prevGeometry, nextGeometry]);
+  useEffect(() => () => void (document.body.style.cursor = ''), []);
 
   // `years` is newest-first: ◀ steps toward older years, ▶ toward newer ones.
   // Step from the RENDERED year so a stale stored year cannot strand the dial.

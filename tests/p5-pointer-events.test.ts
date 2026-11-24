@@ -25,31 +25,33 @@ function bodyFor(selector: string): string {
 
 describe('3D canvas pointer routing (review fix A2)', () => {
   it('makes the 3D app shell pointer-transparent so clicks reach the canvas', () => {
-    expect(bodyFor('.app-3d .app-shell')).toMatch(/pointer-events:\s*none/);
+    expect(bodyFor('.app-scene-live .app-shell')).toMatch(
+      /pointer-events:\s*none/,
+    );
   });
 
   it('re-enables pointer events on interactive DOM descendants', () => {
     const interactive = [
-      '.app-3d .app-shell a', // menu links + contact icons
-      '.app-3d .app-shell button', // mode toggle + desktop icons/close
-      '.app-3d .app-shell input',
-      '.app-3d .app-shell label', // climate year label
-      '.app-3d .app-shell summary',
-      '.app-3d .app-shell [contenteditable]',
-      ".app-3d .app-shell [role='button']",
-      ".app-3d .app-shell [role='dialog']", // overlay windows
-      ".app-3d .app-shell [role='group']", // rendering-mode toggle
-      ".app-3d .app-shell [role='link']",
-      ".app-3d .app-shell [role='checkbox']",
-      ".app-3d .app-shell [role='switch']",
-      ".app-3d .app-shell [role='tab']",
-      ".app-3d .app-shell [tabindex]:not([tabindex='-1'])",
+      '.app-scene-live .app-shell a', // menu links + contact icons
+      '.app-scene-live .app-shell button', // mode toggle + desktop icons/close
+      '.app-scene-live .app-shell input',
+      '.app-scene-live .app-shell label', // climate year label
+      '.app-scene-live .app-shell summary',
+      '.app-scene-live .app-shell [contenteditable]',
+      ".app-scene-live .app-shell [role='button']",
+      ".app-scene-live .app-shell [role='dialog']", // overlay windows
+      ".app-scene-live .app-shell [role='group']", // rendering-mode toggle
+      ".app-scene-live .app-shell [role='link']",
+      ".app-scene-live .app-shell [role='checkbox']",
+      ".app-scene-live .app-shell [role='switch']",
+      ".app-scene-live .app-shell [role='tab']",
+      ".app-scene-live .app-shell [tabindex]:not([tabindex='-1'])",
     ];
     for (const selector of interactive) {
       expect(P5_CSS).toContain(selector);
     }
     expect(
-      bodyFor(".app-3d .app-shell [tabindex]:not([tabindex='-1'])"),
+      bodyFor(".app-scene-live .app-shell [tabindex]:not([tabindex='-1'])"),
     ).toMatch(/pointer-events:\s*auto/);
   });
 

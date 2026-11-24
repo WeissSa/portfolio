@@ -8,7 +8,7 @@
  * `.scene-layer` wrapper (not a child), so it stays visible at opacity 1 while
  * the chunk downloads instead of being hidden by the wrapper's opacity:0.
  */
-import { lazy, Suspense, useCallback, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 import { Paper } from '@mantine/core';
 import { usePortfolioStore } from '../state/store';
 import type { RoomQuality } from '../scene/Room';
@@ -34,7 +34,15 @@ export function SceneLayer({
   active?: boolean;
 }) {
   const [ready, setReady] = useState(false);
-  const onReady = useCallback(() => setReady(true), []);
+  const setSceneReady = usePortfolioStore((state) => state.setSceneReady);
+  const onReady = useCallback((live: boolean) => setReady(live), []);
+  // The DOM shell must not adopt the 3D layout (sr-only menu, right column,
+  // grade overlay) until the Canvas has actually drawn a frame — and must
+  // fall back to full-width 2D the instant it stops (2026-11-24 bug).
+  useEffect(() => {
+    setSceneReady(ready && active);
+    return () => setSceneReady(false);
+  }, [ready, active, setSceneReady]);
   // Book picking needs real pointer input. The wrapper stays aria-hidden and
   // the canvas is never focusable; keyboard/SR users use the DOM list + overlay.
   const pointerFine = usePortfolioStore((state) => state.pointerFine);

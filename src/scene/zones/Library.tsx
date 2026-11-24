@@ -14,6 +14,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { useThree, type ThreeEvent } from '@react-three/fiber';
 import { POSTS, postId } from '../../content/posts';
+import { useDeferredDispose } from '../../lib/deferred-dispose';
 import { DESIGN_TOKENS } from '../../styles/design-tokens';
 import { usePortfolioStore } from '../../state/store';
 import {
@@ -104,18 +105,15 @@ export function LibraryZone({ cells, materials }: LibraryZoneProps) {
   // New GPU resources belong to this zone, not the shell: tear them down if
   // the library unmounts on a mode toggle (the shared atlas/material live in
   // RoomMaterials and are freed by disposeRoomMaterials).
-  useEffect(
-    () => () => {
-      bodyGeometry.dispose();
-      baseLabelsGeometry.dispose();
-      document.body.style.cursor = '';
-    },
-    [bodyGeometry, baseLabelsGeometry],
-  );
+  useDeferredDispose(() => {
+    bodyGeometry.dispose();
+    baseLabelsGeometry.dispose();
+  }, [bodyGeometry, baseLabelsGeometry]);
+  useEffect(() => () => void (document.body.style.cursor = ''), []);
   // The rendered labels are a per-selection COPY: dispose the previous copy as
   // soon as React swaps it (and the last one on unmount), so toggling books
   // repeatedly cannot leak GPU buffers (review fix A1).
-  useEffect(() => () => labelsGeometry.dispose(), [labelsGeometry]);
+  useDeferredDispose(() => labelsGeometry.dispose(), [labelsGeometry]);
 
   const bookAt = (instanceId: number | undefined): LibraryBook | undefined =>
     instanceId === undefined ? undefined : books[instanceId];
