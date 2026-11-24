@@ -11,7 +11,7 @@
  */
 import * as THREE from 'three';
 import { DESIGN_TOKENS } from '../../styles/design-tokens';
-import { DIEGETIC_ROWS, PLAQUE } from '../diegetic';
+import { CRT_DOCK, DIEGETIC_ROWS, PLAQUE } from '../diegetic';
 import { createRng, type Rng } from './rng';
 import { BOOK_SPINE_COLORS, PALETTE, shadeHex } from './palette';
 
@@ -794,7 +794,8 @@ export function planMonitorDesktop(
       shade: 0.1,
     },
   );
-  // Top menu bar.
+  // Top menu bar. Commit 4b: the CRT mirrors the FIVE canonical route names
+  // (the plaque stays canonical; this is only legible in monitor close-up).
   ops.push({
     kind: 'rect',
     x: 0,
@@ -803,6 +804,17 @@ export function planMonitorDesktop(
     h: 20,
     color: PALETTE.ink,
     alpha: 1,
+  });
+  DIEGETIC_ROWS.forEach((row, index) => {
+    ops.push({
+      kind: 'text',
+      text: `>${row.label.slice(0, 4).toUpperCase()}`,
+      x: 90 + index * 68,
+      y: 14,
+      font: `10px ${DISPLAY_FONT}`,
+      color: DESIGN_TOKENS.climate.projectorPlaqueText,
+      align: 'left',
+    });
   });
   ops.push({
     kind: 'text',
@@ -940,6 +952,32 @@ export function planMonitorDesktop(
     ],
     color: PALETTE.p5Red,
     alpha: 0.9,
+  });
+  // CRT-OS dock: five gilt route shortcuts + slash motif. These mirror the
+  // plaque; only the MONITOR_VIEWPOINT close-up makes them legible (4b).
+  DIEGETIC_ROWS.forEach((row, index) => {
+    const dx = CRT_DOCK.hitXs[index] ?? 130 + index * 60;
+    const tx = (dx / CRT_DOCK.textureWidth) * width;
+    ops.push({
+      kind: 'polygon',
+      points: [
+        [tx - 12, height - 20],
+        [tx - 5, height - 26],
+        [tx - 1, height - 20],
+        [tx - 8, height - 14],
+      ],
+      color: PALETTE.brassLight,
+      alpha: 0.9,
+    });
+    ops.push({
+      kind: 'text',
+      text: row.label.slice(0, 4).toUpperCase(),
+      x: tx + 2,
+      y: height - 7,
+      font: `11px ${DISPLAY_FONT}`,
+      color: DESIGN_TOKENS.climate.projectorPlaqueText,
+      align: 'left',
+    });
   });
   ops.push(edgeDarken(0.18));
   return { name: 'monitor', width, height, ops };

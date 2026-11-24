@@ -16,7 +16,7 @@
  * keyboard/SR visitors always use the DOM equivalent. Headless R3F tests are
  * structural only; pixel-level appearance needs a browser screenshot review.
  */
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { useThree, type ThreeEvent } from '@react-three/fiber';
 import {
@@ -38,7 +38,10 @@ import {
   heatmapSize,
   type HeatmapPalette,
 } from '../../lib/climate-draw';
+import { navigate } from '../../lib/router';
+import { PALETTE } from '../art/palette';
 import { useDeferredDispose } from '../../lib/deferred-dispose';
+import { PROJECTED_PANEL } from '../diegetic';
 import { DESIGN_TOKENS } from '../../styles/design-tokens';
 import { usePortfolioStore } from '../../state/store';
 import type { RoomMaterials } from '../art/materials';
@@ -139,14 +142,61 @@ export function buildProjectorTexture(
   // line still names both sources so the room reads as the real widget.
   ctx.fillStyle = INK;
   ctx.font = '19px system-ui, sans-serif';
-  ctx.fillText(CLIMATE_ATTRIBUTION_LINE, PROJECTOR_TEXTURE_WIDTH / 2, 492);
+  ctx.fillText(CLIMATE_ATTRIBUTION_LINE, PROJECTOR_TEXTURE_WIDTH / 2, 446);
   ctx.fillStyle = RED;
   ctx.font = 'bold 19px system-ui, sans-serif';
   ctx.fillText(
     `${CLIMATE_ATTRIBUTION.supportLabel} ${CLIMATE_ATTRIBUTION.climateDefenseFund.label}`,
     PROJECTOR_TEXTURE_WIDTH / 2,
-    526,
+    478,
   );
+
+  // Commit 4b: CLIMATE-LOCAL menu strip (year / back / info) painted into the
+  // bottom of the SAME projected texture. Not a duplicate of the global nav.
+  const stripTop = PROJECTOR_TEXTURE_HEIGHT - PROJECTED_PANEL.stripHeight;
+  ctx.fillStyle = INK;
+  ctx.fillRect(
+    0,
+    stripTop,
+    PROJECTOR_TEXTURE_WIDTH,
+    PROJECTED_PANEL.stripHeight,
+  );
+  // Brass frame + purple rule: the strip reads as part of the screen rather
+  // than text floating on the wall; gilt lettering stays on the dark inlay.
+  ctx.fillStyle = PALETTE.brassLight;
+  ctx.fillRect(18, stripTop + 3, PROJECTOR_TEXTURE_WIDTH - 36, 3);
+  ctx.fillRect(
+    18,
+    PROJECTOR_TEXTURE_HEIGHT - 6,
+    PROJECTOR_TEXTURE_WIDTH - 36,
+    3,
+  );
+  ctx.fillStyle = DESIGN_TOKENS.p5.link;
+  ctx.fillRect(24, stripTop + 10, PROJECTOR_TEXTURE_WIDTH - 48, 2);
+  ctx.fillStyle = PALETTE.brassDark;
+  for (const divider of [0.44, 0.69]) {
+    ctx.fillRect(
+      PROJECTOR_TEXTURE_WIDTH * divider,
+      stripTop + 8,
+      2,
+      PROJECTED_PANEL.stripHeight - 16,
+    );
+  }
+  ctx.textAlign = 'center';
+  ctx.fillStyle = DESIGN_TOKENS.climate.projectorPlaqueText;
+  ctx.font = `bold ${PROJECTED_PANEL.fontPx}px ${DISPLAY_FONT}`;
+  const items = ['YEAR ◀ ▶', 'BACK', 'INFO'];
+  items.forEach((label, index) => {
+    ctx.fillText(
+      label,
+      [
+        PROJECTOR_TEXTURE_WIDTH * 0.3,
+        PROJECTOR_TEXTURE_WIDTH * 0.58,
+        PROJECTOR_TEXTURE_WIDTH * 0.8,
+      ][index]!,
+      stripTop + 42,
+    );
+  });
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
@@ -327,6 +377,68 @@ export function ClimateProjector({
       }
     };
 
+  // Local panel highlight is deliberately SEPARATE from the canonical global
+  // nav highlight: it never lights the plaque or the CRT (no triple flash).
+  const [localItem, setLocalItem] = useState<'back' | 'info' | null>(null);
+  const localGeometry = useMemo(
+    () =>
+      new THREE.PlaneGeometry(
+        0.34,
+        (PROJECTED_PANEL.stripHeight / PROJECTED_PANEL.textureHeight) *
+          PROJECTED_PANEL.screenHeight,
+      ),
+    [],
+  );
+  const localMaterial = useMemo(
+    () =>
+      new THREE.MeshBasicMaterial({
+        color: DESIGN_TOKENS.state.focus,
+        transparent: true,
+        opacity: 0.22,
+        depthWrite: false,
+      }),
+    [],
+  );
+  // Transparent (not `visible={false}`) so the local hit planes stay raycastable.
+  const hitMaterial = useMemo(
+    () =>
+      new THREE.MeshBasicMaterial({
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+      }),
+    [],
+  );
+  useDeferredDispose(() => {
+    localGeometry.dispose();
+    localMaterial.dispose();
+    hitMaterial.dispose();
+  }, [localGeometry, localMaterial, hitMaterial]);
+
+  const stripY =
+    -PROJECTED_PANEL.screenHeight / 2 +
+    ((PROJECTED_PANEL.stripHeight / PROJECTED_PANEL.textureHeight) *
+      PROJECTED_PANEL.screenHeight) /
+      2;
+  const localPick =
+    (item: 'back' | 'info') => (event: ThreeEvent<MouseEvent>) => {
+      event.stopPropagation();
+      setLocalItem(null);
+      if (item === 'back') navigate('/');
+      else openClimatePanel();
+    };
+  const localHover =
+    (item: 'back' | 'info') => (event: ThreeEvent<PointerEvent>) => {
+      event.stopPropagation();
+      setLocalItem(item);
+      document.body.style.cursor = 'pointer';
+    };
+
+  const localOut = () => {
+    setLocalItem(null);
+    document.body.style.cursor = '';
+  };
+
   const onScreenClick = (event: ThreeEvent<MouseEvent>) => {
     event.stopPropagation();
     // Content stays in DOM: this only opens the shared ClimateView dialog.
@@ -356,7 +468,7 @@ export function ClimateProjector({
           name="climate-year-prev"
           geometry={prevGeometry}
           material={materials.brass}
-          position={[-0.22, -0.65, 0.03]}
+          position={[-0.38, stripY, 0.03]}
           onClick={stepYear('prev')}
           onPointerOver={onPointerOver}
           onPointerOut={onPointerOut}
@@ -365,11 +477,41 @@ export function ClimateProjector({
           name="climate-year-next"
           geometry={nextGeometry}
           material={materials.brass}
-          position={[0.22, -0.65, 0.03]}
+          position={[-0.2, stripY, 0.03]}
           onClick={stepYear('next')}
           onPointerOver={onPointerOver}
           onPointerOut={onPointerOut}
         />
+      </group>
+      {/* Climate-zone-LOCAL menu: back / info hit planes inside the painted
+          strip. The year dial above is the third local control. */}
+      <group name="climate-local-menu">
+        {(
+          [
+            ['back', 0.152],
+            ['info', 0.57],
+          ] as const
+        ).map(([item, x]) => (
+          <group key={item}>
+            <mesh
+              name={`projected-${item}`}
+              geometry={localGeometry}
+              material={hitMaterial}
+              position={[x, stripY, 0.032]}
+              onClick={localPick(item)}
+              onPointerOver={localHover(item)}
+              onPointerOut={localOut}
+            />
+            {localItem === item && (
+              <mesh
+                name={`projected-${item}-highlight`}
+                geometry={localGeometry}
+                material={localMaterial}
+                position={[x, stripY, 0.028]}
+              />
+            )}
+          </group>
+        ))}
       </group>
     </group>
   );

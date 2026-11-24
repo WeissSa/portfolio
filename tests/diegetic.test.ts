@@ -14,6 +14,7 @@ import {
 import { DESIGN_TOKENS } from '../src/styles/design-tokens';
 import { usePortfolioStore } from '../src/state/store';
 import {
+  CRT_DOCK,
   DIEGETIC_ROWS,
   HOME_FOV_DEGREES,
   PLAQUE,
@@ -25,7 +26,7 @@ import {
 } from '../src/scene/diegetic';
 import { HOME_VIEWPOINT } from '../src/scene/viewpoints';
 import { createWallPlaque } from '../src/scene/art/geometry';
-import { planWallPlaque } from '../src/scene/art/textures';
+import { planMonitorDesktop, planWallPlaque } from '../src/scene/art/textures';
 import { plaqueRowY } from '../src/scene/zones/WallPlaque';
 import { advancePainterlyTime } from '../src/scene/effects/PainterlyPass';
 import { roomShadowSettings } from '../src/scene/Room';
@@ -123,6 +124,36 @@ describe('wall plaque framing (HOME_VIEWPOINT)', () => {
       expect(rows[i]!).toBeLessThan(rows[i - 1]!);
       expect(rows[i - 1]! - rows[i]!).toBeCloseTo(rows[0]! - rows[1]!);
     }
+  });
+});
+
+describe('4b diegetic sequencing (no signage farm)', () => {
+  it('paints five CRT dock shortcuts mirroring the plaque routes', () => {
+    const plan = planMonitorDesktop('smoke');
+    const texts = plan.ops.filter((op) => op.kind === 'text');
+    for (const row of DIEGETIC_ROWS) {
+      expect(
+        texts.some(
+          (op) =>
+            op.kind === 'text' &&
+            op.text.toUpperCase().includes(row.label.slice(0, 4).toUpperCase()),
+        ),
+      ).toBe(true);
+    }
+    expect(CRT_DOCK.hitXs).toHaveLength(5);
+    expect(plan.ops.some((op) => op.kind === 'polygon')).toBe(true);
+  });
+
+  it('hands the canonical highlight to the CRT only in close-up', () => {
+    const store = usePortfolioStore.getState();
+    store.setMenuFocusRoute('/climate');
+    store.setCrtCloseUp(true);
+    // WallPlaque derives `null` while crtCloseUp is true; the CRT is the ONE
+    // highlighted global surface, never plaque + CRT + projector at once.
+    expect(usePortfolioStore.getState().crtCloseUp).toBe(true);
+    expect(usePortfolioStore.getState().menuFocusRoute).toBe('/climate');
+    store.setCrtCloseUp(false);
+    expect(usePortfolioStore.getState().crtCloseUp).toBe(false);
   });
 });
 

@@ -253,6 +253,8 @@ describe('R3F book zone (headless, structural only)', () => {
     const labelDispose = vi.spyOn(labelGeometry, 'dispose');
 
     await renderer.unmount();
+    // Deferred disposal (StrictMode-safe) runs one macrotask after unmount.
+    await new Promise((resolveDelay) => setTimeout(resolveDelay, 10));
     expect(bodyDispose).toHaveBeenCalled();
     expect(labelDispose).toHaveBeenCalled();
     disposeRoomMaterials(materials);

@@ -72,11 +72,13 @@ export const PLAQUE = {
 export const CRT_DOCK = {
   textureWidth: 512,
   textureHeight: 320,
-  /** Hit-plane width / height in monitor-local metres. */
-  hitWidth: 0.14,
-  hitHeight: 0.055,
-  hitY: -0.235,
-  hitZ: 0.032,
+  /** Texture-space x of the five dock labels (shared by paint + hit planes). */
+  hitXs: [130, 190, 250, 310, 370] as const,
+  /** Hit-plane width / height in monitor-local metres (desk group origin). */
+  hitWidth: 0.09,
+  hitHeight: 0.05,
+  hitY: 0.33,
+  hitZ: 0.033,
   /** Camera must be closer than this to treat the CRT as the highlighted surface. */
   closeUpDistance: 1.35,
 } as const;

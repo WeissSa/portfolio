@@ -40,7 +40,7 @@ export function WallPlaque({ parts, materials }: WallPlaqueProps) {
   const setMenuHoverRoute = usePortfolioStore(
     (state) => state.setMenuHoverRoute,
   );
-  const desktopOpen = usePortfolioStore((state) => state.desktopOpen);
+  const crtCloseUp = usePortfolioStore((state) => state.crtCloseUp);
   const invalidate = useThree((state) => state.invalidate);
 
   const hitGeometry = useMemo(
@@ -83,7 +83,7 @@ export function WallPlaque({ parts, materials }: WallPlaqueProps) {
 
   // Highlight precedence: DOM keyboard focus > pointer hover. The plaque is
   // NOT lit while the monitor close-up owns the canonical highlight (4b).
-  const highlighted = desktopOpen ? null : (menuFocusRoute ?? menuHoverRoute);
+  const highlighted = crtCloseUp ? null : (menuFocusRoute ?? menuHoverRoute);
   useEffect(() => invalidate(), [highlighted, invalidate]);
 
   const pick = (route: Route) => (event: ThreeEvent<MouseEvent>) => {

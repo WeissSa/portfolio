@@ -141,6 +141,9 @@ export interface PortfolioStore {
   /** Route focused in the sr-only DOM menu (keyboard → in-world highlight). */
   menuFocusRoute: Route | null;
   setMenuFocusRoute: (route: Route | null) => void;
+  /** CRT close-up owns the canonical highlight while true; plaque yields. */
+  crtCloseUp: boolean;
+  setCrtCloseUp: (close: boolean) => void;
 
   /* Reduced-motion 3D (commit 4): auto mode stays 2D, but an INFORMED opt-in
    * can force 3D. The session then uses static cuts, a zone-title HUD and a
@@ -191,6 +194,7 @@ const CLEARED_3D_UI = {
   hoveredProjectId: null,
   menuHoverRoute: null,
   menuFocusRoute: null,
+  crtCloseUp: false,
   sceneReady: false,
 };
 
@@ -351,6 +355,8 @@ export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
   setMenuHoverRoute: (menuHoverRoute) => set({ menuHoverRoute }),
   menuFocusRoute: null,
   setMenuFocusRoute: (menuFocusRoute) => set({ menuFocusRoute }),
+  crtCloseUp: false,
+  setCrtCloseUp: (crtCloseUp) => set({ crtCloseUp }),
 
   reducedMotionOptIn: readReducedMotionOptIn(),
   setReducedMotionOptIn: (value) => {

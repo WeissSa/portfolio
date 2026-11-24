@@ -8,9 +8,15 @@ import {
   type Page,
 } from '@playwright/test';
 import {
+  CLIMATE_VIEWPOINT_DATA,
+  HOME_FOV_DEGREES,
   HOME_VIEWPOINT_DATA,
   PLAQUE,
+  PROJECTED_PANEL,
   plaqueProjection,
+  framingCamera,
+  projectCapHeight,
+  projectWorldRect,
 } from '../../src/scene/diegetic';
 
 /**
@@ -247,6 +253,78 @@ test.describe('diegetic plaque framing + reveal-on-focus', () => {
     }
     await page.screenshot({
       path: resolve(SHOTS, 'mobile_3d_menu-opaque.png'),
+    });
+    await context.close();
+  });
+
+  test('CRT dock mirrors the routes only in the monitor close-up (4b)', async ({
+    browser,
+  }) => {
+    const context = await contextFor(browser, { viewport: DESKTOP });
+    const page = await context.newPage();
+    await page.goto('#/about');
+    await ready(page);
+    // The monitor pick opens the shared DOM desktop and flies the camera to
+    // MONITOR_VIEWPOINT. Hide the overlay in the CAPTURE only, so the CRT dock
+    // painted into the monitor texture can be photographed in close-up.
+    await page.mouse.move(850, 350);
+    await page.waitForTimeout(200);
+    await page.mouse.click(850, 350);
+    await expect(
+      page.getByRole('dialog', { name: 'About desktop — full screen' }),
+    ).toBeVisible();
+    await page.addStyleTag({
+      content: '.desktop-zoom { display: none !important; }',
+    });
+    await page.waitForTimeout(1800);
+    await page.screenshot({ path: resolve(SHOTS, 'desktop_3d_crt-menu.png') });
+    await context.close();
+  });
+
+  test('projected climate-local panel is legible and unoccluded (4b)', async ({
+    browser,
+  }) => {
+    const context = await contextFor(browser, { viewport: DESKTOP });
+    const page = await context.newPage();
+    await page.goto('#/climate');
+    await ready(page);
+    // The projected strip sits at the bottom of the 1.9×1.07 m screen.
+    const stripWorldHeight =
+      (PROJECTED_PANEL.stripHeight / PROJECTED_PANEL.textureHeight) *
+      PROJECTED_PANEL.screenHeight;
+    const stripCenter: [number, number, number] = [
+      PROJECTED_PANEL.center[0],
+      PROJECTED_PANEL.center[1] -
+        PROJECTED_PANEL.screenHeight / 2 +
+        stripWorldHeight / 2,
+      PROJECTED_PANEL.center[2],
+    ];
+    const glyphWorld =
+      (PROJECTED_PANEL.fontPx / PROJECTED_PANEL.textureHeight) *
+      PROJECTED_PANEL.screenHeight;
+    const camera = framingCamera(
+      CLIMATE_VIEWPOINT_DATA,
+      DESKTOP,
+      HOME_FOV_DEGREES,
+    );
+    const cap = projectCapHeight(camera, stripCenter, glyphWorld, DESKTOP);
+    expect(cap, 'projected local-menu caps >= 16px').toBeGreaterThanOrEqual(
+      PROJECTED_PANEL.minCapPx,
+    );
+    const rect = projectWorldRect(
+      camera,
+      stripCenter,
+      PROJECTED_PANEL.screenWidth * 0.8,
+      stripWorldHeight,
+      DESKTOP,
+    );
+    const { overlap, blockers } = await opaqueOverlap(page, rect);
+    expect(
+      overlap / (rect.width * rect.height),
+      `projected panel overlap ${blockers.join(', ')}`,
+    ).toBeLessThan(0.3);
+    await page.screenshot({
+      path: resolve(SHOTS, 'desktop_3d_projected-panel.png'),
     });
     await context.close();
   });

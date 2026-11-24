@@ -157,6 +157,20 @@ describe('buildProjectorTexture (shared drawer, headless)', () => {
     expect(calls.map((call) => call.method)).toContain('restore');
   });
 
+  it('paints a climate-LOCAL menu strip (year / back / info), not a global nav copy', () => {
+    const a = recordingFactory();
+    buildProjectorTexture(SMALL_CELLS, 2024, 'SAME', a.factory);
+    const texts = a.calls
+      .filter((call) => call.method === 'fillText')
+      .map((call) => String(call.args[0]));
+    for (const label of ['YEAR', 'BACK', 'INFO']) {
+      expect(texts.some((text) => text.includes(label))).toBe(true);
+    }
+    for (const globalRoute of ['ABOUT', 'EXPERIENCE', 'PROJECTS']) {
+      expect(texts.some((text) => text.includes(globalRoute))).toBe(false);
+    }
+  });
+
   it('is deterministic for identical inputs', () => {
     const a = recordingFactory();
     const b = recordingFactory();
@@ -200,6 +214,27 @@ describe('ClimateProjector R3F zone (headless, structural)', () => {
     const renderer = await mount();
     const material = screenMesh(renderer).material as THREE.MeshBasicMaterial;
     expect(material.map).toBeInstanceOf(THREE.CanvasTexture);
+    await renderer.unmount();
+    disposeRoomMaterials(materials);
+    screenGeometry.dispose();
+  });
+
+  it('exposes climate-local back / info hit planes (4b)', async () => {
+    const renderer = await mount();
+    for (const name of ['projected-back', 'projected-info']) {
+      const node = renderer.scene.find((item) => item.props.name === name);
+      expect(node, `${name} must exist`).toBeDefined();
+    }
+    const info = renderer.scene.find(
+      (item) => item.props.name === 'projected-info',
+    )!;
+    act(() => info.props.onClick({ stopPropagation: vi.fn() }));
+    expect(usePortfolioStore.getState().climatePanelOpen).toBe(true);
+    const back = renderer.scene.find(
+      (item) => item.props.name === 'projected-back',
+    )!;
+    act(() => back.props.onClick({ stopPropagation: vi.fn() }));
+    expect(window.location.hash).toBe('#/');
     await renderer.unmount();
     disposeRoomMaterials(materials);
     screenGeometry.dispose();
