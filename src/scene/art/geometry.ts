@@ -12,6 +12,7 @@
  * floor level, center); Room.tsx places the groups.
  */
 import * as THREE from 'three';
+import { PLAQUE } from '../diegetic';
 import { createRng } from './rng';
 import { BOOK_SPINE_COLORS, PALETTE } from './palette';
 import type { MaterialKey } from './materials';
@@ -327,6 +328,110 @@ export function createDesk(seed: string | number): RoomPart[] {
   }
   // Both brass pulls share a material and never move independently.
   parts.push(mergeStaticParts('desk-pulls', pulls));
+  return parts;
+}
+
+/* ---------------------------------------------------------- wall plaque -- */
+
+/**
+ * CANONICAL global-nav plaque (commit 4): beveled dark-wood board, raised
+ * brass inlay frame, four corner rosettes, two P5-ish brass slash/jag motifs,
+ * a dark inlay panel and a thin purple inlay line. The lettered face is a
+ * separate plane carrying the seeded `plaque` CanvasTexture (gilt lettering
+ * on ink, NEVER on brass). Local origin is the plaque centre, face +z.
+ */
+export function createWallPlaque(seed: string | number): RoomPart[] {
+  const rng = createRng(
+    typeof seed === 'string' ? `${seed}:wall-plaque` : seed + 404,
+  );
+  const w = PLAQUE.width;
+  const h = PLAQUE.height;
+  const parts: RoomPart[] = [
+    part(
+      'plaque-board',
+      beveledBox(w + 0.12, h + 0.12, 0.09, 0.018),
+      'woodDark',
+      [0, 0, -0.045],
+    ),
+    part(
+      'plaque-inlay-panel',
+      box(w + 0.01, h + 0.01, 0.008),
+      'silhouette',
+      [0, 0, 0.006],
+    ),
+    part(
+      'plaque-lettered-face',
+      new THREE.PlaneGeometry(w, h),
+      'plaqueFace',
+      [0, 0, 0.012],
+    ),
+  ];
+  const frame: RoomPart[] = [
+    part('plaque-frame-top', box(w + 0.06, 0.02, 0.014), 'brass', [
+      0,
+      h / 2 + 0.015,
+      0.016,
+    ]),
+    part('plaque-frame-bottom', box(w + 0.06, 0.02, 0.014), 'brass', [
+      0,
+      -h / 2 - 0.015,
+      0.016,
+    ]),
+    part('plaque-frame-left', box(0.02, h + 0.05, 0.014), 'brass', [
+      -w / 2 - 0.015,
+      0,
+      0.016,
+    ]),
+    part('plaque-frame-right', box(0.02, h + 0.05, 0.014), 'brass', [
+      w / 2 + 0.015,
+      0,
+      0.016,
+    ]),
+  ];
+  parts.push(mergeStaticParts('plaque-brass-frame', frame));
+  // Raised rosettes: cylinder axis is +y, rotate onto the wall (+z).
+  const rosettes: RoomPart[] = [];
+  const corners: [number, number][] = [
+    [-1, 1],
+    [1, 1],
+    [-1, -1],
+    [1, -1],
+  ];
+  for (const [sx, sy] of corners) {
+    rosettes.push(
+      part(
+        `plaque-rosette-${sx}-${sy}`,
+        new THREE.CylinderGeometry(0.042, 0.042, 0.014, 10),
+        'brass',
+        [sx * (w / 2 + 0.012), sy * (h / 2 + 0.012), 0.026],
+        [Math.PI / 2, 0, 0],
+      ),
+    );
+  }
+  parts.push(...rosettes);
+  // Two brass jag inlays at the board edges, echoing the painted slash motif.
+  parts.push(
+    part(
+      'plaque-jag-left',
+      box(0.012, 0.18, 0.01),
+      'brass',
+      [-w / 2 - 0.032, rng.range(-0.12, 0.12), 0.02],
+      [0, 0, 0.42],
+    ),
+    part(
+      'plaque-jag-right',
+      box(0.012, 0.18, 0.01),
+      'brass',
+      [w / 2 + 0.032, rng.range(-0.12, 0.12), 0.02],
+      [0, 0, -0.42],
+    ),
+    // Thin purple inlay under the heading band (accent only, never lettering).
+    part('plaque-purple-inlay', box(w - 0.12, 0.004, 0.006), 'plaqueAccent', [
+      0,
+      h / 2 - 0.1,
+      0.018,
+    ]),
+  );
   return parts;
 }
 

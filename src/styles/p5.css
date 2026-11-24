@@ -419,6 +419,109 @@
   transform: translate(-50%, -50%) skewX(-6deg);
 }
 
+/* --------------------------------------------------------------------------
+ * Commit 4: diegetic room — clean framing band + reveal-on-focus DOM twin.
+ * In 3D desktop the flat menu is sr-only (never painted over the plaque), but
+ * it stays in the tab order. Focus WITHIN the nav un-hides a real, opaque
+ * floating menu at bottom-left so sighted keyboard users always see focus.
+ * Coarse pointers keep the full opaque DOM menu (and 44px targets).
+ * ------------------------------------------------------------------------ */
+.main-menu__focus-chip {
+  display: none;
+}
+
+.p5-btn--diegetic-highlight {
+  outline: 3px solid var(--state-focus);
+  outline-offset: 2px;
+}
+
+.app-3d:not(.app-fine-pointer) .main-menu {
+  background: var(--p5-black);
+  border: 2px solid var(--border-panel);
+}
+
+.app-3d.app-fine-pointer .main-menu {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.app-3d.app-fine-pointer .main-menu:focus-within {
+  position: fixed;
+  left: 1.5rem;
+  bottom: 1.5rem;
+  z-index: 12;
+  width: auto;
+  max-width: 20rem;
+  height: auto;
+  margin: 0;
+  padding: 1rem;
+  overflow: visible;
+  clip-path: none;
+  white-space: normal;
+  background: var(--p5-black);
+  border: 2px solid var(--state-focus);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--p5-black) 60%, transparent);
+  pointer-events: auto;
+}
+
+.app-3d.app-fine-pointer .main-menu:focus-within .main-menu__focus-chip {
+  display: block;
+  margin-bottom: var(--space-sm);
+  color: var(--state-focus);
+  font-weight: 700;
+}
+
+@media (min-width: 1024px) {
+  /* Left ~50% stays clear for the room + wall plaque; zone content is pushed
+     into the right column. The QA harness measures real DOM opacity overlap. */
+  .app-3d.app-fine-pointer .app-shell {
+    max-width: none;
+    padding: 0;
+  }
+  .app-3d.app-fine-pointer .app-shell > div:first-of-type {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+  }
+  .app-3d.app-fine-pointer main {
+    /* flex-basis must be set too: Tailwind's flex-1 uses basis 0%. */
+    flex: 0 0 50%;
+    width: 50%;
+    max-height: 100vh;
+    margin-left: auto;
+    overflow-y: auto;
+    padding: var(--space-lg) var(--space-xl) var(--space-lg) var(--space-lg);
+  }
+}
+
+/* Reduced-motion 3D opt-in: static cuts need a visible navigation cue. */
+.zone-title-hud {
+  position: fixed;
+  top: var(--space-md);
+  left: 50%;
+  z-index: 6;
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  color: var(--p5-white);
+  background: var(--p5-black);
+  border: 2px solid var(--state-focus);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.zone-title-hud__note {
+  color: var(--p5-link);
+  font-size: var(--type-xs);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

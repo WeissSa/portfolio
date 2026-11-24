@@ -2,6 +2,10 @@ import { create } from 'zustand';
 import type { Route } from '../lib/router';
 import { flatToHistorical, type HistoricalData } from '../lib/climate';
 import { loadClimateData } from '../lib/climate-api';
+import {
+  readReducedMotionOptIn,
+  writeReducedMotionOptIn,
+} from '../lib/device-tier';
 
 export type Mode = '2d' | '3d';
 export type ClimateStatus = 'idle' | 'loading' | 'ready' | 'error';
@@ -127,6 +131,25 @@ export interface PortfolioStore {
   climatePanelOpen: boolean;
   openClimatePanel: () => void;
   closeClimatePanel: () => void;
+
+  /* Commit 4 bidirectional diegetic/DOM sync. The canonical HIGHLIGHT is
+   * derived from these: in-world hover and DOM keyboard focus both write here,
+   * so one surface lights up at a time (4b adds the CRT mirror in close-up). */
+  /** Route hovered on the plaque / CRT (pointer → DOM twin highlight). */
+  menuHoverRoute: Route | null;
+  setMenuHoverRoute: (route: Route | null) => void;
+  /** Route focused in the sr-only DOM menu (keyboard → in-world highlight). */
+  menuFocusRoute: Route | null;
+  setMenuFocusRoute: (route: Route | null) => void;
+
+  /* Reduced-motion 3D (commit 4): auto mode stays 2D, but an INFORMED opt-in
+   * can force 3D. The session then uses static cuts, a zone-title HUD and a
+   * frozen grain clock. */
+  reducedMotionOptIn: boolean;
+  setReducedMotionOptIn: (value: boolean) => void;
+  /** Reduced motion is the only gate — the informed opt-in can be offered. */
+  reducedMotionOptInAvailable: boolean;
+  setReducedMotionOptInAvailable: (value: boolean) => void;
 }
 
 const IDLE_CLIMATE: ClimateState = {
@@ -157,6 +180,8 @@ const CLEARED_3D_UI = {
   ...CLOSED_MODALS,
   hoveredPostId: null,
   hoveredProjectId: null,
+  menuHoverRoute: null,
+  menuFocusRoute: null,
 };
 
 export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
@@ -266,9 +291,17 @@ export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
     if (typeof document !== 'undefined' && document.body.style.cursor) {
       document.body.style.cursor = '';
     }
-    const { hoveredPostId, hoveredProjectId } = get();
-    if (hoveredPostId !== null || hoveredProjectId !== null) {
-      set({ hoveredPostId: null, hoveredProjectId: null });
+    const { hoveredPostId, hoveredProjectId, menuHoverRoute } = get();
+    if (
+      hoveredPostId !== null ||
+      hoveredProjectId !== null ||
+      menuHoverRoute !== null
+    ) {
+      set({
+        hoveredPostId: null,
+        hoveredProjectId: null,
+        menuHoverRoute: null,
+      });
     }
   },
 
@@ -303,4 +336,18 @@ export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
     get().clearSceneHover();
     set({ climatePanelOpen: false });
   },
+
+  menuHoverRoute: null,
+  setMenuHoverRoute: (menuHoverRoute) => set({ menuHoverRoute }),
+  menuFocusRoute: null,
+  setMenuFocusRoute: (menuFocusRoute) => set({ menuFocusRoute }),
+
+  reducedMotionOptIn: readReducedMotionOptIn(),
+  setReducedMotionOptIn: (value) => {
+    writeReducedMotionOptIn(value);
+    set({ reducedMotionOptIn: value });
+  },
+  reducedMotionOptInAvailable: false,
+  setReducedMotionOptInAvailable: (reducedMotionOptInAvailable) =>
+    set({ reducedMotionOptInAvailable }),
 }));

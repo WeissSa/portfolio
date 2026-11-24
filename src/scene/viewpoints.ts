@@ -7,6 +7,7 @@
  */
 import type { DeviceTier } from '../lib/device-tier';
 import type { Route } from '../lib/router';
+import { CLIMATE_VIEWPOINT_DATA, HOME_VIEWPOINT_DATA } from './diegetic';
 import {
   DESK_TOP_HEIGHT,
   MONITOR_SCREEN_LOCAL_Y,
@@ -26,11 +27,13 @@ export interface ZoneViewpoint {
   target: Vec3;
 }
 
-/** Home / establishing shot — also the camera's start pose on mount. */
-export const HOME_VIEWPOINT: ZoneViewpoint = {
-  position: [0, 1.65, 4.8],
-  target: [0, 1.35, -1.2],
-};
+/**
+ * Home / establishing shot — also the camera's start pose on mount. The
+ * target sits to the right of centre so the diegetic wall plaque (above/right
+ * of the desk) lands in the CLEAN LEFT BAND of the 3D desktop DOM layout;
+ * the screen, desk and window stay in shot (commit 4 framing test).
+ */
+export const HOME_VIEWPOINT: ZoneViewpoint = HOME_VIEWPOINT_DATA;
 
 export const ZONE_VIEWPOINTS: Record<Route, ZoneViewpoint> = {
   '/': HOME_VIEWPOINT,
@@ -65,11 +68,9 @@ export const ZONE_VIEWPOINTS: Record<Route, ZoneViewpoint> = {
       DESK_POSITION[2] + 0.18,
     ],
   },
-  // The Projector screen — Climate: stand back and face the screen.
-  '/climate': {
-    position: [SCREEN_POSITION[0] + 2.15, 1.8, SCREEN_POSITION[2] + 3.1],
-    target: [SCREEN_POSITION[0], SCREEN_POSITION[1], SCREEN_POSITION[2]],
-  },
+  // The Projector screen — Climate: close enough that the projected
+  // climate-local strip (year / back / info) is legible (4b framing test).
+  '/climate': CLIMATE_VIEWPOINT_DATA,
 };
 
 /**

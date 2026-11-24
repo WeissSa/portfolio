@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button, MantineProvider } from '@mantine/core';
 import { mantineTheme } from './styles/mantine-theme';
 import {
+  canOptIntoReducedMotion3d,
   clearManualMode,
   detectCapabilities,
   recommendMode,
@@ -9,6 +10,7 @@ import {
   writeSceneFailure,
   type DeviceTier,
 } from './lib/device-tier';
+import { usePrefersReducedMotion } from './lib/a11y';
 import { useRoute, type Route } from './lib/router';
 import { usePortfolioStore } from './state/store';
 import { MainMenu } from './ui/MainMenu';
@@ -71,6 +73,7 @@ export default function App() {
   const setMode = usePortfolioStore((s) => s.setMode);
   const setAutoMode = usePortfolioStore((s) => s.setAutoMode);
   const setPointerFine = usePortfolioStore((s) => s.setPointerFine);
+  const pointerFine = usePortfolioStore((s) => s.pointerFine);
   // Monitor desktop zoom (commit 7): 3D-only. 2D #/about keeps rendering
   // AboutDesktop through ZoneContent below, unaffected by this flag.
   const desktopOpen = usePortfolioStore((s) => s.desktopOpen);
@@ -78,6 +81,13 @@ export default function App() {
   // screen pick or by the keyboard-accessible trigger below.
   const climatePanelOpen = usePortfolioStore((s) => s.climatePanelOpen);
   const openClimatePanel = usePortfolioStore((s) => s.openClimatePanel);
+  const reducedMotionOptIn = usePortfolioStore((s) => s.reducedMotionOptIn);
+  const setReducedMotionOptInAvailable = usePortfolioStore(
+    (s) => s.setReducedMotionOptInAvailable,
+  );
+  const prefersReducedMotion = usePrefersReducedMotion();
+  /** 3D while reduced motion is active: static cuts + HUD + frozen grain. */
+  const static3d = mode === '3d' && prefersReducedMotion;
   const initialRouteSynced = useRef(false);
   const [tier, setTier] = useState<DeviceTier>('desktop');
   // 3c P10 warm start: after the first 3D visit, DESKTOP keeps the Canvas
@@ -117,22 +127,40 @@ export default function App() {
   useEffect(() => {
     const caps = detectCapabilities();
     const decision = resolveMode(caps);
+    const optInAvailable = canOptIntoReducedMotion3d(caps, decision.tier);
+    setReducedMotionOptInAvailable(optInAvailable);
     setTier(decision.tier);
-    setMode(decision.mode);
+    // Reduced motion stays authoritative for AUTO mode; only the explicit,
+    // informed opt-in (ModeToggle) may put this session into 3D.
+    setMode(
+      optInAvailable &&
+        reducedMotionOptIn &&
+        decision.reason === 'reduced-motion'
+        ? '3d'
+        : decision.mode,
+    );
     // The toggle uses the ungated recommendation to decide whether 3D is even
     // offered and to restore "Auto" after a manual override is cleared.
     setAutoMode(recommendMode(caps));
     // Canvas picking is enabled only for a fine pointer; keyboard/assistive
     // users always have the DOM equivalent (§3.3, commit 6).
     setPointerFine(caps.pointerType === 'fine');
-  }, [setMode, setAutoMode, setPointerFine]);
+  }, [
+    setMode,
+    setAutoMode,
+    setPointerFine,
+    setReducedMotionOptInAvailable,
+    reducedMotionOptIn,
+  ]);
 
   return (
     <MantineProvider theme={mantineTheme} forceColorScheme="dark">
       <div
         className={`min-h-screen bg-p5-black text-white${
           hasNavigated ? '' : ' app-initial'
-        }${mode === '3d' ? ' app-3d' : ''}`}
+        }${mode === '3d' ? ' app-3d' : ''}${
+          pointerFine ? ' app-fine-pointer' : ''
+        }${static3d ? ' app-static-3d' : ''}`}
       >
         <a
           href="#main"
@@ -145,6 +173,15 @@ export default function App() {
         <p aria-live="polite" className="sr-only">
           {ZONE_NAMES[route]} zone selected
         </p>
+
+        {/* Reduced-motion 3D opt-in: no camera flights, so the visible ZONE
+            HUD is the substitute for motion as a navigation cue (commit 4). */}
+        {static3d && (
+          <div className="zone-title-hud" aria-hidden="true">
+            <span className="p5-display">{ZONE_NAMES[route]}</span>
+            <span className="zone-title-hud__note">static view</span>
+          </div>
+        )}
 
         {/* 3c warm start: desktop keeps the lazy Canvas mounted after the first
           visit (hidden + zero frames while in 2D); mobile/low unmount as before.

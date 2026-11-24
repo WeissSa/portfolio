@@ -124,7 +124,7 @@ describe('desktop zoom DOM (3D)', () => {
     openZoom();
     await user.click(
       screen.getByRole('button', {
-        name: 'Close desktop and return to the room',
+        name: 'Back to room',
       }),
     );
     expect(usePortfolioStore.getState().desktopOpen).toBe(false);
@@ -140,7 +140,7 @@ describe('desktop zoom DOM (3D)', () => {
     await waitFor(() =>
       expect(
         within(zoom).getByRole('button', {
-          name: 'Close desktop and return to the room',
+          name: 'Back to room',
         }),
       ).toHaveFocus(),
     );

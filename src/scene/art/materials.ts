@@ -32,7 +32,9 @@ export type MaterialKey =
   | 'book'
   | 'bookHero'
   | 'bookAtlas'
-  | 'caseLabel';
+  | 'caseLabel'
+  | 'plaqueFace'
+  | 'plaqueAccent';
 
 /**
  * Non-enumerable `textureClones` keeps the material map indexable by
@@ -231,6 +233,23 @@ export function createRoomMaterials(
         : PALETTE.p5White,
       roughness: 0.7,
       metalness: 0.05,
+    }),
+    // Commit 4: gilt lettering on the DARK inlay (never on brass). A faint
+    // emissiveMap keeps the lettering legible in the establishing shot.
+    plaqueFace: standard({
+      map: textures.plaque,
+      color: textures.plaque
+        ? DESIGN_TOKENS.material.textureNeutral
+        : DESIGN_TOKENS.climate.projectorInk,
+      emissive: new THREE.Color(DESIGN_TOKENS.climate.projectorPlaqueText),
+      emissiveMap: textures.plaque,
+      emissiveIntensity: 0.35,
+      roughness: 0.82,
+      metalness: 0.08,
+    }),
+    // Thin purple inlay accent — decoration only, never carries text.
+    plaqueAccent: new THREE.MeshBasicMaterial({
+      color: DESIGN_TOKENS.p5.link,
     }),
   };
   // Non-enumerable: consumers indexing by MaterialKey and Object.values()

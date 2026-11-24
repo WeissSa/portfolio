@@ -67,6 +67,41 @@ export const SCENE_FAILURE_STORAGE_KEY = 'portfolio:3d-failed';
  */
 export const SCENE_FAILURE_VALUE = 'true';
 
+/**
+ * Commit 4: an INFORMED opt-in for reduced-motion visitors who still want the
+ * 3D room. It is deliberately separate from the normal manual mode: the
+ * automatic decision remains 2D (the reduced-motion gate is authoritative),
+ * and the opt-in is only offered when reduced motion is the ONLY blocker.
+ * The session then uses static cuts, a zone-title HUD and a frozen grain clock.
+ */
+export const REDUCED_MOTION_OPTIN_KEY = 'portfolio:reduced-motion-3d';
+export function readReducedMotionOptIn(): boolean {
+  try {
+    return localStorage.getItem(REDUCED_MOTION_OPTIN_KEY) === 'true';
+  } catch {
+    return false;
+  }
+}
+export function writeReducedMotionOptIn(value: boolean): void {
+  try {
+    if (value) localStorage.setItem(REDUCED_MOTION_OPTIN_KEY, 'true');
+    else localStorage.removeItem(REDUCED_MOTION_OPTIN_KEY);
+  } catch {
+    // Storage may be blocked; the in-memory store still honours the toggle.
+  }
+}
+export function canOptIntoReducedMotion3d(
+  caps: DeviceCapabilities,
+  tier: DeviceTier = classifyTier(caps),
+): boolean {
+  if (!caps.reducedMotion) return false;
+  // Every OTHER gate must pass; scene crashes stay authoritative.
+  return (
+    capabilityGate({ ...caps, reducedMotion: false }, tier) === null &&
+    !readSceneFailure()
+  );
+}
+
 /** Classify hardware into a render tier. Pure — no DOM access. */
 export function classifyTier(caps: DeviceCapabilities): DeviceTier {
   if (!caps.webgl2 || caps.saveData) return 'low';

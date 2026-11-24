@@ -19,6 +19,7 @@ import { POSTS, PROJECTS } from '../content/index';
 import { usePrefersReducedMotion } from '../lib/a11y';
 import { DESIGN_TOKENS } from '../styles/design-tokens';
 import { CameraRig } from './CameraRig';
+import { PLAQUE } from './diegetic';
 import { PainterlyPass } from './effects/PainterlyPass';
 import { createCoalescedPointerEvents } from './perf-events';
 import {
@@ -55,6 +56,7 @@ import {
   createProjector,
   createRoomShell,
   createRugGeometry,
+  createWallPlaque,
   createWindow,
   DESK_TOP_HEIGHT,
   disposeParts,
@@ -70,6 +72,7 @@ import {
   type RoomMaterials,
 } from './art/materials';
 import { LibraryZone } from './zones/Library';
+import { WallPlaque } from './zones/WallPlaque';
 import { DeskZone } from './zones/Desk';
 import { ProjectCases } from './zones/ProjectCases';
 import { ClimateProjector } from './zones/ClimateProjector';
@@ -90,6 +93,20 @@ export interface RoomSceneProps {
   quality?: RoomQuality;
   /** DI seam for headless tests (defaults to the browser canvas painter). */
   textureFactory?: TextureFactory;
+  /** Reduced-motion 3D: freeze the grain clock (static-cut mode, commit 4). */
+  freezeTime?: boolean;
+}
+
+/**
+ * Single source for the shadow contract the review asked to assert: only a
+ * desktop Canvas allocates a shadow map, and only its one warm key spot casts.
+ */
+export function roomShadowSettings(quality: RoomQuality): {
+  canvasShadows: boolean;
+  keyLight: boolean;
+} {
+  const desktop = quality === 'desktop';
+  return { canvasShadows: desktop, keyLight: desktop };
 }
 
 /* Placement constants live in ./placement so the camera viewpoints can
@@ -225,6 +242,7 @@ export function RoomScene({
   seed = 'the-room',
   quality = 'desktop',
   textureFactory = createPlanTexture,
+  freezeTime = false,
 }: RoomSceneProps): JSX.Element {
   const furniture = useMemo(() => {
     const shell = createRoomShell();
@@ -259,6 +277,7 @@ export function RoomScene({
     const cases = createGameCases(seed, PROJECTS.length);
     const screenCloth = new THREE.PlaneGeometry(1.9, 1.07);
     const screenBar = new THREE.BoxGeometry(2.02, 0.05, 0.04);
+    const plaque = createWallPlaque(seed);
     return {
       shell,
       desk,
@@ -279,6 +298,7 @@ export function RoomScene({
       cases,
       screenCloth,
       screenBar,
+      plaque,
     };
   }, [seed, quality]);
 
@@ -317,6 +337,7 @@ export function RoomScene({
         ...furniture.props.shelf,
         ...furniture.frames.flatMap((frame) => frame.parts),
         ...furniture.cases,
+        ...furniture.plaque,
       ]);
       furniture.rugGeometry.dispose();
       furniture.screenCloth.dispose();
@@ -338,7 +359,7 @@ export function RoomScene({
   // desk replaces the old shadowless desk-lamp point light, so the total light
   // count stays ≤5. Desktop tier only — mobile gets the same warm pool without
   // a shadow map (castShadow=false, Canvas shadows disabled).
-  const keyLight = quality === 'desktop';
+  const keyLight = roomShadowSettings(quality).keyLight;
   const keyLightTarget: Vec3 = [
     DESK_POSITION[0] - 0.45,
     DESK_TOP_HEIGHT,
@@ -346,7 +367,7 @@ export function RoomScene({
   ];
 
   return (
-    <PainterlyPass enabled={quality === 'desktop'}>
+    <PainterlyPass enabled={quality === 'desktop'} freezeTime={freezeTime}>
       {/* Base ambience: cool night fill + moonlight from the window. The
           ambient is dimmed (0.5 → 0.36) so the warm key light reads. */}
       <ambientLight intensity={0.36} color={DESIGN_TOKENS.room.ambient} />
@@ -596,6 +617,11 @@ export function RoomScene({
           <Parts parts={parts} materials={materials} shadows={keyLight} />
         </group>
       ))}
+
+      {/* CANONICAL diegetic nav (commit 4): framed, lettered and pickable. */}
+      <group name="wall-plaque" position={PLAQUE.position}>
+        <WallPlaque parts={furniture.plaque} materials={materials} />
+      </group>
     </PainterlyPass>
   );
 }
@@ -664,7 +690,7 @@ export default function Room({
       dpr={dpr}
       // One 1024² shadow map for the warm desk key light — DESKTOP tier only;
       // mobile/low never allocate a shadow map (art-overhaul commit 3a).
-      shadows={quality === 'desktop'}
+      shadows={roomShadowSettings(quality).canvasShadows}
       gl={{ antialias: false, powerPreference: 'high-performance' }}
       // 3c P2: at most one raycast per frame during pointer movement.
       events={createCoalescedPointerEvents}
@@ -682,6 +708,7 @@ export default function Room({
         seed={seed}
         quality={quality}
         textureFactory={textureFactory}
+        freezeTime={reducedMotion}
       />
     </Canvas>
   );

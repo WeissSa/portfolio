@@ -1,7 +1,8 @@
-import { render, screen, within } from '@testing-library/react';
+import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import App from '../src/App';
+import { usePortfolioStore } from '../src/state/store';
 
 describe('P5 main menu', () => {
   it('lists all zones plus GitHub/LinkedIn contact links', () => {
@@ -64,6 +65,29 @@ describe('P5 main menu', () => {
 
     await user.keyboard('{End}');
     expect(within(menu).getByRole('link', { name: 'Climate' })).toHaveFocus();
+  });
+
+  it('syncs keyboard focus to the canonical in-world highlight', () => {
+    render(<App />);
+    const menu = screen.getByRole('navigation', { name: 'Main menu' });
+    const climate = within(menu).getByRole('link', { name: 'Climate' });
+    act(() => climate.focus());
+    expect(usePortfolioStore.getState().menuFocusRoute).toBe('/climate');
+    expect(climate).toHaveClass('p5-btn--diegetic-highlight');
+    act(() => climate.blur());
+    expect(usePortfolioStore.getState().menuFocusRoute).toBeNull();
+    expect(climate).not.toHaveClass('p5-btn--diegetic-highlight');
+  });
+
+  it('mirrors an in-world hover on the DOM twin link', () => {
+    render(<App />);
+    const menu = screen.getByRole('navigation', { name: 'Main menu' });
+    const about = within(menu).getByRole('link', { name: 'About' });
+    expect(about).not.toHaveClass('p5-btn--diegetic-highlight');
+    act(() => usePortfolioStore.getState().setMenuHoverRoute('/about'));
+    expect(about).toHaveClass('p5-btn--diegetic-highlight');
+    act(() => usePortfolioStore.getState().setMenuHoverRoute(null));
+    expect(about).not.toHaveClass('p5-btn--diegetic-highlight');
   });
 
   it('activates a zone with Enter and deep-links the hash route', async () => {

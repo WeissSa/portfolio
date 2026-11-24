@@ -172,8 +172,19 @@ export function choosePainterlyTargetType(
     : THREE.UnsignedByteType;
 }
 
+/** Pure grain-clock step: reduced-motion 3D holds uTime at a fixed value. */
+export function advancePainterlyTime(
+  current: number,
+  delta: number,
+  frozen = false,
+): number {
+  return frozen ? current : current + delta;
+}
+
 export interface PainterlyPassProps {
   enabled: boolean;
+  /** Freeze film-grain shimmer (reduced-motion 3D opt-in, commit 4). */
+  freezeTime?: boolean;
   grain?: number;
   vignette?: number;
   grade?: number;
@@ -184,6 +195,7 @@ export interface PainterlyPassProps {
 
 export function PainterlyPass({
   enabled,
+  freezeTime = false,
   grain = PAINTERLY_DEFAULTS.grain,
   vignette = PAINTERLY_DEFAULTS.vignette,
   grade = PAINTERLY_DEFAULTS.grade,
@@ -194,6 +206,7 @@ export function PainterlyPass({
   if (!enabled) return children ?? null;
   return (
     <PainterlyPassInner
+      freezeTime={freezeTime}
       grain={grain}
       vignette={vignette}
       grade={grade}
@@ -206,6 +219,7 @@ export function PainterlyPass({
 }
 
 function PainterlyPassInner({
+  freezeTime = false,
   grain = PAINTERLY_DEFAULTS.grain,
   vignette = PAINTERLY_DEFAULTS.vignette,
   grade = PAINTERLY_DEFAULTS.grade,
@@ -286,8 +300,13 @@ function PainterlyPassInner({
 
   const time = useRef(0);
   useFrame((_state, delta) => {
-    time.current += delta;
+    time.current = advancePainterlyTime(time.current, delta, freezeTime);
     uniforms.uTime.value = time.current;
+    // QA hook (commit 4): expose the ACTUAL shader clock so the Playwright
+    // harness can assert it is frozen in the reduced-motion 3D opt-in.
+    if (freezeTime && typeof document !== 'undefined') {
+      document.documentElement.dataset.grainTime = String(time.current);
+    }
     gl.setRenderTarget(rig.target);
     gl.render(scene, camera);
     gl.setRenderTarget(null);

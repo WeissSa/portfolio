@@ -11,6 +11,7 @@
  */
 import * as THREE from 'three';
 import { DESIGN_TOKENS } from '../../styles/design-tokens';
+import { DIEGETIC_ROWS, PLAQUE } from '../diegetic';
 import { createRng, type Rng } from './rng';
 import { BOOK_SPINE_COLORS, PALETTE, shadeHex } from './palette';
 
@@ -110,7 +111,8 @@ export type TextureKey =
   | 'bookAtlas'
   | 'caseLabels'
   | 'monitor'
-  | 'projector';
+  | 'projector'
+  | 'plaque';
 
 /** Hard budgets asserted by unit tests (§4.3 "tests assert determinism + budget"). */
 export const MAX_TEXTURE_SIZE = 512;
@@ -1014,6 +1016,121 @@ export function planProjectorScreen(
   return { name: 'projector', width, height, ops };
 }
 
+/**
+ * CANONICAL DIEGETIC NAV (commit 4): gilt route names on a DARK inlay panel —
+ * never gold-on-brass (1.51:1). The board's brass inlay / rosettes / jag
+ * motifs are separate geometry; this texture is the lettered face only.
+ * 60px Anton on a 320px-tall strip => ~21px caps from HOME_VIEWPOINT.
+ */
+export function planWallPlaque(
+  seed: string | number,
+  width = PLAQUE.textureWidth,
+  height = PLAQUE.textureHeight,
+): TexturePlan {
+  const rng = createRng(
+    typeof seed === 'string' ? `${seed}:plaque` : seed + 1204,
+  );
+  const ops: PaintOp[] = [{ kind: 'fill', color: DESIGN_TOKENS.p5.black }];
+  // Aged varnish on the dark inlay (kept subtle: lettering contrast dominates).
+  brushNoise(rng, ops, { width, height }, 36, PALETTE.ink, {
+    lenRange: [24, 90],
+    widthRange: [2, 7],
+    alphaRange: [0.02, 0.06],
+    shade: 0.08,
+  });
+  // Brass inlay frame + the thin purple line under the heading band.
+  ops.push(
+    {
+      kind: 'frame',
+      x: 2,
+      y: 2,
+      w: width - 4,
+      h: height - 4,
+      thickness: 6,
+      color: PALETTE.brassDark,
+    },
+    {
+      kind: 'frame',
+      x: 11,
+      y: 11,
+      w: width - 22,
+      h: height - 22,
+      thickness: 2,
+      color: PALETTE.brassLight,
+    },
+    {
+      kind: 'rect',
+      x: 24,
+      y: 32,
+      w: width - 48,
+      h: 3,
+      color: DESIGN_TOKENS.p5.link,
+      alpha: 0.95,
+    },
+  );
+  // Corner rosettes (painted; the raised brass ones are in createWallPlaque).
+  const corners: [number, number][] = [
+    [20, 20],
+    [width - 20, 20],
+    [20, height - 20],
+    [width - 20, height - 20],
+  ];
+  for (const [cx, cy] of corners) {
+    ops.push({ kind: 'circle', x: cx, y: cy, r: 9, color: PALETTE.brass });
+    ops.push({ kind: 'circle', x: cx, y: cy, r: 4, color: PALETTE.brassDark });
+  }
+  // P5-inspired slash / jag motifs as brass inlay (generic, not a copied UI).
+  for (const side of [0, 1]) {
+    const base = side === 0 ? 16 : width - 46;
+    ops.push({
+      kind: 'polygon',
+      points: [
+        [base, 62],
+        [base + 22, 50],
+        [base + 30, 66],
+        [base + 12, 80],
+      ],
+      color: PALETTE.brass,
+      alpha: 0.85,
+    });
+    ops.push({
+      kind: 'polygon',
+      points: [
+        [base + 4, height - 86],
+        [base + 26, height - 100],
+        [base + 34, height - 84],
+        [base + 16, height - 68],
+      ],
+      color: PALETTE.brass,
+      alpha: 0.85,
+    });
+  }
+  // Gilt lettering, one row per route, baseline-aligned with the hit planes.
+  DIEGETIC_ROWS.forEach((row, index) => {
+    const baseline = PLAQUE.rowBaselines[index] ?? 38 + index * 62;
+    ops.push({
+      kind: 'rect',
+      x: 46,
+      y: baseline + 5,
+      w: width - 92,
+      h: 1,
+      color: PALETTE.brassDark,
+      alpha: 0.7,
+    });
+    ops.push({
+      kind: 'text',
+      text: row.label.toUpperCase(),
+      x: 56,
+      y: baseline,
+      font: `${PLAQUE.fontPx}px ${DISPLAY_FONT}`,
+      color: DESIGN_TOKENS.climate.projectorPlaqueText,
+      align: 'left',
+    });
+  });
+  ops.push(edgeDarken(0.12));
+  return { name: 'plaque', width, height, ops };
+}
+
 export interface RoomTextureContent {
   books: readonly BookEntry[];
   cases: readonly string[];
@@ -1034,6 +1151,7 @@ export function createTexturePlans(
     caseLabels: planCaseLabels(seed, content.cases),
     monitor: planMonitorDesktop(seed),
     projector: planProjectorScreen(seed),
+    plaque: planWallPlaque(seed),
   };
 }
 
@@ -1185,6 +1303,7 @@ export function renderTexturePlans(
     caseLabels: factory(plans.caseLabels),
     monitor: factory(plans.monitor),
     projector: factory(plans.projector),
+    plaque: factory(plans.plaque),
   };
 }
 

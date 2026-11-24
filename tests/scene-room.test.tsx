@@ -21,6 +21,8 @@ import {
   PAINTERLY_VERTEX_SHADER,
 } from '../src/scene/effects/PainterlyPass';
 import type { TextureFactory } from '../src/scene/art/textures';
+import { DESK_POSITION } from '../src/scene/placement';
+import { DESK_TOP_HEIGHT } from '../src/scene/art/geometry';
 
 /** Headless stand-in: no 2D canvas in jsdom, textures never get sampled. */
 const stubTextureFactory: TextureFactory = () => new THREE.Texture();
@@ -28,7 +30,8 @@ const stubTextureFactory: TextureFactory = () => new THREE.Texture();
 describe('room materials', () => {
   it('creates every material key without textures (graceful degradation)', () => {
     const materials = createRoomMaterials({});
-    expect(Object.keys(materials).length).toBe(20);
+    // 20 original keys + the commit-4 plaque face / purple inlay materials.
+    expect(Object.keys(materials).length).toBe(22);
     for (const material of Object.values(materials)) {
       expect(material).toBeInstanceOf(THREE.Material);
     }
@@ -62,7 +65,7 @@ describe('room materials', () => {
     const materials = createRoomMaterials({ wood, plaster });
 
     // Non-enumerable: key count and Object.values() loop stay unchanged.
-    expect(Object.keys(materials)).toHaveLength(20);
+    expect(Object.keys(materials)).toHaveLength(22);
     const clones = materials.textureClones ?? [];
     expect(clones).toHaveLength(2);
     expect((materials.woodDark as THREE.MeshStandardMaterial).map).toBe(
@@ -234,6 +237,17 @@ describe('RoomScene headless render', () => {
     const keySpot = shadowCasters[0] as THREE.SpotLight;
     expect(keySpot.shadow.mapSize.width).toBe(1024);
     expect(keySpot.shadow.mapSize.height).toBe(1024);
+    // Review assertion (3a/3b): a SpotLight aims at its target's WORLD pose;
+    // a stale/default target silently lights the wrong corner of the room.
+    expect(keySpot.target.position.x).toBeCloseTo(DESK_POSITION[0] - 0.45);
+    expect(keySpot.target.position.y).toBeCloseTo(DESK_TOP_HEIGHT);
+    expect(keySpot.target.position.z).toBeCloseTo(DESK_POSITION[2] + 0.05);
+
+    // Commit 4: the canonical plaque ships inside the same headless tree.
+    const plaque = renderer.scene.findAll(
+      (node) => node.type === 'Group' && node.props.name === 'wall-plaque',
+    );
+    expect(plaque).toHaveLength(1);
 
     await renderer.unmount();
   });

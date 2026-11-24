@@ -3,6 +3,7 @@ import { ActionIcon, Button, Tooltip } from '@mantine/core';
 import { LINKS } from '../content/links';
 import { HEADLINE, SITE_OWNER } from '../content/bio';
 import { Route, ROUTES, useRoute } from '../lib/router';
+import { usePortfolioStore } from '../state/store';
 import { GitHubIcon, LinkedInIcon } from './primitives';
 import { ModeToggle } from './ModeToggle';
 
@@ -22,6 +23,13 @@ const MENU_LABELS: Record<Route, string> = {
  */
 export function MainMenu() {
   const route = useRoute();
+  // Bidirectional diegetic sync (commit 4): DOM focus lights the plaque row;
+  // plaque hover lights this DOM twin. Both use ONE canonical store field.
+  const menuHoverRoute = usePortfolioStore((state) => state.menuHoverRoute);
+  const menuFocusRoute = usePortfolioStore((state) => state.menuFocusRoute);
+  const setMenuFocusRoute = usePortfolioStore(
+    (state) => state.setMenuFocusRoute,
+  );
   const itemRefs = useMemo(
     () => ROUTES.map(() => createRef<HTMLAnchorElement>()),
     [],
@@ -64,7 +72,13 @@ export function MainMenu() {
   };
 
   return (
-    <nav aria-label="Main menu" className="p5-cut-in">
+    <nav aria-label="Main menu" className="main-menu p5-cut-in">
+      {/* Reveal-on-focus: in 3D desktop the nav is sr-only, but focusing any
+          link un-hides this chip + the real links, so sighted keyboard users
+          ALWAYS see where focus landed. */}
+      <p className="main-menu__focus-chip" aria-hidden="true">
+        Keyboard menu — focus visible
+      </p>
       <div className="p5-panel p5-panel--red mb-2 px-4 py-3">
         <p className="p5-display text-lg leading-tight text-p5-black">
           {SITE_OWNER}
@@ -78,12 +92,19 @@ export function MainMenu() {
               component="a"
               ref={itemRefs[index]}
               data-index={index}
+              data-route={r}
               href={`#${r}`}
               onKeyDown={onKeyDown}
+              onFocus={() => setMenuFocusRoute(r)}
+              onBlur={() => setMenuFocusRoute(null)}
               aria-current={route === r ? 'page' : undefined}
               radius={0}
               className={`p5-btn w-full justify-start text-base ${
                 route === r ? 'p5-btn--active' : ''
+              }${
+                menuHoverRoute === r || menuFocusRoute === r
+                  ? ' p5-btn--diegetic-highlight'
+                  : ''
               }`}
             >
               <span>{MENU_LABELS[r]}</span>

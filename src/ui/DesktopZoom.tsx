@@ -53,11 +53,10 @@ export function DesktopZoom() {
       <Button
         type="button"
         onClick={closeDesktop}
-        aria-label="Close desktop and return to the room"
         radius={0}
         className="p5-btn p5-btn--red desktop-zoom__close"
       >
-        ✕ Back to room
+        Back to room
       </Button>
       <AboutDesktop />
     </div>

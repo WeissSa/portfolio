@@ -12,6 +12,37 @@ import { Button } from '@mantine/core';
 import { clearManualMode, writeManualMode } from '../lib/device-tier';
 import { usePortfolioStore, type Mode } from '../state/store';
 
+/** Reduced-motion visitors may opt INTO a static-cut 3D session (commit 4). */
+function ReducedMotionOptIn() {
+  const available = usePortfolioStore((s) => s.reducedMotionOptInAvailable);
+  const optedIn = usePortfolioStore((s) => s.reducedMotionOptIn);
+  const setOptIn = usePortfolioStore((s) => s.setReducedMotionOptIn);
+  const setMode = usePortfolioStore((s) => s.setMode);
+  if (!available) return null;
+  return (
+    <Button
+      type="button"
+      aria-label="Static 3D under reduced motion"
+      aria-pressed={optedIn}
+      onClick={() => {
+        const next = !optedIn;
+        setOptIn(next);
+        if (!next) {
+          clearManualMode();
+          setMode('2d');
+        } else {
+          writeManualMode('3d');
+          setMode('3d');
+        }
+      }}
+      radius={0}
+      className="p5-btn p5-btn--red px-3"
+    >
+      <span aria-hidden="true">Static 3D</span>
+    </Button>
+  );
+}
+
 export function ModeToggle() {
   const mode = usePortfolioStore((state) => state.mode);
   const setMode = usePortfolioStore((state) => state.setMode);
@@ -35,6 +66,7 @@ export function ModeToggle() {
   return (
     <>
       <div role="group" aria-label="Rendering mode" className="flex gap-2">
+        <ReducedMotionOptIn />
         <Button
           type="button"
           aria-label="3D room mode"
@@ -50,7 +82,7 @@ export function ModeToggle() {
           radius={0}
           className="p5-btn p5-btn--red px-3 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          <span aria-hidden="true">{mode === '3d' ? '3D ON' : '3D'}</span>
+          <span aria-hidden="true">3D</span>
         </Button>
         <Button
           type="button"
