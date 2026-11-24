@@ -274,6 +274,49 @@ export const PAIR_TABLE: readonly Pair[] = [
     surface: 'dom',
     state: 'default',
   },
+  // parchment background — the PostBook light faces (a11y fix 2026-11-23):
+  // dark-on-light text; the brass accent (~2.36:1) and the purple link
+  // (~1.83:1) FAIL on parchment and are forbidden there.
+  {
+    id: 'ink/parchment',
+    fg: TARGET.ink,
+    bg: TARGET.parchment,
+    kind: 'text',
+    surface: 'dom',
+    state: 'default',
+  },
+  {
+    id: 'light-face-link/parchment',
+    fg: TARGET.ink,
+    bg: TARGET.parchment,
+    kind: 'text',
+    surface: 'dom',
+    note: '.p5-prose--light link default',
+  },
+  {
+    id: 'light-face-link-visited/parchment',
+    fg: TARGET.panel,
+    bg: TARGET.parchment,
+    kind: 'text',
+    surface: 'dom',
+    state: 'visited',
+  },
+  {
+    id: 'brass-accent/parchment',
+    fg: TARGET.brass,
+    bg: TARGET.parchment,
+    kind: 'forbidden',
+    surface: 'dom',
+    note: '~2.36:1 — never text on a light face',
+  },
+  {
+    id: 'link/parchment',
+    fg: TARGET.link,
+    bg: TARGET.parchment,
+    kind: 'forbidden',
+    surface: 'dom',
+    note: '~1.83:1 — never purple link text on a light face',
+  },
   // explicitly forbidden adjacency (gold on brass ≈ 1.5:1)
   {
     id: 'gold/brass',
@@ -486,6 +529,35 @@ describe('per-background fg/bg contrast contract', () => {
     for (const [fg, bg] of recoloredPairs) {
       expect(hexContrast(fg, bg), `${fg} on ${bg}`).toBeGreaterThanOrEqual(4.5);
     }
+  });
+
+  it('keeps PostBook light-face (parchment) text AA and bans brass/purple there', () => {
+    // HIGH a11y fix (review 2026-11-23): PostBook faces are parchment
+    // (--p5-white) with ink text; the old cover title / NDA note used brass
+    // (--p5-red ≈2.36:1) and prose links used purple (≈1.83:1) — all under AA.
+    const lightFace = PAIR_TABLE.filter(
+      (p) => p.bg === TARGET.parchment && p.kind === 'text',
+    );
+    expect(lightFace.length).toBeGreaterThanOrEqual(3);
+    for (const pair of lightFace) {
+      expect(hexContrast(pair.fg, pair.bg), pair.id).toBeGreaterThanOrEqual(
+        4.5,
+      );
+    }
+    // Record the failing ratios that motivated the fix, so a future palette
+    // shift that makes brass/purple light-face-safe (or the reverse) is a
+    // visible, deliberate decision.
+    expect(hexContrast(TARGET.brass, TARGET.parchment)).toBeLessThan(3);
+    expect(hexContrast(TARGET.link, TARGET.parchment)).toBeLessThan(2.5);
+    expect(hexContrast(TARGET.visited, TARGET.parchment)).toBeLessThan(2.5);
+
+    // Source-level invariant: every PostBook face is parchment, so the brass
+    // accent and purple link tokens must never appear as inline text colors,
+    // and the light-face prose class must stay wired.
+    const source = read('../src/ui/PostBook.tsx');
+    expect(source).not.toContain("color: 'var(--p5-red)'");
+    expect(source).not.toContain("color: 'var(--p5-link)'");
+    expect(source).toContain('p5-prose--light');
   });
 });
 

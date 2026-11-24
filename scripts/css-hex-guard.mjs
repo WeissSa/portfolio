@@ -8,9 +8,10 @@
  *   2. Every hex literal INSIDE `:root` must equal a value from the canonical
  *      design-tokens.json store (no unapproved color smuggled in as a var).
  *
- * The index.html `<style data-critical-mirror>` block is explicitly
- * allowlisted (it is the dev-only first-paint mirror, kept byte-stable and
- * parity-tested against static-mirror.css by tests/critical-css-parity.test.ts).
+ * NOTE: the index.html `<style data-critical-mirror>` block is OUT OF SCOPE
+ * for this guard (it only scans src/styles/*.css), not "allowlisted" — the
+ * mirror's parity with static-mirror.css is enforced separately by
+ * tests/critical-css-parity.test.ts.
  *
  * Scope: this guard covers HEX literals only. `rgba()`/`hsl()`/named colors
  * are NOT matched — the codebase convention (enforced by review + the

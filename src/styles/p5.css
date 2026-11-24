@@ -41,6 +41,9 @@
   --space-md: 1rem;
   --space-lg: 1.5rem;
   --space-xl: 2rem;
+  /* P5 panel clip-path cut, tokenized into the spacing scale (a11y/lint
+     follow-up): the canonical value stays on --p5-cut, this mirrors it. */
+  --space-cut: var(--p5-cut);
 }
 
 /* Visible P5-styled focus ring everywhere (state.focus = gold). */
@@ -178,6 +181,22 @@
 
 .p5-prose a:visited {
   color: var(--state-visited);
+}
+
+/*
+ * Light-face prose (a11y fix, owner review 2026-11-23): the PostBook faces are
+ * parchment (--p5-white) with ink text. On parchment, the default purple link
+ * computes to ~1.83:1 and the brass accent to ~2.36:1 — both far under AA —
+ * so links inside a light face use dark-on-light tokens: ink (13.6:1) for
+ * default/hover and panel ink (11.8:1) for visited. Declared AFTER the
+ * .p5-prose rules above so equal specificity resolves here.
+ */
+.p5-prose--light a {
+  color: var(--p5-black);
+}
+
+.p5-prose--light a:visited {
+  color: var(--p5-ink);
 }
 
 /* Single cut-in transition, softened and reduced-motion-safe. */

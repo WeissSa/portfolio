@@ -31,11 +31,15 @@ import { NDA_NOTE } from './PostCard';
 const PAGE_WIDTH = 260;
 const PAGE_HEIGHT = 360;
 
-/** Face content shell: parchment-on-ink via token CSS vars, no raw hex. */
+/** Face content shell: parchment-on-ink via token CSS vars, no raw hex.
+ *  `p5-prose--light` (p5.css) flips prose links to dark-on-light tokens —
+ *  the default purple link/brass accents fail AA on the parchment face
+ *  (a11y fix, owner review 2026-11-23). All text on this light face must be
+ *  ink-dark: never var(--p5-red) (brass ≈2.36:1) or var(--p5-link) (≈1.83:1). */
 function Face({ children }: { children: ReactNode }) {
   return (
     <div
-      className="p5-prose flex h-full w-full flex-col gap-2 overflow-hidden p-4 text-sm"
+      className="p5-prose p5-prose--light flex h-full w-full flex-col gap-2 overflow-hidden p-4 text-sm"
       style={{ background: 'var(--p5-white)', color: 'var(--p5-black)' }}
     >
       {children}
@@ -52,9 +56,7 @@ export default function PostBook({ post }: { post: Post }) {
     {
       front: (
         <Face>
-          <p className="p5-display text-lg" style={{ color: 'var(--p5-red)' }}>
-            {post.title}
-          </p>
+          <p className="p5-display text-lg">{post.title}</p>
           {post.featured && (
             <p>
               <StarMark />
@@ -90,11 +92,7 @@ export default function PostBook({ post }: { post: Post }) {
             data-testid="post-description"
             dangerouslySetInnerHTML={{ __html: post.descriptionHtml }}
           />
-          {!post.repoUrl && (
-            <p className="text-sm font-bold" style={{ color: 'var(--p5-red)' }}>
-              {NDA_NOTE}
-            </p>
-          )}
+          {!post.repoUrl && <p className="text-sm font-bold">{NDA_NOTE}</p>}
         </Face>
       ),
       back: (

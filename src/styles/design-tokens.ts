@@ -1,14 +1,14 @@
 /**
  * Canonical design tokens — the ONE place raw palette hex values live.
  *
- * Commit 1a moves every existing color value here WITHOUT changing any value;
- * every layer (Tailwind, CSS :root, scene palette, materials, textures, lights
- * and UI classes) derives from these roles. The raw values live in the sibling
- * JSON file so this module can be consumed by TS/TSX *and* by the CJS Tailwind
- * config and the Node lint guards without a transpiler.
- *
- * Commit 2 is the ONLY commit allowed to change a hex string: a rejected
- * palette then costs one small, reviewable diff here.
+ * Commit 1a moved every color value here; commit 2 recolored them onto the
+ * unified Dishonored+purple palette (the ONLY commit that changed hex
+ * strings — a future palette change is likewise one small, reviewable diff
+ * in the sibling JSON). Every layer (Tailwind, CSS :root, scene palette,
+ * materials, textures, lights and UI classes) derives from these roles. The
+ * raw values live in the sibling JSON file so this module can be consumed by
+ * TS/TSX *and* by the CJS Tailwind config and the Node lint guards without a
+ * transpiler.
  *
  * LEVEL_COLORS (src/lib/climate.ts) are a DATA SCALE, intentionally not design
  * tokens: a test asserts this module's values never intersect them.
@@ -54,9 +54,9 @@ export const DESIGN_TOKENS = {
  *     // defaultRadius / fontFamily / other tokens come from the same module
  *   });
  *
- * Every value below is an EXISTING token value: this export adds no new color
- * and changes no rendering (zero visual change in the 1a/1b refactor). Commit 2
- * retargets the canonical values here; the Mantine theme follows automatically.
+ * Every value below is an EXISTING token value: this export adds no new
+ * color. Commit 2 retargeted the canonical values onto the unified palette;
+ * the Mantine theme follows automatically.
  */
 export const MANTINE_THEME_ROLES = {
   background: DESIGN_TOKENS.p5.black,

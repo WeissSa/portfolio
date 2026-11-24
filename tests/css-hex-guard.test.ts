@@ -50,7 +50,12 @@ describe('CSS color guard', () => {
     const allowed = canonicalValues(
       JSON.parse(read('../src/styles/design-tokens.json')),
     );
-    for (const file of ['p5.css', 'index.css', 'static-mirror.css']) {
+    for (const file of [
+      'p5.css',
+      'index.css',
+      'static-mirror.css',
+      'fonts.css',
+    ]) {
       const css = read(`../src/styles/${file}`);
       expect(findRawHexOutsideRoot(css), file).toEqual([]);
       expect(findNonTokenRootHex(css, allowed), file).toEqual([]);

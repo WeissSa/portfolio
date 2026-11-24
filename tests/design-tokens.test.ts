@@ -1,8 +1,8 @@
 /**
- * Canonical token guards (commit 1a). These pin the *identical-values*
- * invariant: the token store is the one source of truth and every derived
- * layer still carries exactly the pre-refactor hex strings. No recoloring
- * happens until commit 2.
+ * Canonical token guards. The token store is the one source of truth and
+ * every derived layer carries exactly the canonical values (commit 2 moved
+ * them onto the unified Dishonored+purple palette; the pins below follow the
+ * tokens, so a future deliberate recolor stays one small JSON diff).
  */
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -23,7 +23,7 @@ const read = (relative: string): string =>
 const kebab = (role: string): string =>
   role.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`);
 
-describe('canonical design tokens (commit 1a)', () => {
+describe('canonical design tokens', () => {
   it('never intersects the heatmap LEVEL_COLORS data scale', () => {
     const dataScale = new Set(LEVEL_COLORS.map(normalizeHex));
     const overlap = ALL_TOKEN_VALUES.map(normalizeHex).filter((value) =>
