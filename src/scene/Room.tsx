@@ -114,13 +114,20 @@ export function roomShadowSettings(quality: RoomQuality): {
  * derive from the same source without a circular Room ↔ CameraRig import. */
 
 /**
- * RoomPart transforms are authored static and never imperatively updated, so
- * bake the TRS into the local matrix once at mount, then freeze it (R3F sets
- * position/rotation/scale but does not call updateMatrix itself). The shared
- * ref runs after applyProps, so the authored transform is already in place.
+ * Bake a static node's authored TRS into its local matrix, then keep it frozen
+ * (matrixAutoUpdate stays false at steady state). R3F 9's applyProps writes
+ * position/rotation/scale but NEVER calls updateMatrix(), so a mount-only ref
+ * leaves the matrix stuck at the first pose: on a seed change React reuses the
+ * same mesh instances (stable keys) and lands new transform props, but the
+ * frozen `object.matrix` still holds the old transform.
+ *
+ * Passed via `onUpdate` (not `ref`): R3F invokes onUpdate at the end of every
+ * applyProps — mount AND any props commit — after the new TRS has been written,
+ * so the matrix is re-baked in place whenever a transform prop changes without
+ * ever re-enabling per-frame auto-update. Stable module-scope identity also
+ * keeps it out of R3F's prop diff.
  */
-const freezeStaticMatrix = (object: THREE.Object3D | null): void => {
-  if (!object) return;
+const bakeStaticMatrix = (object: THREE.Object3D): void => {
   object.updateMatrix();
 };
 
@@ -139,7 +146,7 @@ function Parts({
       {parts.map((part) => (
         <mesh
           key={part.id}
-          ref={freezeStaticMatrix}
+          onUpdate={bakeStaticMatrix}
           geometry={part.geometry}
           material={materials[part.material]}
           position={part.position}
@@ -443,7 +450,7 @@ export function RoomScene({
 
       <group
         name="room-shell"
-        ref={freezeStaticMatrix}
+        onUpdate={bakeStaticMatrix}
         matrixAutoUpdate={false}
       >
         <Parts
@@ -456,11 +463,11 @@ export function RoomScene({
       <group
         name="rug"
         position={RUG_POSITION}
-        ref={freezeStaticMatrix}
+        onUpdate={bakeStaticMatrix}
         matrixAutoUpdate={false}
       >
         <mesh
-          ref={freezeStaticMatrix}
+          onUpdate={bakeStaticMatrix}
           geometry={furniture.rugGeometry}
           material={materials.rug}
           receiveShadow={keyLight}
@@ -471,7 +478,7 @@ export function RoomScene({
       <group
         name="desk"
         position={DESK_POSITION}
-        ref={freezeStaticMatrix}
+        onUpdate={bakeStaticMatrix}
         matrixAutoUpdate={false}
       >
         <Parts
@@ -496,7 +503,7 @@ export function RoomScene({
             constant the desktop-zoom camera derives its close-up from. */}
         <group
           position={MONITOR_DESK_OFFSET}
-          ref={freezeStaticMatrix}
+          onUpdate={bakeStaticMatrix}
           matrixAutoUpdate={false}
         >
           <DeskZone monitor={furniture.monitor} materials={materials} />
@@ -506,7 +513,7 @@ export function RoomScene({
         <group
           name="prop-headphones"
           position={MONITOR_DESK_OFFSET}
-          ref={freezeStaticMatrix}
+          onUpdate={bakeStaticMatrix}
           matrixAutoUpdate={false}
         >
           <Parts
@@ -519,7 +526,7 @@ export function RoomScene({
             five individually clickable groups with an open/flip lid animation. */}
         <group
           position={[-0.15, DESK_TOP_HEIGHT + 0.035, 0.18]}
-          ref={freezeStaticMatrix}
+          onUpdate={bakeStaticMatrix}
           matrixAutoUpdate={false}
         >
           <ProjectCases cases={furniture.cases} materials={materials} />
@@ -530,7 +537,7 @@ export function RoomScene({
         name="chair"
         position={CHAIR_POSITION}
         rotation={CHAIR_ROTATION}
-        ref={freezeStaticMatrix}
+        onUpdate={bakeStaticMatrix}
         matrixAutoUpdate={false}
       >
         <Parts
@@ -544,7 +551,7 @@ export function RoomScene({
         name="pc-tower"
         position={TOWER_POSITION}
         rotation={TOWER_ROTATION}
-        ref={freezeStaticMatrix}
+        onUpdate={bakeStaticMatrix}
         matrixAutoUpdate={false}
       >
         <Parts
@@ -563,7 +570,7 @@ export function RoomScene({
       {/* Floor-level narrative props (world space): paper stack + cable coil. */}
       <group
         name="floor-props"
-        ref={freezeStaticMatrix}
+        onUpdate={bakeStaticMatrix}
         matrixAutoUpdate={false}
       >
         <Parts
@@ -577,7 +584,7 @@ export function RoomScene({
           tower top, window sill. */}
       <group
         name="clutter-tins"
-        ref={freezeStaticMatrix}
+        onUpdate={bakeStaticMatrix}
         matrixAutoUpdate={false}
       >
         <ClutterFamily
@@ -592,7 +599,7 @@ export function RoomScene({
         name="bookshelf"
         position={SHELF_POSITION}
         rotation={SHELF_ROTATION}
-        ref={freezeStaticMatrix}
+        onUpdate={bakeStaticMatrix}
         matrixAutoUpdate={false}
       >
         <Parts
@@ -614,7 +621,7 @@ export function RoomScene({
       <group
         name="floor-lamp"
         position={LAMP_POSITION}
-        ref={freezeStaticMatrix}
+        onUpdate={bakeStaticMatrix}
         matrixAutoUpdate={false}
       >
         <Parts
@@ -628,7 +635,7 @@ export function RoomScene({
         name="window"
         position={WINDOW_POSITION}
         rotation={WINDOW_ROTATION}
-        ref={freezeStaticMatrix}
+        onUpdate={bakeStaticMatrix}
         matrixAutoUpdate={false}
       >
         <Parts
@@ -642,7 +649,7 @@ export function RoomScene({
         name="projector"
         position={PROJECTOR_POSITION}
         rotation={PROJECTOR_ROTATION}
-        ref={freezeStaticMatrix}
+        onUpdate={bakeStaticMatrix}
         matrixAutoUpdate={false}
       >
         <Parts
@@ -653,11 +660,11 @@ export function RoomScene({
         {/* Additive light cone from the lens toward the screen. */}
         <group
           position={[0, 0.075, -0.2]}
-          ref={freezeStaticMatrix}
+          onUpdate={bakeStaticMatrix}
           matrixAutoUpdate={false}
         >
           <mesh
-            ref={freezeStaticMatrix}
+            onUpdate={bakeStaticMatrix}
             geometry={furniture.beam.geometry}
             material={materials[furniture.beam.material]}
             matrixAutoUpdate={false}
@@ -668,7 +675,7 @@ export function RoomScene({
       <group
         name="projector-screen"
         position={SCREEN_POSITION}
-        ref={freezeStaticMatrix}
+        onUpdate={bakeStaticMatrix}
         matrixAutoUpdate={false}
       >
         {/* Commit 9: the static cloth is replaced by the live climate
@@ -680,7 +687,7 @@ export function RoomScene({
           deferUntilZone={quality !== 'desktop'}
         />
         <mesh
-          ref={freezeStaticMatrix}
+          onUpdate={bakeStaticMatrix}
           geometry={furniture.screenBar}
           material={materials.woodDark}
           position={[0, 0.62, -0.01]}
@@ -693,7 +700,7 @@ export function RoomScene({
           key={`frame-${index}`}
           name={`frame-${index}`}
           position={position}
-          ref={freezeStaticMatrix}
+          onUpdate={bakeStaticMatrix}
           matrixAutoUpdate={false}
         >
           <Parts parts={parts} materials={materials} shadows={keyLight} />
@@ -704,7 +711,7 @@ export function RoomScene({
       <group
         name="wall-plaque"
         position={PLAQUE.position}
-        ref={freezeStaticMatrix}
+        onUpdate={bakeStaticMatrix}
         matrixAutoUpdate={false}
       >
         <WallPlaque parts={furniture.plaque} materials={materials} />

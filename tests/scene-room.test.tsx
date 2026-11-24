@@ -21,11 +21,57 @@ import {
   PAINTERLY_VERTEX_SHADER,
 } from '../src/scene/effects/PainterlyPass';
 import type { TextureFactory } from '../src/scene/art/textures';
-import { DESK_POSITION } from '../src/scene/placement';
-import { DESK_TOP_HEIGHT } from '../src/scene/art/geometry';
+import {
+  CHAIR_POSITION,
+  CHAIR_ROTATION,
+  DESK_POSITION,
+  FRAME_POSITIONS,
+  LAMP_POSITION,
+  PROJECTOR_POSITION,
+  PROJECTOR_ROTATION,
+  RUG_POSITION,
+  SCREEN_POSITION,
+  SHELF_POSITION,
+  SHELF_ROTATION,
+  TOWER_POSITION,
+  TOWER_ROTATION,
+  WINDOW_POSITION,
+  WINDOW_ROTATION,
+} from '../src/scene/placement';
+import { PLAQUE } from '../src/scene/diegetic';
+import { PROJECTS, postId } from '../src/content/index';
+import { usePortfolioStore } from '../src/state/store';
+import { DESK_TOP_HEIGHT, type Vec3 } from '../src/scene/art/geometry';
 
 /** Headless stand-in: no 2D canvas in jsdom, textures never get sampled. */
 const stubTextureFactory: TextureFactory = () => new THREE.Texture();
+
+/** Compose the matrix a frozen node must carry for its authored TRS. */
+function authoredMatrix(
+  position?: Vec3,
+  rotation?: Vec3,
+  scale?: Vec3,
+): THREE.Matrix4 {
+  const p = position ?? [0, 0, 0];
+  const r = rotation ?? [0, 0, 0];
+  const s = scale ?? [1, 1, 1];
+  return new THREE.Matrix4().compose(
+    new THREE.Vector3(p[0], p[1], p[2]),
+    new THREE.Quaternion().setFromEuler(new THREE.Euler(r[0], r[1], r[2])),
+    new THREE.Vector3(s[0], s[1], s[2]),
+  );
+}
+
+/** Element-wise comparison so a stale (unre-baked) matrix cannot slip through. */
+function expectMatrixClose(
+  actual: THREE.Matrix4,
+  expected: THREE.Matrix4,
+  precision = 6,
+): void {
+  actual.elements.forEach((value, i) => {
+    expect(value).toBeCloseTo(expected.elements[i]!, precision);
+  });
+}
 
 describe('room materials', () => {
   it('creates every material key without textures (graceful degradation)', () => {
@@ -296,5 +342,199 @@ describe('RoomScene headless render', () => {
     expect((lid!.instance as THREE.Group).matrixAutoUpdate).toBe(true);
 
     await renderer.unmount();
+  });
+
+  it('freezes rotated/translated top-level groups with matrices matching their authored TRS', async () => {
+    const renderer = await ReactThreeTestRenderer.create(
+      <RoomScene
+        seed="frozen-groups"
+        quality="mobile"
+        textureFactory={stubTextureFactory}
+      />,
+      { frameloop: 'never' },
+    );
+    // The headless renderer never draws a frame; one explicit world-matrix
+    // pass stands in for WebGLRenderer's per-frame updateMatrixWorld call.
+    renderer.scene.instance.updateMatrixWorld(true);
+
+    const authored: [string, Vec3, Vec3][] = [
+      ['desk', DESK_POSITION, [0, 0, 0]],
+      ['chair', CHAIR_POSITION, CHAIR_ROTATION],
+      ['pc-tower', TOWER_POSITION, TOWER_ROTATION],
+      ['bookshelf', SHELF_POSITION, SHELF_ROTATION],
+      ['window', WINDOW_POSITION, WINDOW_ROTATION],
+      ['projector', PROJECTOR_POSITION, PROJECTOR_ROTATION],
+      ['projector-screen', SCREEN_POSITION, [0, 0, 0]],
+      ['wall-plaque', PLAQUE.position, [0, 0, 0]],
+      ...FRAME_POSITIONS.map(
+        ([pos], i) => [`frame-${i}`, pos, [0, 0, 0]] as [string, Vec3, Vec3],
+      ),
+    ];
+
+    for (const [name, position, rotation] of authored) {
+      const node = renderer.scene.find(
+        (n) => n.type === 'Group' && n.props.name === name,
+      );
+      expect(node, `missing group ${name}`).toBeDefined();
+      const object = node!.instance as THREE.Group;
+
+      // Frozen at steady state: no per-frame auto-update.
+      expect(object.matrixAutoUpdate, `${name} matrixAutoUpdate`).toBe(false);
+
+      // Mobile tier renders groups straight under the identity scene, so the
+      // world matrix IS the baked authored TRS. Translation must be exact.
+      const world = new THREE.Vector3().setFromMatrixPosition(
+        object.matrixWorld,
+      );
+      expect(world.x, `${name} world x`).toBeCloseTo(position[0], 6);
+      expect(world.y, `${name} world y`).toBeCloseTo(position[1], 6);
+      expect(world.z, `${name} world z`).toBeCloseTo(position[2], 6);
+
+      // Rotation: decompose the frozen world matrix and compare as a
+      // quaternion (handles the >π chair yaw and -π/2 window/shelf yaws).
+      const worldQuat = new THREE.Quaternion();
+      object.matrixWorld.decompose(
+        new THREE.Vector3(),
+        worldQuat,
+        new THREE.Vector3(),
+      );
+      const expectedQuat = new THREE.Quaternion().setFromEuler(
+        new THREE.Euler(rotation[0], rotation[1], rotation[2]),
+      );
+      expect(
+        worldQuat.angleTo(expectedQuat),
+        `${name} world rotation`,
+      ).toBeLessThan(1e-5);
+    }
+
+    await renderer.unmount();
+  });
+
+  it('re-bakes frozen matrices when the seed changes (keyed meshes are reused)', async () => {
+    const renderer = await ReactThreeTestRenderer.create(
+      <RoomScene
+        seed="seed-a"
+        quality="mobile"
+        textureFactory={stubTextureFactory}
+      />,
+      { frameloop: 'never' },
+    );
+
+    // A chair leg carries a seeded rotation wobble, so a new seed lands a new
+    // authored transform on the SAME keyed mesh instance.
+    const legNode = () => {
+      const chair = renderer.scene.find(
+        (n) => n.type === 'Group' && n.props.name === 'chair',
+      )!;
+      return chair.children.find(
+        (n) => n.type === 'Mesh' && Array.isArray(n.props.rotation),
+      )!;
+    };
+    const before = legNode();
+    const beforeRotation = before.props.rotation as Vec3;
+    const beforeMatrix = (before.instance as THREE.Mesh).matrix.clone();
+
+    await renderer.update(
+      <RoomScene
+        seed="seed-b"
+        quality="mobile"
+        textureFactory={stubTextureFactory}
+      />,
+    );
+    renderer.scene.instance.updateMatrixWorld(true);
+
+    const after = legNode();
+    const afterRotation = after.props.rotation as Vec3;
+    const mesh = after.instance as THREE.Mesh;
+
+    // The seed genuinely changed the authored transform (otherwise this
+    // would not exercise the stale-matrix bug).
+    expect(afterRotation).not.toEqual(beforeRotation);
+    expect(mesh.matrixAutoUpdate).toBe(false);
+
+    // The frozen matrix must now match the NEW props — a mount-only ref would
+    // leave it at `beforeMatrix`, failing this precise comparison.
+    expectMatrixClose(
+      mesh.matrix,
+      authoredMatrix(
+        after.props.position as Vec3 | undefined,
+        after.props.rotation as Vec3 | undefined,
+        after.props.scale as Vec3 | undefined,
+      ),
+    );
+    expect(mesh.matrix.elements).not.toEqual(beforeMatrix.elements);
+
+    await renderer.unmount();
+  });
+
+  it('still raycasts a frozen mesh (frozen matrix keeps geometry pickable)', async () => {
+    const renderer = await ReactThreeTestRenderer.create(
+      <RoomScene
+        seed="pick"
+        quality="mobile"
+        textureFactory={stubTextureFactory}
+      />,
+      { frameloop: 'never' },
+    );
+    renderer.scene.instance.updateMatrixWorld(true);
+
+    // The room floor is a frozen, -π/2-X-rotated plane at world origin.
+    const shell = renderer.scene.find(
+      (n) => n.type === 'Group' && n.props.name === 'room-shell',
+    )!;
+    const floor = shell.children.find((n) => n.type === 'Mesh')!;
+    const floorMesh = floor.instance as THREE.Mesh;
+    expect(floorMesh.matrixAutoUpdate).toBe(false);
+
+    // Cast straight down from above the baked world position; the frozen
+    // matrix must still place the geometry where a ray can hit it.
+    const center = new THREE.Vector3().setFromMatrixPosition(
+      floorMesh.matrixWorld,
+    );
+    const raycaster = new THREE.Raycaster(
+      new THREE.Vector3(center.x, center.y + 3, center.z),
+      new THREE.Vector3(0, -1, 0),
+    );
+    expect(raycaster.intersectObject(floorMesh, false).length).toBeGreaterThan(
+      0,
+    );
+
+    await renderer.unmount();
+  });
+
+  it('actually animates a ProjectCases lid in useFrame when selected', async () => {
+    const projectId = postId(PROJECTS[0]!);
+    usePortfolioStore.getState().selectProject(projectId);
+    try {
+      const renderer = await ReactThreeTestRenderer.create(
+        <RoomScene
+          seed="lid"
+          quality="mobile"
+          textureFactory={stubTextureFactory}
+        />,
+        { frameloop: 'never' },
+      );
+
+      const caseGroup = renderer.scene.find(
+        (n) => n.type === 'Group' && n.props.name === `game-case-${projectId}`,
+      )!;
+      // The anonymous group child is the hinged lid; its mesh holds the part.
+      const lid = caseGroup.children.find(
+        (n) => n.type === 'Group' && n.props.name === undefined,
+      )!;
+      const lidObject = lid.instance as THREE.Group;
+      const startY = lidObject.position.y;
+      expect(lidObject.rotation.x).toBe(0);
+
+      // Drive the useFrame damper directly — no renderer loop in jsdom.
+      await renderer.advanceFrames(20, 0.05);
+
+      expect(lidObject.position.y).toBeGreaterThan(startY);
+      expect(lidObject.rotation.x).toBeLessThan(0); // OPEN_TILT is negative
+
+      await renderer.unmount();
+    } finally {
+      usePortfolioStore.getState().selectProject(null);
+    }
   });
 });
