@@ -17,6 +17,7 @@ import {
   framingCamera,
   projectCapHeight,
   projectWorldRect,
+  advancePainterlyTime,
 } from '../../src/scene/diegetic';
 
 /**
@@ -65,6 +66,20 @@ async function contextFor(
     ],
   );
   return context;
+}
+
+/** Real keyboard Tab (programmatic focus() does not set :focus-visible). */
+async function tabIntoMenu(page: Page): Promise<string> {
+  for (let attempt = 0; attempt < 16; attempt += 1) {
+    await page.keyboard.press('Tab');
+    const route = await page.evaluate(() => {
+      const active = document.activeElement as HTMLElement | null;
+      const nav = document.querySelector('nav[aria-label="Main menu"]');
+      return nav?.contains(active) ? (active?.dataset.route ?? '') : null;
+    });
+    if (route !== null) return route;
+  }
+  throw new Error('Tab never reached the sr-only DOM menu');
 }
 
 async function ready(page: Page): Promise<void> {
@@ -153,7 +168,7 @@ test.describe('diegetic plaque framing + reveal-on-focus', () => {
     await context.close();
   });
 
-  test('sr-only DOM menu reveals focus and mirrors the canonical route', async ({
+  test('keyboard reveals the diegetic DOM menu; pointer clicks never do', async ({
     browser,
   }) => {
     const context = await contextFor(browser, { viewport: DESKTOP });
@@ -161,25 +176,61 @@ test.describe('diegetic plaque framing + reveal-on-focus', () => {
     await page.goto('#/');
     await ready(page);
     const nav = page.locator('nav[aria-label="Main menu"]');
-    const hiddenWidth = await nav.evaluate(
-      (el) => el.getBoundingClientRect().width,
+    const width = () => nav.evaluate((el) => el.getBoundingClientRect().width);
+    expect(await width(), 'menu is sr-only in 3D desktop').toBeLessThanOrEqual(
+      2,
     );
-    expect(hiddenWidth, 'menu is sr-only in 3D desktop').toBeLessThanOrEqual(2);
 
-    await nav.locator('a[data-route="/about"]').focus();
+    // A mouse click focuses links too — the old :focus-within rule floated the
+    // menu over the room. The keyboard-only :has(:focus-visible) must not.
+    await page.mouse.click(1200, 780);
+    expect(
+      await width(),
+      'pointer click keeps the room clean',
+    ).toBeLessThanOrEqual(2);
+    await expect(nav.locator('.main-menu__focus-chip')).toBeHidden();
+
+    const route = await tabIntoMenu(page);
     await expect(nav.locator('.main-menu__focus-chip')).toBeVisible();
-    const shown = await nav.evaluate((el) => el.getBoundingClientRect().width);
-    expect(shown, 'focus reveals a visible menu').toBeGreaterThan(100);
+    expect(await width(), 'keyboard reveals a visible menu').toBeGreaterThan(
+      100,
+    );
     expect(
       await page.evaluate(
         () => (document.activeElement as HTMLElement)?.dataset.route,
       ),
-    ).toBe('/about');
-    await expect(nav.locator('a[data-route="/about"]')).toHaveClass(
+    ).toBe(route);
+    await expect(nav.locator(`a[data-route="${route}"]`)).toHaveClass(
       /p5-btn--diegetic-highlight/,
     );
     await page.screenshot({
       path: resolve(SHOTS, 'desktop_3d_menu-focus.png'),
+    });
+    await context.close();
+  });
+
+  test('768–1023px fine pointers keep the diegetic right column, no gutter', async ({
+    browser,
+  }) => {
+    const context = await contextFor(browser, {
+      viewport: { width: 900, height: 800 },
+    });
+    const page = await context.newPage();
+    await page.goto('#/');
+    await ready(page);
+    const nav = page.locator('nav[aria-label="Main menu"]');
+    expect(
+      await nav.evaluate((el) => el.getBoundingClientRect().width),
+    ).toBeLessThanOrEqual(2);
+    const mainLeft = await page
+      .locator('main')
+      .evaluate((el) => el.getBoundingClientRect().left);
+    expect(
+      mainLeft,
+      'zone content starts at the 50% clean band',
+    ).toBeGreaterThan(420);
+    await page.screenshot({
+      path: resolve(SHOTS, 'desktop_3d_medium-width.png'),
     });
     await context.close();
   });
@@ -199,18 +250,30 @@ test.describe('diegetic plaque framing + reveal-on-focus', () => {
     const hud = page.locator('.zone-title-hud');
     await expect(hud).toBeVisible();
     await expect(hud).toContainText('Home');
-    // The app publishes the ACTUAL shader clock in reduced-motion 3D; pixel
-    // screenshot equality is too brittle under SwiftShader compositing.
-    const readTime = () =>
-      page.evaluate(() => document.documentElement.dataset.grainTime);
-    await page.waitForFunction(() =>
-      Boolean(document.documentElement.dataset.grainTime),
+    // The demand frameloop + instant cuts render ZERO frames after the first
+    // paint, so a DOM clock written inside useFrame never changes and would
+    // "prove" freezing even with a broken clock. Assert the shipped FREEZE
+    // DECISION (published once by an effect) + the pure step the pass calls.
+    await page.waitForFunction(
+      () => document.documentElement.dataset.grainFrozen === 'true',
     );
-    const first = await readTime();
-    await page.waitForTimeout(700);
-    const second = await readTime();
-    expect(first, 'grain uTime must be published').toBeDefined();
-    expect(second, 'grain uTime must be frozen').toBe(first);
+    expect(
+      await page.evaluate(() => document.documentElement.dataset.grainFrozen),
+      'PainterlyPass received freezeTime=true',
+    ).toBe('true');
+    const steps = [0.016, 5, 700];
+    const frozen = steps.reduce(
+      (time, delta) => advancePainterlyTime(time, delta, true),
+      12,
+    );
+    expect(frozen, 'grain clock holds across every tick').toBe(12);
+    expect(
+      steps.reduce(
+        (time, delta) => advancePainterlyTime(time, delta, false),
+        12,
+      ),
+      'control: an unfrozen clock advances',
+    ).toBeGreaterThan(12);
     // sr-only menu: focus reveals it, Enter follows the same hash link.
     await page.locator('nav a[data-route="/climate"]').focus();
     await page.keyboard.press('Enter');

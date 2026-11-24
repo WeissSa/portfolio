@@ -162,6 +162,14 @@ export interface PortfolioStore {
    */
   sceneReady: boolean;
   setSceneReady: (ready: boolean) => void;
+  /**
+   * True when the camera is AT its zone viewpoint (set by CameraRig when a
+   * flight settles, or immediately for reduced-motion instant cuts). Zone
+   * spotlights and per-zone click affordances wait for this so they never light
+   * up a scene that is still flying toward the zone.
+   */
+  cameraSettled: boolean;
+  setCameraSettled: (settled: boolean) => void;
 }
 
 const IDLE_CLIMATE: ClimateState = {
@@ -369,4 +377,8 @@ export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
 
   sceneReady: false,
   setSceneReady: (sceneReady) => set({ sceneReady }),
+
+  // The camera starts AT the home shot, so the first frame needs no flight.
+  cameraSettled: true,
+  setCameraSettled: (cameraSettled) => set({ cameraSettled }),
 }));

@@ -2,7 +2,11 @@ import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import App from '../src/App';
-import { MODE_STORAGE_KEY } from '../src/lib/device-tier';
+import {
+  MODE_STORAGE_KEY,
+  REDUCED_MOTION_OPTIN_KEY,
+  readReducedMotionOptIn,
+} from '../src/lib/device-tier';
 import { usePortfolioStore } from '../src/state/store';
 
 // jsdom has no WebGL2; stub the lazy scene so a capable-device default into 3D
@@ -143,6 +147,50 @@ describe('3D-by-default on capable devices (owner decision)', () => {
     await waitFor(() => expect(usePortfolioStore.getState().mode).toBe('2d'));
     expect(usePortfolioStore.getState().autoMode).toBe('2d');
     expect(screen.queryByTestId('scene-stub')).not.toBeInTheDocument();
+  });
+
+  it('Auto clears the reduced-motion opt-in and stays 2D after a simulated reload', async () => {
+    stubCapabilities({ reducedMotion: true });
+    localStorage.setItem(REDUCED_MOTION_OPTIN_KEY, 'true');
+    usePortfolioStore.setState({ reducedMotionOptIn: true });
+    const first = render(<App />);
+
+    // The informed opt-in is the only way reduced motion reaches 3D.
+    await waitFor(() => expect(usePortfolioStore.getState().mode).toBe('3d'));
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Automatic mode' }));
+    expect(usePortfolioStore.getState().mode).toBe('2d');
+    expect(localStorage.getItem(REDUCED_MOTION_OPTIN_KEY)).toBeNull();
+
+    // Simulate a reload: a fresh store seeds the opt-in from localStorage and
+    // the same reduced-motion capability gate runs again.
+    first.unmount();
+    usePortfolioStore.setState({
+      mode: '2d',
+      autoMode: '2d',
+      reducedMotionOptIn: readReducedMotionOptIn(),
+    });
+    render(<App />);
+    await waitFor(() => expect(usePortfolioStore.getState().mode).toBe('2d'));
+    expect(usePortfolioStore.getState().reducedMotionOptIn).toBe(false);
+    expect(screen.queryByTestId('scene-stub')).not.toBeInTheDocument();
+  });
+
+  it('gates the 3D layout on scene readiness and revokes it on context loss', async () => {
+    stubCapabilities();
+    render(<App />);
+    await waitFor(() => expect(usePortfolioStore.getState().mode).toBe('3d'));
+    const shell = screen.getByRole('link', { name: /skip to content/i })
+      .parentElement as HTMLElement;
+    // Mode intent alone is NOT enough: no frame drawn → full-width 2D layout.
+    expect(shell).not.toHaveClass('app-scene-live');
+
+    act(() => usePortfolioStore.getState().setSceneReady(true));
+    expect(shell).toHaveClass('app-scene-live');
+    // A lost WebGL context revokes readiness instantly (SceneReadySignal →
+    // store), so no empty purple field + crammed right column can persist.
+    act(() => usePortfolioStore.getState().setSceneReady(false));
+    expect(shell).not.toHaveClass('app-scene-live');
   });
 
   it('a manual 2D override wins; Auto restores the desktop 3D default', async () => {

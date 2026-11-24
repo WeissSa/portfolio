@@ -10,7 +10,9 @@ import assert from 'node:assert/strict';
 import { resolve } from 'node:path';
 import { chromium } from '@playwright/test';
 
-const URL = 'http://127.0.0.1:5173/portfolio/#/';
+// Default to Vite's first port; QA_DEV_URL lets a second dev server (Vite
+// moves to 5174/5175 when 5173 is busy) be verified without killing the first.
+const URL = process.env.QA_DEV_URL ?? 'http://127.0.0.1:5173/portfolio/#/';
 const SWIFT = [
   '--use-gl=angle',
   '--use-angle=swiftshader',
@@ -48,7 +50,15 @@ try {
   page.on('pageerror', (error) => errors.push(String(error)));
 
   await page.goto(URL, { waitUntil: 'domcontentloaded' });
-  await page.locator('.scene-layer--ready').waitFor({ timeout: 60000 });
+  try {
+    await page.locator('.scene-layer--ready').waitFor({ timeout: 60000 });
+  } catch (error) {
+    // Surface browser-side failures instead of only a locator timeout.
+    throw new Error(
+      `scene never became ready: ${errors.join(' | ') || '(no console errors)'}`,
+      { cause: error },
+    );
+  }
   await page.waitForTimeout(3000);
 
   const state = await page.evaluate(() => {
@@ -114,12 +124,66 @@ try {
     [],
     `no disposed-resource errors: ${errors.join(' | ')}`,
   );
+
+  // Diegetic-only contract: pointer clicks must NEVER float the DOM menu over
+  // the room; real keyboard Tab must still reveal it (a11y-in-use case).
+  const nav = page.locator('nav[aria-label="Main menu"]');
+  const navWidth = () => nav.evaluate((el) => el.getBoundingClientRect().width);
+  await page.mouse.click(1300, 820);
+  const pointerMenuWidth = await navWidth();
+  assert.ok(
+    pointerMenuWidth <= 2,
+    'pointer interaction keeps the diegetic room clean',
+  );
+  await page.screenshot({
+    path: resolve('qa-evidence/screenshots/dev_3d_diegetic_room.png'),
+  });
+
+  let keyboardRoute = '';
+  for (let attempt = 0; attempt < 16; attempt += 1) {
+    await page.keyboard.press('Tab');
+    keyboardRoute = await page.evaluate(() => {
+      const active = document.activeElement;
+      const menu = document.querySelector('nav[aria-label="Main menu"]');
+      return menu?.contains(active) ? (active?.dataset.route ?? '') : '';
+    });
+    if (keyboardRoute) break;
+  }
+  assert.ok(keyboardRoute, 'Tab must reach the accessible DOM menu');
+  assert.ok(
+    (await navWidth()) > 100,
+    'keyboard focus reveals the visible DOM menu',
+  );
+  await page.screenshot({
+    path: resolve('qa-evidence/screenshots/dev_3d_keyboard_menu.png'),
+  });
+
+  // Zone zoom spotlight: keyboard-activate a different zone, let the camera
+  // flight settle, then capture the in-world affordance state there.
+  await nav.locator('a[data-route="/experience"]').press('Enter');
+  await page.waitForTimeout(2400);
+  assert.equal(
+    await page.evaluate(() => window.location.hash),
+    '#/experience',
+    'keyboard navigation reaches the zone',
+  );
+  await page.screenshot({
+    path: resolve('qa-evidence/screenshots/dev_3d_zone_spotlight.png'),
+  });
+
   console.log(
     JSON.stringify({
       state,
       pngBytes: shot.length,
       consoleErrors: errors.length,
-      screenshot: SHOT,
+      pointerMenuWidth,
+      keyboardRevealedRoute: keyboardRoute,
+      screenshots: [
+        SHOT,
+        resolve('qa-evidence/screenshots/dev_3d_diegetic_room.png'),
+        resolve('qa-evidence/screenshots/dev_3d_keyboard_menu.png'),
+        resolve('qa-evidence/screenshots/dev_3d_zone_spotlight.png'),
+      ],
     }),
   );
   await context.close();

@@ -49,6 +49,26 @@ describe('useDeferredDispose', () => {
     ).toHaveBeenCalledTimes(1);
   });
 
+  it('never loses an earlier generation when deps change twice in one macrotask', async () => {
+    const first = { dispose: vi.fn() };
+    const second = { dispose: vi.fn() };
+    const third = { dispose: vi.fn() };
+    const view = render(<Harness resource={first} />);
+    // Both rerenders land before the deferred timer fires. The old single-timer
+    // implementation cancelled the first disposal when the second change came,
+    // leaking the first GPU resource forever.
+    view.rerender(<Harness resource={second} />);
+    view.rerender(<Harness resource={third} />);
+    await flushTimers();
+    expect(first.dispose).toHaveBeenCalledTimes(1);
+    expect(second.dispose).toHaveBeenCalledTimes(1);
+    expect(third.dispose).not.toHaveBeenCalled();
+
+    view.unmount();
+    await flushTimers();
+    expect(third.dispose).toHaveBeenCalledTimes(1);
+  });
+
   it('disposes the old generation on a genuine dependency change', async () => {
     const first = { dispose: vi.fn() };
     const second = { dispose: vi.fn() };

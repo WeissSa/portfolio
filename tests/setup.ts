@@ -3,6 +3,7 @@ import { afterEach, vi } from 'vitest';
 import { cleanup } from '@testing-library/react';
 import {
   MODE_STORAGE_KEY,
+  REDUCED_MOTION_OPTIN_KEY,
   SCENE_FAILURE_STORAGE_KEY,
 } from '../src/lib/device-tier';
 import { usePortfolioStore } from '../src/state/store';
@@ -16,10 +17,18 @@ afterEach(() => {
   try {
     localStorage.removeItem(MODE_STORAGE_KEY);
     localStorage.removeItem(SCENE_FAILURE_STORAGE_KEY);
+    localStorage.removeItem(REDUCED_MOTION_OPTIN_KEY);
   } catch {
     // Storage may be unavailable; nothing to clean.
   }
-  usePortfolioStore.setState({ mode: '2d', autoMode: '2d' });
+  usePortfolioStore.setState({
+    mode: '2d',
+    autoMode: '2d',
+    reducedMotionOptIn: false,
+    reducedMotionOptInAvailable: false,
+    sceneReady: false,
+    cameraSettled: true,
+  });
   // Undo per-test `vi.stubGlobal` overrides so the shared fixture below is
   // restored for the next test; individual test files need no afterEach.
   vi.unstubAllGlobals();

@@ -20,6 +20,7 @@
     "test:watch": "vitest",
     "size": "size-limit && node scripts/check-3d-budget.mjs",
     "capture:qa": "npm run build && playwright test",
+    "qa:dev-render": "node scripts/qa/dev-render.mjs",
     "verify": "npm run typecheck && npm run lint && npm run format:check && npm run test && npm run build && npm run size"
   },
   "dependencies": {

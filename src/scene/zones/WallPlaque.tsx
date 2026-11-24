@@ -11,6 +11,7 @@
 import { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import { useThree, type ThreeEvent } from '@react-three/fiber';
+import { PickableEdges, pickAffordance, useZoneSpotlight } from '../affordance';
 import { useDeferredDispose } from '../../lib/deferred-dispose';
 import { navigate, type Route } from '../../lib/router';
 import { DESIGN_TOKENS } from '../../styles/design-tokens';
@@ -26,8 +27,15 @@ export interface WallPlaqueProps {
 
 /** Texture-space baseline → plaque-local world y (texture y grows downward). */
 export function plaqueRowY(index: number): number {
-  const baseline = PLAQUE.rowBaselines[index] ?? 38 + index * 62;
-  const glyphCentre = baseline - PLAQUE.fontPx * 0.36;
+  const baseline =
+    PLAQUE.rowBaselines[index] ??
+    PLAQUE.rowBaselines[0]! +
+      index * (PLAQUE.rowBaselines[1]! - PLAQUE.rowBaselines[0]!);
+  // Vertical centre of the glyph box, not of the em square: keeps the pick
+  // plane aligned with the visible letters after the glyph-bounds fix.
+  const glyphCentre =
+    baseline -
+    ((PLAQUE.glyphAscentEm - PLAQUE.glyphDescentEm) / 2) * PLAQUE.fontPx;
   return (
     PLAQUE.height / 2 - (glyphCentre / PLAQUE.textureHeight) * PLAQUE.height
   );
@@ -42,14 +50,18 @@ export function WallPlaque({ parts, materials }: WallPlaqueProps) {
   );
   const crtCloseUp = usePortfolioStore((state) => state.crtCloseUp);
   const invalidate = useThree((state) => state.invalidate);
+  // Home-zone spotlight: all five rows gain a thin gold edge once the camera
+  // has settled; hover/keyboard focus still own the brighter wash + outline.
+  const spotlight = useZoneSpotlight('/');
 
+  // Pitch is height/5 = 0.2 m; planes are 0.16 m so the five hit zones never
+  // overlap after the glyph-bounds re-spacing (52px ≈ 0.1625 m).
   const hitGeometry = useMemo(
-    () => new THREE.PlaneGeometry(PLAQUE.width - 0.3, PLAQUE.height / 5 - 0.02),
+    () => new THREE.PlaneGeometry(PLAQUE.width - 0.3, PLAQUE.hitHeight),
     [],
   );
   const highlightGeometry = useMemo(
-    () =>
-      new THREE.PlaneGeometry(PLAQUE.width - 0.22, PLAQUE.height / 5 - 0.008),
+    () => new THREE.PlaneGeometry(PLAQUE.width - 0.22, PLAQUE.hitHeight),
     [],
   );
   const highlightMaterial = useMemo(
@@ -133,17 +145,33 @@ export function WallPlaque({ parts, materials }: WallPlaqueProps) {
         ))}
       {/* Gold wash behind ONE canonical row. No emissive pulse when picking is
           unavailable — coarse pointers only ever see the static lettering. */}
-      {DIEGETIC_ROWS.map((row, index) =>
-        highlighted === row.route ? (
-          <mesh
-            key={`highlight-${row.route}`}
-            name={`plaque-highlight-${row.route}`}
-            geometry={highlightGeometry}
-            material={highlightMaterial}
-            position={[0, plaqueRowY(index), 0.016]}
-          />
-        ) : null,
-      )}
+      {DIEGETIC_ROWS.map((row, index) => {
+        const hovered = highlighted === row.route;
+        const affordance = pickAffordance(
+          hovered,
+          menuFocusRoute === row.route && !crtCloseUp,
+          spotlight,
+        );
+        return (
+          <group key={`row-${row.route}`}>
+            {hovered && (
+              <mesh
+                name={`plaque-highlight-${row.route}`}
+                geometry={highlightGeometry}
+                material={highlightMaterial}
+                position={[0, plaqueRowY(index), 0.016]}
+              />
+            )}
+            {/* Reusable click affordance: idle rows cost zero draw calls. */}
+            <PickableEdges
+              geometry={highlightGeometry}
+              position={[0, plaqueRowY(index), 0.02]}
+              state={affordance}
+              name={`plaque-affordance-${row.route}`}
+            />
+          </group>
+        );
+      })}
     </group>
   );
 }

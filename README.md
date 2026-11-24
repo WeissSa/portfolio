@@ -15,6 +15,7 @@ A painterly 3D portfolio room built with **Vite + React 19 + TypeScript + react-
 
 - **Auto (default):** a device that passes every static capability gate starts in 3D. This includes **capable desktops and capable mobile/touch devices**; mobile uses a lighter tier (DPR cap 1.5, no post pass, portrait camera framings).
 - **Automatic 2D** on constrained devices: no WebGL2, save-data, `prefers-reduced-motion`, or very low memory/core count. A device whose 3D scene has crashed is also pinned to 2D via a persisted failure signal, so "Auto" and reloads cannot re-trigger the crash (error boundary + `portfolio:3d-failed`).
+- **Reduced-motion opt-in:** when reduced motion is the _only_ blocker, a `Static 3D` button lets visitors choose a static-cut 3D session (zone-title HUD, frozen grain clock, no camera flights). The informed choice is persisted (`portfolio:reduced-motion-3d`); **Auto clears it** alongside the manual mode override, so Auto always returns to the authoritative capability-derived mode (2D under reduced motion) and survives a reload.
 - **Manual override:** the `Rendering mode` group in the main menu has a `3D room mode` button and an `Auto` button. A chosen mode is persisted (`portfolio:mode`); `Auto` clears the override and returns to the device's safe default. Only one 3D modal dialog can be open at a time.
 - Keyboard: Tab/arrow keys navigate, Enter activates, Escape closes the top dialog, and a skip link targets `#main`. Canvas is `aria-hidden`; all content has DOM equivalents.
 
@@ -35,6 +36,12 @@ npm run verify         # typecheck → lint → format:check → test → build 
 npm run format:check   # Prettier (also in the CI verify job)
 npm run size           # shell ≤185 KB + lazy 3D chunk ≤260 KB + book chunk ≤16 KB (brotli)
 ```
+
+To verify the **dev** rendering path (StrictMode double-invoke) rather than the
+built preview, start `npm run dev` in one terminal and run
+`npm run qa:dev-render` in another: it captures `dev_3d_render.png`, asserts the
+canvas really drew lit geometry and that no disposed-resource errors were
+logged, and checks the readiness-gated layout.
 
 > **Shell budget note (Mantine-first commit, 2026-11-23; re-measured at the
 > palette recolor):** the interactive shell budget was raised from 120 KB to

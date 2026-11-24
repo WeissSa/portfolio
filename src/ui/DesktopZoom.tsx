@@ -54,6 +54,7 @@ export function DesktopZoom() {
         type="button"
         onClick={closeDesktop}
         radius={0}
+        aria-label="Close desktop and return to the room"
         className="p5-btn p5-btn--red desktop-zoom__close"
       >
         Back to room

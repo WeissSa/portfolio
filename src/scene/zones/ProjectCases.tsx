@@ -20,6 +20,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
 import { PROJECTS, postId } from '../../content/posts';
+import { PickableEdges, pickAffordance, useZoneSpotlight } from '../affordance';
 import { usePortfolioStore } from '../../state/store';
 import type { RoomPart } from '../art/geometry';
 import type { RoomMaterials } from '../art/materials';
@@ -60,6 +61,9 @@ export function ProjectCases({ cases, materials }: ProjectCasesProps) {
     (state) => state.setHoveredProject,
   );
   const invalidate = useThree((state) => state.invalidate);
+  // Projects-zone spotlight: thin gold edges on every case once the camera
+  // settles; the hovered/selected case gets the brighter treatment.
+  const spotlight = useZoneSpotlight('/projects');
 
   // Refs into the lid groups + the damped animation state. Plain number arrays
   // allocated once: useFrame only reads/writes them, never creates objects.
@@ -157,6 +161,18 @@ export function ProjectCases({ cases, materials }: ProjectCasesProps) {
               position={body.position}
               rotation={body.rotation}
               scale={body.scale}
+            />
+            <PickableEdges
+              geometry={body.geometry}
+              position={body.position ?? [0, 0, 0]}
+              rotation={body.rotation ?? [0, 0, 0]}
+              scale={body.scale ?? [1, 1, 1]}
+              state={pickAffordance(
+                id === hoveredProjectId,
+                id === selectedProjectId,
+                spotlight,
+              )}
+              name={`case-affordance-${id}`}
             />
             <group
               ref={(node) => {

@@ -7,7 +7,12 @@ import { screen } from '@testing-library/react';
 import { renderWithProviders } from './helpers';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { MODE_STORAGE_KEY } from '../src/lib/device-tier';
+import {
+  MODE_STORAGE_KEY,
+  REDUCED_MOTION_OPTIN_KEY,
+  readReducedMotionOptIn,
+  writeReducedMotionOptIn,
+} from '../src/lib/device-tier';
 import { usePortfolioStore } from '../src/state/store';
 import { ModeToggle } from '../src/ui/ModeToggle';
 
@@ -58,6 +63,53 @@ describe('ModeToggle', () => {
     await user.click(screen.getByRole('button', { name: 'Automatic mode' }));
     expect(localStorage.getItem(MODE_STORAGE_KEY)).toBeNull();
     expect(usePortfolioStore.getState().mode).toBe('2d');
+  });
+
+  it('Auto after a reduced-motion opt-in returns to the capability-derived 2D mode', async () => {
+    const user = userEvent.setup();
+    usePortfolioStore.setState({
+      mode: '3d',
+      autoMode: '2d',
+      reducedMotionOptIn: true,
+      reducedMotionOptInAvailable: true,
+    });
+    writeReducedMotionOptIn(true);
+    renderWithProviders(<ModeToggle />);
+
+    await user.click(screen.getByRole('button', { name: 'Automatic mode' }));
+    expect(usePortfolioStore.getState().mode).toBe('2d');
+    expect(usePortfolioStore.getState().reducedMotionOptIn).toBe(false);
+    expect(readReducedMotionOptIn()).toBe(false);
+    expect(localStorage.getItem(REDUCED_MOTION_OPTIN_KEY)).toBeNull();
+    expect(
+      screen.getByRole('button', { name: 'Static 3D under reduced motion' }),
+    ).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('Static 3D and Auto keep aria-pressed consistent for sighted users', async () => {
+    const user = userEvent.setup();
+    usePortfolioStore.setState({
+      mode: '2d',
+      autoMode: '2d',
+      reducedMotionOptIn: false,
+      reducedMotionOptInAvailable: true,
+    });
+    renderWithProviders(<ModeToggle />);
+    const static3d = screen.getByRole('button', {
+      name: 'Static 3D under reduced motion',
+    });
+    const threeD = screen.getByRole('button', { name: '3D room mode' });
+    expect(static3d).toHaveAttribute('aria-pressed', 'false');
+    expect(threeD).toHaveAttribute('aria-pressed', 'false');
+
+    await user.click(static3d);
+    expect(static3d).toHaveAttribute('aria-pressed', 'true');
+    expect(threeD).toHaveAttribute('aria-pressed', 'true');
+    expect(localStorage.getItem(REDUCED_MOTION_OPTIN_KEY)).toBe('true');
+
+    await user.click(screen.getByRole('button', { name: 'Automatic mode' }));
+    expect(static3d).toHaveAttribute('aria-pressed', 'false');
+    expect(threeD).toHaveAttribute('aria-pressed', 'false');
   });
 
   it('disables 3D with an explanation when capabilities forbid it', async () => {

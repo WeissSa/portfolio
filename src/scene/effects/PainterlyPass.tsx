@@ -30,6 +30,7 @@ import { useEffect, useMemo, useRef, type ReactNode } from 'react';
 import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
 import { useDeferredDispose } from '../../lib/deferred-dispose';
+import { advancePainterlyTime } from '../diegetic';
 
 export const PAINTERLY_VERTEX_SHADER = /* glsl */ `
 varying vec2 vUv;
@@ -186,14 +187,11 @@ export function bindPainterlyDiffuse(
   uniforms.tDiffuse.value = target.texture;
 }
 
-/** Pure grain-clock step: reduced-motion 3D holds uTime at a fixed value. */
-export function advancePainterlyTime(
-  current: number,
-  delta: number,
-  frozen = false,
-): number {
-  return frozen ? current : current + delta;
-}
+/**
+ * Re-export the pure clock step from the dependency-free diegetic module so
+ * both the pass and the Playwright harness exercise the SAME implementation.
+ */
+export { advancePainterlyTime } from '../diegetic';
 
 export interface PainterlyPassProps {
   enabled: boolean;
@@ -310,6 +308,19 @@ function PainterlyPassInner({
     rig.quad.geometry.dispose();
   }, [rig]);
 
+  // QA hook (review fix): publish the FREEZE DECISION once, outside useFrame.
+  // With frameloop='demand' + instant cuts zero frames fire, so a DOM dataset
+  // written from useFrame never changes and would "prove" freezing even when
+  // the clock advances on real frames. The harness asserts this flag plus the
+  // pure clock function the pass actually calls.
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    document.documentElement.dataset.grainFrozen = String(freezeTime);
+    return () => {
+      delete document.documentElement.dataset.grainFrozen;
+    };
+  }, [freezeTime]);
+
   const time = useRef(0);
   useFrame((_state, delta) => {
     // StrictMode (dev) can re-create the memoized rig WITHOUT re-creating the
@@ -318,11 +329,6 @@ function PainterlyPassInner({
     bindPainterlyDiffuse(uniforms, rig.target);
     time.current = advancePainterlyTime(time.current, delta, freezeTime);
     uniforms.uTime.value = time.current;
-    // QA hook (commit 4): expose the ACTUAL shader clock so the Playwright
-    // harness can assert it is frozen in the reduced-motion 3D opt-in.
-    if (freezeTime && typeof document !== 'undefined') {
-      document.documentElement.dataset.grainTime = String(time.current);
-    }
     gl.setRenderTarget(rig.target);
     gl.render(scene, camera);
     gl.setRenderTarget(null);

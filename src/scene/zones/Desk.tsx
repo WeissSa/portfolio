@@ -17,6 +17,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import * as THREE from 'three';
 import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
+import { PickableEdges, pickAffordance, useZoneSpotlight } from '../affordance';
 import { navigate } from '../../lib/router';
 import { useDeferredDispose } from '../../lib/deferred-dispose';
 import { DESIGN_TOKENS } from '../../styles/design-tokens';
@@ -48,6 +49,10 @@ export function DeskZone({ monitor, materials }: DeskZoneProps) {
   const setCrtCloseUp = usePortfolioStore((state) => state.setCrtCloseUp);
   const camera = useThree((state) => state.camera);
   const [closeUp, setCloseUp] = useState(false);
+  const [monitorHovered, setMonitorHovered] = useState(false);
+  // About-zone spotlight: the monitor + dock pickables gain a gold edge after
+  // the camera settles; picking the monitor still opens the DOM desktop.
+  const spotlight = useZoneSpotlight('/about');
 
   // No per-frame allocations: one preallocated target vector and a boolean
   // state flip only when the camera crosses the close-up threshold.
@@ -118,10 +123,12 @@ export function DeskZone({ monitor, materials }: DeskZoneProps) {
   };
   const onPointerOver = (event: ThreeEvent<PointerEvent>) => {
     event.stopPropagation();
+    setMonitorHovered(true);
     document.body.style.cursor = 'pointer';
   };
   const onPointerOut = (event: ThreeEvent<PointerEvent>) => {
     event.stopPropagation();
+    setMonitorHovered(false);
     document.body.style.cursor = '';
   };
   const dockPick = (route: string) => (event: ThreeEvent<MouseEvent>) => {
@@ -138,6 +145,7 @@ export function DeskZone({ monitor, materials }: DeskZoneProps) {
     };
 
   const highlighted = closeUp ? (menuFocusRoute ?? menuHoverRoute) : null;
+  const bezel = monitor.find((part) => part.id === 'monitor-bezel');
 
   return (
     <group
@@ -156,6 +164,16 @@ export function DeskZone({ monitor, materials }: DeskZoneProps) {
           scale={part.scale}
         />
       ))}
+      {bezel && (
+        <PickableEdges
+          geometry={bezel.geometry}
+          position={bezel.position ?? [0, 0, 0]}
+          rotation={bezel.rotation ?? [0, 0, 0]}
+          scale={bezel.scale ?? [1, 1, 1]}
+          state={pickAffordance(monitorHovered, false, spotlight)}
+          name="monitor-affordance"
+        />
+      )}
       {/* CRT-OS dock: transparent pick planes + ONE canonical highlight.
           Fine pointers only; the DOM menu remains the accessible path. */}
       {pointerFine &&
@@ -177,21 +195,38 @@ export function DeskZone({ monitor, materials }: DeskZoneProps) {
           />
         ))}
       {closeUp &&
-        DIEGETIC_ROWS.map((row, index) =>
-          highlighted === row.route ? (
-            <mesh
-              key={`crt-highlight-${row.route}`}
-              name={`crt-highlight-${row.route}`}
-              geometry={highlightGeometry}
-              material={highlightMaterial}
-              position={[
-                crtDockX(CRT_DOCK.hitXs[index] ?? 130 + index * 60),
-                CRT_DOCK.hitY,
-                CRT_DOCK.hitZ - 0.001,
-              ]}
-            />
-          ) : null,
-        )}
+        DIEGETIC_ROWS.map((row, index) => {
+          const position: [number, number, number] = [
+            crtDockX(CRT_DOCK.hitXs[index] ?? 130 + index * 60),
+            CRT_DOCK.hitY,
+            CRT_DOCK.hitZ - 0.001,
+          ];
+          return (
+            <group key={`crt-row-${row.route}`}>
+              {highlighted === row.route && (
+                <mesh
+                  name={`crt-highlight-${row.route}`}
+                  geometry={highlightGeometry}
+                  material={highlightMaterial}
+                  position={position}
+                />
+              )}
+              <PickableEdges
+                geometry={highlightGeometry}
+                position={position}
+                state={pickAffordance(
+                  highlighted === row.route,
+                  menuFocusRoute === row.route,
+                  // No blanket five-row outline in the close-up: the monitor
+                  // itself carries the About-zone spotlight, and this keeps
+                  // the draw-call budget intact while the dialog is open.
+                  false,
+                )}
+                name={`crt-affordance-${row.route}`}
+              />
+            </group>
+          );
+        })}
     </group>
   );
 }

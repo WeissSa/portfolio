@@ -47,6 +47,9 @@ export function ModeToggle() {
   const mode = usePortfolioStore((state) => state.mode);
   const setMode = usePortfolioStore((state) => state.setMode);
   const autoMode = usePortfolioStore((state) => state.autoMode);
+  const setReducedMotionOptIn = usePortfolioStore(
+    (state) => state.setReducedMotionOptIn,
+  );
   // detectCapabilities() → recommendMode(): '2d' whenever any gate trips, so
   // this doubles as the "is 3D safe on this device?" flag.
   const canUse3d = autoMode === '3d';
@@ -59,9 +62,14 @@ export function ModeToggle() {
   }, [canUse3d, mode, setMode]);
 
   const useAuto = useCallback(() => {
+    // Auto is the authoritative recovery: clear BOTH overrides. The reduced-
+    // motion static-3D opt-in writes a persisted manual mode AND its own key;
+    // clearing only the former would silently re-arm 3D on the next reload and
+    // leave Static 3D's aria-pressed stuck true (owner review 2026-11-24).
+    setReducedMotionOptIn(false);
     clearManualMode();
     setMode(autoMode);
-  }, [autoMode, setMode]);
+  }, [autoMode, setMode, setReducedMotionOptIn]);
 
   return (
     <>

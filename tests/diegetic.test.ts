@@ -14,14 +14,19 @@ import {
 import { DESIGN_TOKENS } from '../src/styles/design-tokens';
 import { usePortfolioStore } from '../src/state/store';
 import {
+  CLIMATE_VIEWPOINT_DATA,
   CRT_DOCK,
   DIEGETIC_ROWS,
   HOME_FOV_DEGREES,
   PLAQUE,
+  PROJECTED_PANEL,
   framingCamera,
   isWithinView,
+  plaqueGlyphBox,
   plaqueProjection,
+  plaquePurpleRule,
   projectCapHeight,
+  projectedStripBounds,
   textureGlyphWorldHeight,
 } from '../src/scene/diegetic';
 import { HOME_VIEWPOINT } from '../src/scene/viewpoints';
@@ -81,6 +86,30 @@ describe('wall plaque framing (HOME_VIEWPOINT)', () => {
         VIEWPORT,
       ),
     ).toBeCloseTo(capHeightPx);
+  });
+
+  it('keeps all five row glyph boxes inside the frame, clear of the purple rule', () => {
+    const rule = plaquePurpleRule();
+    for (let index = 0; index < DIEGETIC_ROWS.length; index += 1) {
+      const box = plaqueGlyphBox(index);
+      expect(box.top, `row ${index} clears the purple rule`).toBeGreaterThan(
+        rule.bottom,
+      );
+      expect(box.top, `row ${index} clears the top frame`).toBeGreaterThan(16);
+      expect(box.bottom, `row ${index} clears the bottom frame`).toBeLessThan(
+        PLAQUE.textureHeight - 16,
+      );
+      if (index > 0) {
+        expect(box.top).toBeGreaterThan(plaqueGlyphBox(index - 1)!.bottom);
+      }
+      // Conservative Anton advance for the longest label ("EXPERIENCE").
+      const label = DIEGETIC_ROWS[index]!.label.toUpperCase();
+      expect(label.length * PLAQUE.fontPx * 0.62).toBeLessThan(
+        PLAQUE.textureWidth - 112,
+      );
+    }
+    // Hit planes must not overlap at the new 52px row pitch.
+    expect(PLAQUE.hitHeight).toBeLessThan(PLAQUE.height / DIEGETIC_ROWS.length);
   });
 
   it('paints gilt lettering only on ink — never gold on brass', () => {
@@ -185,8 +214,46 @@ describe('bidirectional DOM ↔ in-world sync', () => {
 
 describe('reduced-motion 3D and shadow gating', () => {
   it('freezes the grain clock only when requested', () => {
-    expect(advancePainterlyTime(3, 0.016)).toBeCloseTo(3.016);
-    expect(advancePainterlyTime(3, 0.016, true)).toBe(3);
+    // No DOM/frame dependency: the pass calls this pure step on every rendered
+    // frame, so the freeze contract is tested directly (not via a dataset that
+    // a demand frameloop never updates after an instant cut).
+    let time = 3;
+    for (const delta of [0.016, 5, 120]) {
+      time = advancePainterlyTime(time, delta, true);
+    }
+    expect(time).toBe(3);
+    expect(advancePainterlyTime(time, 0.016)).toBeCloseTo(3.016);
+  });
+
+  it('keeps projected strip glyphs clear of the brass rules', () => {
+    const bounds = projectedStripBounds();
+    expect(bounds.glyphTop).toBeGreaterThan(bounds.purpleRuleBottom);
+    expect(bounds.glyphBottom).toBeLessThan(bounds.bottomRuleTop);
+    expect(bounds.glyphTop).toBeGreaterThan(bounds.stripTop + 4);
+    expect(bounds.glyphBottom).toBeLessThan(PROJECTED_PANEL.textureHeight);
+
+    // Font was NOT shrunk below the projected legibility floor.
+    const stripWorldHeight =
+      (PROJECTED_PANEL.stripHeight / PROJECTED_PANEL.textureHeight) *
+      PROJECTED_PANEL.screenHeight;
+    const centre: [number, number, number] = [
+      PROJECTED_PANEL.center[0],
+      PROJECTED_PANEL.center[1] -
+        PROJECTED_PANEL.screenHeight / 2 +
+        stripWorldHeight / 2,
+      PROJECTED_PANEL.center[2],
+    ];
+    const cap = projectCapHeight(
+      framingCamera(CLIMATE_VIEWPOINT_DATA, VIEWPORT, HOME_FOV_DEGREES),
+      centre,
+      textureGlyphWorldHeight(
+        PROJECTED_PANEL.fontPx,
+        PROJECTED_PANEL.textureHeight,
+        PROJECTED_PANEL.screenHeight,
+      ),
+      VIEWPORT,
+    );
+    expect(cap).toBeGreaterThanOrEqual(PROJECTED_PANEL.minCapPx);
   });
 
   it('offers the informed opt-in only when reduced motion is the sole gate', () => {

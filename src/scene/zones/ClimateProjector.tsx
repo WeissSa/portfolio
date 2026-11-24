@@ -41,7 +41,8 @@ import {
 import { navigate } from '../../lib/router';
 import { PALETTE } from '../art/palette';
 import { useDeferredDispose } from '../../lib/deferred-dispose';
-import { PROJECTED_PANEL } from '../diegetic';
+import { PickableEdges, pickAffordance, useZoneSpotlight } from '../affordance';
+import { PROJECTED_PANEL, projectedStripBounds } from '../diegetic';
 import { DESIGN_TOKENS } from '../../styles/design-tokens';
 import { usePortfolioStore } from '../../state/store';
 import type { RoomMaterials } from '../art/materials';
@@ -153,7 +154,8 @@ export function buildProjectorTexture(
 
   // Commit 4b: CLIMATE-LOCAL menu strip (year / back / info) painted into the
   // bottom of the SAME projected texture. Not a duplicate of the global nav.
-  const stripTop = PROJECTOR_TEXTURE_HEIGHT - PROJECTED_PANEL.stripHeight;
+  const bounds = projectedStripBounds();
+  const stripTop = bounds.stripTop;
   ctx.fillStyle = INK;
   ctx.fillRect(
     0,
@@ -165,14 +167,9 @@ export function buildProjectorTexture(
   // than text floating on the wall; gilt lettering stays on the dark inlay.
   ctx.fillStyle = PALETTE.brassLight;
   ctx.fillRect(18, stripTop + 3, PROJECTOR_TEXTURE_WIDTH - 36, 3);
-  ctx.fillRect(
-    18,
-    PROJECTOR_TEXTURE_HEIGHT - 6,
-    PROJECTOR_TEXTURE_WIDTH - 36,
-    3,
-  );
+  ctx.fillRect(18, bounds.bottomRuleTop, PROJECTOR_TEXTURE_WIDTH - 36, 3);
   ctx.fillStyle = DESIGN_TOKENS.p5.link;
-  ctx.fillRect(24, stripTop + 10, PROJECTOR_TEXTURE_WIDTH - 48, 2);
+  ctx.fillRect(24, bounds.purpleRuleTop, PROJECTOR_TEXTURE_WIDTH - 48, 2);
   ctx.fillStyle = PALETTE.brassDark;
   for (const divider of [0.44, 0.69]) {
     ctx.fillRect(
@@ -194,7 +191,7 @@ export function buildProjectorTexture(
         PROJECTOR_TEXTURE_WIDTH * 0.58,
         PROJECTOR_TEXTURE_WIDTH * 0.8,
       ][index]!,
-      stripTop + 42,
+      PROJECTED_PANEL.textBaseline,
     );
   });
 
@@ -231,6 +228,10 @@ export function ClimateProjector({
   );
   const openClimatePanel = usePortfolioStore((state) => state.openClimatePanel);
   const invalidate = useThree((state) => state.invalidate);
+  // Climate-zone spotlight: the year dial + back/info strip gain gold edges
+  // after the camera settles, matching the plaque/CRT/book/case affordances.
+  const spotlight = useZoneSpotlight('/climate');
+  const [dialHover, setDialHover] = useState<'prev' | 'next' | null>(null);
 
   // Cached: loadClimate bails out when status is ready/loading, so mounting the
   // room (or re-entering the zone) never refetches the API/snapshot (§4.4).
@@ -452,6 +453,15 @@ export function ClimateProjector({
     event.stopPropagation();
     document.body.style.cursor = '';
   };
+  const onDialOver =
+    (direction: 'prev' | 'next') => (event: ThreeEvent<PointerEvent>) => {
+      onPointerOver(event);
+      setDialHover(direction);
+    };
+  const onDialOut = (event: ThreeEvent<PointerEvent>) => {
+    onPointerOut(event);
+    setDialHover(null);
+  };
 
   return (
     <group name="climate-projector-content">
@@ -470,8 +480,14 @@ export function ClimateProjector({
           material={materials.brass}
           position={[-0.38, stripY, 0.03]}
           onClick={stepYear('prev')}
-          onPointerOver={onPointerOver}
-          onPointerOut={onPointerOut}
+          onPointerOver={onDialOver('prev')}
+          onPointerOut={onDialOut}
+        />
+        <PickableEdges
+          geometry={prevGeometry}
+          position={[-0.38, stripY, 0.03]}
+          state={pickAffordance(dialHover === 'prev', false, spotlight)}
+          name="projected-prev-affordance"
         />
         <mesh
           name="climate-year-next"
@@ -479,8 +495,14 @@ export function ClimateProjector({
           material={materials.brass}
           position={[-0.2, stripY, 0.03]}
           onClick={stepYear('next')}
-          onPointerOver={onPointerOver}
-          onPointerOut={onPointerOut}
+          onPointerOver={onDialOver('next')}
+          onPointerOut={onDialOut}
+        />
+        <PickableEdges
+          geometry={nextGeometry}
+          position={[-0.2, stripY, 0.03]}
+          state={pickAffordance(dialHover === 'next', false, spotlight)}
+          name="projected-next-affordance"
         />
       </group>
       {/* Climate-zone-LOCAL menu: back / info hit planes inside the painted
@@ -510,6 +532,12 @@ export function ClimateProjector({
                 position={[x, stripY, 0.028]}
               />
             )}
+            <PickableEdges
+              geometry={localGeometry}
+              position={[x, stripY, 0.03]}
+              state={pickAffordance(localItem === item, false, spotlight)}
+              name={`projected-${item}-affordance`}
+            />
           </group>
         ))}
       </group>

@@ -11,7 +11,7 @@
  */
 import * as THREE from 'three';
 import { DESIGN_TOKENS } from '../../styles/design-tokens';
-import { CRT_DOCK, DIEGETIC_ROWS, PLAQUE } from '../diegetic';
+import { CRT_DOCK, DIEGETIC_ROWS, PLAQUE, plaqueGlyphBox } from '../diegetic';
 import { createRng, type Rng } from './rng';
 import { BOOK_SPINE_COLORS, PALETTE, shadeHex } from './palette';
 
@@ -1099,9 +1099,9 @@ export function planWallPlaque(
     {
       kind: 'rect',
       x: 24,
-      y: 32,
+      y: PLAQUE.purpleRuleY,
       w: width - 48,
-      h: 3,
+      h: PLAQUE.purpleRuleThickness,
       color: DESIGN_TOKENS.p5.link,
       alpha: 0.95,
     },
@@ -1145,7 +1145,8 @@ export function planWallPlaque(
   }
   // Gilt lettering, one row per route, baseline-aligned with the hit planes.
   DIEGETIC_ROWS.forEach((row, index) => {
-    const baseline = PLAQUE.rowBaselines[index] ?? 38 + index * 62;
+    // Same bounds the QA glyph test asserts: no row crosses the rule/frame.
+    const baseline = plaqueGlyphBox(index).baseline;
     ops.push({
       kind: 'rect',
       x: 46,

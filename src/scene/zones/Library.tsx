@@ -14,8 +14,13 @@ import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { useThree, type ThreeEvent } from '@react-three/fiber';
 import { POSTS, postId } from '../../content/posts';
+import {
+  PickableEdges,
+  affordanceTint,
+  pickAffordance,
+  useZoneSpotlight,
+} from '../affordance';
 import { useDeferredDispose } from '../../lib/deferred-dispose';
-import { DESIGN_TOKENS } from '../../styles/design-tokens';
 import { usePortfolioStore } from '../../state/store';
 import {
   bookAtlasRows,
@@ -48,6 +53,9 @@ export function LibraryZone({ cells, materials }: LibraryZoneProps) {
   const selectedPostId = usePortfolioStore((state) => state.selectedPostId);
   const setHoveredPost = usePortfolioStore((state) => state.setHoveredPost);
   const selectPost = usePortfolioStore((state) => state.selectPost);
+  // Experience-zone spotlight: all books get a subtle gold lift once the
+  // camera settles; hover/selection keep the stronger shared affordance.
+  const spotlight = useZoneSpotlight('/experience');
 
   const bodyGeometry = useMemo(() => new THREE.BoxGeometry(1, 1, 1), []);
   const baseLabelsGeometry = useMemo(
@@ -80,7 +88,6 @@ export function LibraryZone({ cells, materials }: LibraryZoneProps) {
     const position = new THREE.Vector3();
     const scale = new THREE.Vector3();
     const color = new THREE.Color();
-    const highlight = new THREE.Color(DESIGN_TOKENS.library.bookHighlight);
     books.forEach((book, index) => {
       position.set(...book.position);
       if (book.id === selectedPostId) position.z += PULL_OUT;
@@ -88,10 +95,16 @@ export function LibraryZone({ cells, materials }: LibraryZoneProps) {
       matrix.makeScale(scale.x, scale.y, scale.z);
       matrix.setPosition(position);
       mesh.setMatrixAt(index, matrix);
-      color.set(book.color);
-      if (book.id === selectedPostId || book.id === hoveredPostId) {
-        color.lerp(highlight, 0.4);
-      }
+      color.copy(
+        affordanceTint(
+          book.color,
+          pickAffordance(
+            book.id === hoveredPostId,
+            book.id === selectedPostId,
+            spotlight,
+          ),
+        ),
+      );
       mesh.setColorAt(index, color);
     });
     mesh.instanceMatrix.needsUpdate = true;
@@ -100,7 +113,7 @@ export function LibraryZone({ cells, materials }: LibraryZoneProps) {
     // volume), not the unit box; recompute after every hover/selection change.
     mesh.computeBoundingSphere();
     invalidate();
-  }, [books, hoveredPostId, selectedPostId, invalidate]);
+  }, [books, hoveredPostId, selectedPostId, spotlight, invalidate]);
 
   // New GPU resources belong to this zone, not the shell: tear them down if
   // the library unmounts on a mode toggle (the shared atlas/material live in
@@ -142,6 +155,12 @@ export function LibraryZone({ cells, materials }: LibraryZoneProps) {
 
   if (books.length === 0) return null;
 
+  // ONE outline at a time (hovered or selected volume), not 13: keeps the
+  // desktop draw-call budget intact while making the active pick unmistakable.
+  const activeBook = books.find(
+    (book) => book.id === selectedPostId || book.id === hoveredPostId,
+  );
+
   return (
     <group name="library-books">
       <instancedMesh
@@ -152,6 +171,20 @@ export function LibraryZone({ cells, materials }: LibraryZoneProps) {
         onPointerOut={onPointerOut}
       />
       <mesh geometry={labelsGeometry} material={materials.bookAtlas} />
+      {activeBook && (
+        <PickableEdges
+          geometry={bodyGeometry}
+          position={[
+            activeBook.position[0],
+            activeBook.position[1],
+            activeBook.position[2] +
+              (activeBook.id === selectedPostId ? PULL_OUT : 0),
+          ]}
+          scale={activeBook.scale}
+          state={activeBook.id === selectedPostId ? 'selected' : 'hover'}
+          name="book-affordance"
+        />
+      )}
     </group>
   );
 }

@@ -156,6 +156,15 @@
   color: var(--state-active-fg);
 }
 
+/* Mode state must be visible (review 2026-11-24): the 3D and Static-3D toggle
+   buttons have a constant label, so sighted users read the active mode from
+   this ink-on-gold chip (same token pair as the active nav item). */
+.p5-btn[aria-pressed='true'] {
+  background: var(--state-active-bg);
+  color: var(--state-active-fg);
+  border-color: var(--state-active-bg);
+}
+
 .p5-tag {
   display: inline-block;
   padding: 0.15rem 0.6rem;
@@ -313,7 +322,7 @@
  * the outer margins. Make the shell transparent to the pointer, then opt its
  * interactive descendants back in — the DOM UI stays fully usable while clicks
  * on empty / canvas areas reach the scene. 2D mode is untouched: every rule is
- * scoped under `.app-3d`, which App only adds in 3D mode.
+ * scoped under `.app-scene-live`, which App only adds once the Canvas has drawn a frame.
  */
 .app-scene-live .app-shell {
   position: relative;
@@ -420,10 +429,11 @@
 }
 
 /* --------------------------------------------------------------------------
- * Commit 4: diegetic room — clean framing band + reveal-on-focus DOM twin.
- * In 3D desktop the flat menu is sr-only (never painted over the plaque), but
- * it stays in the tab order. Focus WITHIN the nav un-hides a real, opaque
- * floating menu at bottom-left so sighted keyboard users always see focus.
+ * Commit 4 / diegetic-only review: clean framing band + keyboard-only DOM twin.
+ * In live 3D desktop the flat menu is sr-only (never painted over the plaque),
+ * but it stays in the tab order and the a11y tree. ONLY genuine keyboard focus
+ * (`:has(:focus-visible)`) un-hides the floating menu at bottom-left; a mouse
+ * click focuses links too, so `:focus-within` would distract pointer users.
  * Coarse pointers keep the full opaque DOM menu (and 44px targets).
  * ------------------------------------------------------------------------ */
 .main-menu__focus-chip {
@@ -451,7 +461,7 @@
   white-space: nowrap;
 }
 
-.app-scene-live.app-fine-pointer .main-menu:focus-within {
+.app-scene-live.app-fine-pointer .main-menu:has(:focus-visible) {
   position: fixed;
   left: 1.5rem;
   bottom: 1.5rem;
@@ -471,7 +481,7 @@
 }
 
 .app-scene-live.app-fine-pointer
-  .main-menu:focus-within
+  .main-menu:has(:focus-visible)
   .main-menu__focus-chip {
   display: block;
   margin-bottom: var(--space-sm);
@@ -479,7 +489,10 @@
   font-weight: 700;
 }
 
-@media (min-width: 1024px) {
+/* Review fix: the diegetic right-column layout now starts at Tailwind's `md`
+   breakpoint (768px). Below 1024px the old rule left the sr-only menu hidden
+   AND no right column, so the plaque was covered by an empty gutter. */
+@media (min-width: 768px) {
   /* Left ~50% stays clear for the room + wall plaque; zone content is pushed
      into the right column. The QA harness measures real DOM opacity overlap. */
   .app-scene-live.app-fine-pointer .app-shell {

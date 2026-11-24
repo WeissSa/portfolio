@@ -64,9 +64,44 @@ export const PLAQUE = {
   textureWidth: 512,
   textureHeight: 320,
   fontPx: 60,
-  rowBaselines: [38, 100, 162, 224, 286] as const,
+  // Review fix (2026-11-24): the old first baseline (38) put a 60px glyph's
+  // top ABOVE the texture and across the purple rule at y=32–35. Move the rule
+  // up under the frame and re-space all five rows so every glyph box (and its
+  // pick plane) fits inside the inlay with margin.
+  rowBaselines: [72, 124, 176, 228, 280] as const,
+  purpleRuleY: 16,
+  purpleRuleThickness: 3,
+  /** Conservative Anton glyph box, in em units (ascent / descent). */
+  glyphAscentEm: 0.72,
+  glyphDescentEm: 0.12,
+  /** Pick plane height in world metres (< row pitch of height/5 = 0.2). */
+  hitHeight: 0.16,
   minCapPx: 20,
 } as const;
+
+/** Texture-space glyph box and rule coordinates for one plaque row. */
+export function plaqueGlyphBox(index: number): {
+  baseline: number;
+  top: number;
+  bottom: number;
+} {
+  const baseline =
+    PLAQUE.rowBaselines[index] ??
+    PLAQUE.rowBaselines[0]! +
+      index * (PLAQUE.rowBaselines[1]! - PLAQUE.rowBaselines[0]!);
+  return {
+    baseline,
+    top: baseline - PLAQUE.glyphAscentEm * PLAQUE.fontPx,
+    bottom: baseline + PLAQUE.glyphDescentEm * PLAQUE.fontPx,
+  };
+}
+
+export function plaquePurpleRule(): { top: number; bottom: number } {
+  return {
+    top: PLAQUE.purpleRuleY,
+    bottom: PLAQUE.purpleRuleY + PLAQUE.purpleRuleThickness,
+  };
+}
 
 /** CRT dock mirrors the five routes at the bottom of the monitor texture. */
 export const CRT_DOCK = {
@@ -96,8 +131,43 @@ export const PROJECTED_PANEL = {
   textureHeight: 576,
   stripHeight: 64,
   fontPx: 32,
+  /** Review fix: baseline moved up 4px and the purple rule up 2px so the
+   *  glyph box clears the bottom brass rule (y=570) without shrinking the
+   *  font below the projected cap-height floor. */
+  textBaseline: 550,
+  purpleRuleOffset: 8,
+  purpleRuleHeight: 2,
+  bottomRuleInset: 6,
+  glyphAscentEm: 0.8,
+  glyphDescentEm: 0.25,
   minCapPx: 16,
 } as const;
+
+/** Texture-space rule + glyph bounds of the projected climate-local strip. */
+export function projectedStripBounds(): {
+  stripTop: number;
+  purpleRuleTop: number;
+  purpleRuleBottom: number;
+  bottomRuleTop: number;
+  glyphTop: number;
+  glyphBottom: number;
+} {
+  const stripTop = PROJECTED_PANEL.textureHeight - PROJECTED_PANEL.stripHeight;
+  const purpleRuleTop = stripTop + PROJECTED_PANEL.purpleRuleOffset;
+  return {
+    stripTop,
+    purpleRuleTop,
+    purpleRuleBottom: purpleRuleTop + PROJECTED_PANEL.purpleRuleHeight,
+    bottomRuleTop:
+      PROJECTED_PANEL.textureHeight - PROJECTED_PANEL.bottomRuleInset,
+    glyphTop:
+      PROJECTED_PANEL.textBaseline -
+      PROJECTED_PANEL.glyphAscentEm * PROJECTED_PANEL.fontPx,
+    glyphBottom:
+      PROJECTED_PANEL.textBaseline +
+      PROJECTED_PANEL.glyphDescentEm * PROJECTED_PANEL.fontPx,
+  };
+}
 
 export interface ProjectedRect {
   left: number;
@@ -106,6 +176,19 @@ export interface ProjectedRect {
   bottom: number;
   width: number;
   height: number;
+}
+
+/**
+ * Pure grain-clock step (review fix 2026-11-24). Kept here — not in
+ * PainterlyPass — so the Playwright QA harness can assert the freeze logic
+ * without importing R3F/three's CJS loader. The pass calls this exact step.
+ */
+export function advancePainterlyTime(
+  current: number,
+  delta: number,
+  frozen = false,
+): number {
+  return frozen ? current : current + delta;
 }
 
 /** Camera identical to the R3F <Canvas> camera used by Room. */

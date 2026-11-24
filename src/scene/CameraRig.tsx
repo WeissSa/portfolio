@@ -49,6 +49,7 @@ export function CameraRig({
   // Desktop zoom (commit 7): fly to the monitor close-up while the 2D desktop
   // overlay is open, and back to the zone viewpoint when it closes.
   const desktopOpen = usePortfolioStore((state) => state.desktopOpen);
+  const setCameraSettled = usePortfolioStore((state) => state.setCameraSettled);
   const camera = useThree((state) => state.camera);
   const invalidate = useThree((state) => state.invalidate);
   const size = useThree((state) => state.size);
@@ -83,14 +84,19 @@ export function CameraRig({
       currentTarget.copy(desiredTarget);
       camera.lookAt(currentTarget);
       flying.current = false;
+      // Reduced-motion cut: the viewpoint is reached in this same commit, so
+      // zone spotlights can turn on immediately (no animation to wait for).
+      setCameraSettled(true);
     } else {
       flying.current = true;
+      setCameraSettled(false);
     }
     invalidate();
   }, [
     activeZone,
     desktopOpen,
     instant,
+    setCameraSettled,
     portrait,
     tier,
     camera,
@@ -157,6 +163,7 @@ export function CameraRig({
       currentTarget.copy(desiredTarget);
       camera.lookAt(currentTarget);
       flying.current = false;
+      setCameraSettled(true);
       // One final frame is still needed to draw the snapped pose.
       invalidate();
     } else {

@@ -8,9 +8,12 @@
  * while production (no double-invoke) renders fine.
  *
  * `useDeferredDispose` defers cleanup by one macrotask. If the SAME effect is
- * re-established before the timer fires (StrictMode's simulated unmount), the
- * timer is cancelled. A real unmount or a genuine dependency change still
- * disposes exactly once. No StrictMode removal, no resource leaks.
+ * re-established before the timer fires (StrictMode's simulated unmount), that
+ * generation's disposal is cancelled. Every OTHER generation stays queued, so
+ * rapid dependency changes in a single macrotask cannot drop an earlier
+ * generation's disposal. A real unmount or a genuine dependency change still
+ * disposes exactly once per replaced generation. No StrictMode removal, no
+ * resource leaks.
  */
 import { useEffect, useRef } from 'react';
 
@@ -18,32 +21,47 @@ function sameDeps(a: readonly unknown[], b: readonly unknown[]): boolean {
   return a.length === b.length && a.every((value, index) => value === b[index]);
 }
 
+interface PendingDisposal {
+  deps: readonly unknown[];
+  dispose: () => void;
+}
+
 export function useDeferredDispose(
   dispose: () => void,
   deps: readonly unknown[],
 ): void {
+  /** generation id → the outgoing resource's dispose closure. */
+  const pending = useRef<Map<number, PendingDisposal>>(new Map());
+  const generation = useRef(0);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const lastDeps = useRef<readonly unknown[] | null>(null);
+
+  const scheduleFlush = () => {
+    if (timer.current !== null) return;
+    timer.current = setTimeout(() => {
+      timer.current = null;
+      const due = Array.from(pending.current.values());
+      pending.current.clear();
+      for (const entry of due) entry.dispose();
+    }, 0);
+  };
 
   useEffect(() => {
-    if (
-      timer.current !== null &&
-      lastDeps.current !== null &&
-      sameDeps(lastDeps.current, deps)
-    ) {
-      // StrictMode simulated unmount: the very same generation is re-setting
-      // up, so the scheduled disposal must NOT run.
-      clearTimeout(timer.current);
-      timer.current = null;
+    // The Map identity is stable; capture it so the cleanup closes over the
+    // queue, not over a ref read that React's lint warns can change by then.
+    const queue = pending.current;
+    // StrictMode simulated unmount: the very same generation is re-setting up
+    // and reuses the memoized resource, so drop ONLY its pending disposal.
+    // Other queued generations are genuine replacements and must still run.
+    for (const [id, entry] of queue) {
+      if (sameDeps(entry.deps, deps)) queue.delete(id);
     }
-    lastDeps.current = deps;
+    const id = ++generation.current;
 
     return () => {
-      if (timer.current !== null) clearTimeout(timer.current);
-      timer.current = setTimeout(() => {
-        timer.current = null;
-        dispose();
-      }, 0);
+      // Never cancel the whole queue: a second dep change in the same macrotask
+      // would otherwise lose the resource that this generation replaced.
+      queue.set(id, { deps, dispose });
+      scheduleFlush();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);

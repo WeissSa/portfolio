@@ -121,6 +121,47 @@ Per-frame GPU timer (SwiftShader): desktop p95 ≈ 330–550ms; mobile has no `E
 - Five consecutive 2D↔3D toggles: no geometry or texture growth (`renderer.info.memory` asserted non-increasing). Desktop keeps the Canvas warm (`frameloop='never'` + hidden); mobile/low unmount to save GPU memory (conscious memory-vs-stall tradeoff).
 - Scene chunk: **221.12 kB brotli** (baseline 220.37 kB, Δ **+0.75 kB**; ≤8 kB commit budget, 260 kB hard limit). Sampler ships 0 bytes. `npm run verify` green: **427 tests** (43 files), typecheck/lint/format/build/size all pass.
 
+## Diegetic-only + dev-render evidence (2026-11-24, `rework/3d-room`)
+
+Owner direction: in live 3D desktop **no floating DOM overlay menu for pointer
+users** — navigation is entirely in-world (brass wall plaque, CRT dock in the
+monitor close-up, climate-local projected strip). The DOM menu stays in the a11y
+tree and tab order; only genuine keyboard focus (`:has(:focus-visible)`)
+un-hides it, so a mouse click can no longer float it over the room.
+
+| File                             | Route / action                            | Viewport | Condition                | Expected evidence                                                                                                                   |
+| -------------------------------- | ----------------------------------------- | -------- | ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `desktop_3d_plaque.png`          | `#/`                                      | 1440×900 | fine pointer, live scene | All five plaque rows fully inside the inlay (glyph-box bounds asserted in `tests/diegetic.test.ts`); no opaque DOM over the plaque. |
+| `desktop_3d_menu-focus.png`      | `#/` + real Tab                           | 1440×900 | fine pointer             | Floating DOM menu appears **only** on keyboard focus, gold focus chip + ring; pointer click before Tab leaves the room clean.       |
+| `desktop_3d_medium-width.png`    | `#/`                                      | 900×800  | fine pointer             | Diegetic right column starts at 768px — no empty gutter / plaque overlap in the 768–1023px band.                                    |
+| `desktop_3d_crt-menu.png`        | `#/about` + monitor pick                  | 1440×900 | monitor close-up         | CRT dock shortcuts painted into the monitor texture; DOM desktop hidden in the capture only.                                        |
+| `desktop_3d_projected-panel.png` | `#/climate`                               | 1440×900 | fine pointer             | Projected climate-local strip legible, glyphs clear of both brass rules, no opaque DOM occlusion.                                   |
+| `dev_3d_render.png`              | `npm run dev`, `#/`                       | 1440×900 | StrictMode double-invoke | Lit WebGL room (luma range 239–242 measured), readiness-gated layout (`mainLeft=720`), no disposed-resource console errors.         |
+| `dev_3d_diegetic_room.png`       | `npm run dev`, pointer click              | 1440×900 | fine pointer             | Room stays clean: menu width 1px after a mouse click; no floating overlay.                                                          |
+| `dev_3d_keyboard_menu.png`       | `npm run dev`, real Tab                   | 1440×900 | fine pointer             | Focus chip + gold ring, opaque menu (>100px) revealed only by keyboard.                                                             |
+| `dev_3d_zone_spotlight.png`      | `npm run dev`, Tab/Enter → `#/experience` | 1440×900 | camera settled           | Zone spotlight active on the books; keyboard menu still available.                                                                  |
+
+- **Capture commands:** `npm run capture:qa` (built site → Playwright matrix) for
+  the first five; `npm run dev` + `npm run qa:dev-render` for the four dev shots
+  (`QA_DEV_URL` overrides the port if Vite moves off 5173). Measured dev run:
+  `pointerMenuWidth=1`, `keyboardRevealedRoute="/"`, `consoleErrors=0`,
+  `glLost=false`, luma range 239–242, `mainLeft=720`.
+- **Frozen-grain assertion:** the reduced-motion QA test no longer reads a
+  `grainTime` dataset written inside `useFrame` (a demand frameloop with instant
+  cuts fires zero frames, so it passed regardless of the freeze logic). It now
+  asserts the one-shot `data-grain-frozen` flag published by an effect plus the
+  pure `advancePainterlyTime(..., frozen)` step the pass actually calls.
+- **Click affordance / zone spotlights:** all six diegetic pick families share
+  one four-state treatment (`src/scene/affordance.tsx`): idle → zone (gold edge
+  after the camera settles) → hover → selected. Idle draws no extra geometry;
+  no new lights are added. DOM mirror and `LEVEL_COLORS` are unchanged.
+- **Honest gap:** the SwiftShader `perf.spec.ts` desktop relative-gate run timed
+  out (180 s, then 400 s on retry) in this environment before reaching its
+  assertion; mobile passed. The one-frame `renderer.info` QA probe showed 18
+  programs (was 17, +1 for the shared gold-line material) and stable geometry/
+  texture counts. The absolute frame-time gate still needs a re-run on a quiet
+  machine / real hardware — it is NOT part of `npm run verify`.
+
 ### Optimizations applied
 
 - P1 DPR caps desktop `[1,1.5]`, mobile `[1,1.25]`; mobile far plane 60→24.
