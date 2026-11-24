@@ -251,4 +251,50 @@ describe('RoomScene headless render', () => {
 
     await renderer.unmount();
   });
+
+  it('freezes authored-static transforms without moving the furniture', async () => {
+    const renderer = await ReactThreeTestRenderer.create(
+      <RoomScene
+        seed="static"
+        quality="mobile"
+        textureFactory={stubTextureFactory}
+      />,
+      { frameloop: 'never' },
+    );
+
+    // The headless renderer never draws a frame, so force one world-matrix
+    // pass (the real WebGLRenderer does this on every render).
+    renderer.scene.instance.updateMatrixWorld(true);
+
+    // A Parts mesh under the untransformed room-shell group: its world
+    // translation must equal the authored RoomPart position exactly.
+    const shell = renderer.scene.find(
+      (node) => node.type === 'Group' && node.props.name === 'room-shell',
+    );
+    const sample = shell.children.find((node) => node.type === 'Mesh');
+    expect(sample).toBeDefined();
+    const mesh = sample!.instance as THREE.Mesh;
+    expect(mesh.matrixAutoUpdate).toBe(false);
+    const authored = sample!.props.position as [number, number, number];
+    const world = new THREE.Vector3().setFromMatrixPosition(mesh.matrixWorld);
+    expect(world.x).toBeCloseTo(authored[0]);
+    expect(world.y).toBeCloseTo(authored[1]);
+    expect(world.z).toBeCloseTo(authored[2]);
+
+    // The ProjectCases lid groups animate in useFrame and MUST stay live.
+    const caseGroups = renderer.scene.findAll(
+      (node) =>
+        node.type === 'Group' &&
+        typeof node.props.name === 'string' &&
+        (node.props.name as string).startsWith('game-case-'),
+    );
+    expect(caseGroups.length).toBeGreaterThan(0);
+    const lid = caseGroups[0]!.children.find(
+      (node) => node.type === 'Group' && node.props.name === undefined,
+    );
+    expect(lid).toBeDefined();
+    expect((lid!.instance as THREE.Group).matrixAutoUpdate).toBe(true);
+
+    await renderer.unmount();
+  });
 });

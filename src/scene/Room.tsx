@@ -113,6 +113,17 @@ export function roomShadowSettings(quality: RoomQuality): {
 /* Placement constants live in ./placement so the camera viewpoints can
  * derive from the same source without a circular Room ↔ CameraRig import. */
 
+/**
+ * RoomPart transforms are authored static and never imperatively updated, so
+ * bake the TRS into the local matrix once at mount, then freeze it (R3F sets
+ * position/rotation/scale but does not call updateMatrix itself). The shared
+ * ref runs after applyProps, so the authored transform is already in place.
+ */
+const freezeStaticMatrix = (object: THREE.Object3D | null): void => {
+  if (!object) return;
+  object.updateMatrix();
+};
+
 function Parts({
   parts,
   materials,
@@ -128,6 +139,7 @@ function Parts({
       {parts.map((part) => (
         <mesh
           key={part.id}
+          ref={freezeStaticMatrix}
           geometry={part.geometry}
           material={materials[part.material]}
           position={part.position}
@@ -135,6 +147,7 @@ function Parts({
           scale={part.scale}
           castShadow={shadows}
           receiveShadow={shadows}
+          matrixAutoUpdate={false}
         />
       ))}
     </>
@@ -428,7 +441,11 @@ export function RoomScene({
         />
       )}
 
-      <group name="room-shell">
+      <group
+        name="room-shell"
+        ref={freezeStaticMatrix}
+        matrixAutoUpdate={false}
+      >
         <Parts
           parts={furniture.shell}
           materials={materials}
@@ -436,15 +453,27 @@ export function RoomScene({
         />
       </group>
 
-      <group name="rug" position={RUG_POSITION}>
+      <group
+        name="rug"
+        position={RUG_POSITION}
+        ref={freezeStaticMatrix}
+        matrixAutoUpdate={false}
+      >
         <mesh
+          ref={freezeStaticMatrix}
           geometry={furniture.rugGeometry}
           material={materials.rug}
           receiveShadow={keyLight}
+          matrixAutoUpdate={false}
         />
       </group>
 
-      <group name="desk" position={DESK_POSITION}>
+      <group
+        name="desk"
+        position={DESK_POSITION}
+        ref={freezeStaticMatrix}
+        matrixAutoUpdate={false}
+      >
         <Parts
           parts={furniture.desk}
           materials={materials}
@@ -465,12 +494,21 @@ export function RoomScene({
         />
         {/* Pickable monitor (commit 7): offset from the desk via the same
             constant the desktop-zoom camera derives its close-up from. */}
-        <group position={MONITOR_DESK_OFFSET}>
+        <group
+          position={MONITOR_DESK_OFFSET}
+          ref={freezeStaticMatrix}
+          matrixAutoUpdate={false}
+        >
           <DeskZone monitor={furniture.monitor} materials={materials} />
         </group>
         {/* Headphones draped on the bezel — sibling of the pickable monitor
             group so the prop never swallows the About-desktop pick. */}
-        <group name="prop-headphones" position={MONITOR_DESK_OFFSET}>
+        <group
+          name="prop-headphones"
+          position={MONITOR_DESK_OFFSET}
+          ref={freezeStaticMatrix}
+          matrixAutoUpdate={false}
+        >
           <Parts
             parts={furniture.props.monitor}
             materials={materials}
@@ -479,12 +517,22 @@ export function RoomScene({
         </group>
         {/* Pickable game cases (commit 8): the same RoomParts, now wrapped as
             five individually clickable groups with an open/flip lid animation. */}
-        <group position={[-0.15, DESK_TOP_HEIGHT + 0.035, 0.18]}>
+        <group
+          position={[-0.15, DESK_TOP_HEIGHT + 0.035, 0.18]}
+          ref={freezeStaticMatrix}
+          matrixAutoUpdate={false}
+        >
           <ProjectCases cases={furniture.cases} materials={materials} />
         </group>
       </group>
 
-      <group name="chair" position={CHAIR_POSITION} rotation={CHAIR_ROTATION}>
+      <group
+        name="chair"
+        position={CHAIR_POSITION}
+        rotation={CHAIR_ROTATION}
+        ref={freezeStaticMatrix}
+        matrixAutoUpdate={false}
+      >
         <Parts
           parts={furniture.chair}
           materials={materials}
@@ -496,6 +544,8 @@ export function RoomScene({
         name="pc-tower"
         position={TOWER_POSITION}
         rotation={TOWER_ROTATION}
+        ref={freezeStaticMatrix}
+        matrixAutoUpdate={false}
       >
         <Parts
           parts={furniture.tower}
@@ -511,7 +561,11 @@ export function RoomScene({
       </group>
 
       {/* Floor-level narrative props (world space): paper stack + cable coil. */}
-      <group name="floor-props">
+      <group
+        name="floor-props"
+        ref={freezeStaticMatrix}
+        matrixAutoUpdate={false}
+      >
         <Parts
           parts={furniture.props.floor}
           materials={materials}
@@ -521,7 +575,11 @@ export function RoomScene({
 
       {/* Instanced tins/jars (3b clutter family, world space): shelf crown,
           tower top, window sill. */}
-      <group name="clutter-tins">
+      <group
+        name="clutter-tins"
+        ref={freezeStaticMatrix}
+        matrixAutoUpdate={false}
+      >
         <ClutterFamily
           instances={furniture.clutter.tins}
           geometry={furniture.clutterGeometries.tin}
@@ -534,6 +592,8 @@ export function RoomScene({
         name="bookshelf"
         position={SHELF_POSITION}
         rotation={SHELF_ROTATION}
+        ref={freezeStaticMatrix}
+        matrixAutoUpdate={false}
       >
         <Parts
           parts={furniture.bookshelf.parts}
@@ -551,7 +611,12 @@ export function RoomScene({
         />
       </group>
 
-      <group name="floor-lamp" position={LAMP_POSITION}>
+      <group
+        name="floor-lamp"
+        position={LAMP_POSITION}
+        ref={freezeStaticMatrix}
+        matrixAutoUpdate={false}
+      >
         <Parts
           parts={furniture.lamp}
           materials={materials}
@@ -563,6 +628,8 @@ export function RoomScene({
         name="window"
         position={WINDOW_POSITION}
         rotation={WINDOW_ROTATION}
+        ref={freezeStaticMatrix}
+        matrixAutoUpdate={false}
       >
         <Parts
           parts={furniture.windowParts}
@@ -575,6 +642,8 @@ export function RoomScene({
         name="projector"
         position={PROJECTOR_POSITION}
         rotation={PROJECTOR_ROTATION}
+        ref={freezeStaticMatrix}
+        matrixAutoUpdate={false}
       >
         <Parts
           parts={furniture.projector}
@@ -582,15 +651,26 @@ export function RoomScene({
           shadows={keyLight}
         />
         {/* Additive light cone from the lens toward the screen. */}
-        <group position={[0, 0.075, -0.2]}>
+        <group
+          position={[0, 0.075, -0.2]}
+          ref={freezeStaticMatrix}
+          matrixAutoUpdate={false}
+        >
           <mesh
+            ref={freezeStaticMatrix}
             geometry={furniture.beam.geometry}
             material={materials[furniture.beam.material]}
+            matrixAutoUpdate={false}
           />
         </group>
       </group>
 
-      <group name="projector-screen" position={SCREEN_POSITION}>
+      <group
+        name="projector-screen"
+        position={SCREEN_POSITION}
+        ref={freezeStaticMatrix}
+        matrixAutoUpdate={false}
+      >
         {/* Commit 9: the static cloth is replaced by the live climate
             CanvasTexture (heatmap + today widget + attribution) with a year
             dial; the room-owned projector body + light cone above stay put. */}
@@ -600,9 +680,11 @@ export function RoomScene({
           deferUntilZone={quality !== 'desktop'}
         />
         <mesh
+          ref={freezeStaticMatrix}
           geometry={furniture.screenBar}
           material={materials.woodDark}
           position={[0, 0.62, -0.01]}
+          matrixAutoUpdate={false}
         />
       </group>
 
@@ -611,13 +693,20 @@ export function RoomScene({
           key={`frame-${index}`}
           name={`frame-${index}`}
           position={position}
+          ref={freezeStaticMatrix}
+          matrixAutoUpdate={false}
         >
           <Parts parts={parts} materials={materials} shadows={keyLight} />
         </group>
       ))}
 
       {/* CANONICAL diegetic nav (commit 4): framed, lettered and pickable. */}
-      <group name="wall-plaque" position={PLAQUE.position}>
+      <group
+        name="wall-plaque"
+        position={PLAQUE.position}
+        ref={freezeStaticMatrix}
+        matrixAutoUpdate={false}
+      >
         <WallPlaque parts={furniture.plaque} materials={materials} />
       </group>
     </PainterlyPass>
