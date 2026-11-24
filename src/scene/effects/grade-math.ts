@@ -22,11 +22,21 @@ export type Rgb = readonly [number, number, number];
  * shader's `luma` weights are Rec.601 — an artistic choice mirrored exactly
  * here for gradeLinear(). They are NOT the WCAG luminance coefficients; see
  * WCAG_LUMA below for contrast math.
+ *
+ * Commit 3b notes: the shadow tint carries the owner's subtle PURPLE lean and
+ * the highlights run warmer. The shader's two SPATIAL effects (4-tap edge
+ * darkening and tonal posterization) are deliberately NOT modeled here: they
+ * are functions of screen position/neighborhood, not of the pixel color, so
+ * they cannot enter a per-color contrast computation. Their impact is bounded
+ * by design — edge darkening only touches high-gradient pixels (flat interior
+ * fields, where text contrast is measured, keep full value) and the
+ * posterization step (1/16 mixed at uStroke ≤ 0.12) shifts any channel by at
+ * most ~0.004, well under the contrast contract's margins.
  */
 export const GRADE_CONSTANTS = {
   luma: [0.299, 0.587, 0.114] as const,
-  shadowTint: [0.04, 0.09, 0.1] as const,
-  highlightTint: [0.11, 0.07, 0.02] as const,
+  shadowTint: [0.065, 0.05, 0.11] as const,
+  highlightTint: [0.12, 0.075, 0.025] as const,
   baseSubtract: 0.04,
   desaturation: 0.92,
   contrast: 1.06,
@@ -54,7 +64,7 @@ export interface GradeParams {
   grade: number;
   /** uVignette (0.55 default). */
   vignette: number;
-  /** uGrain amplitude (0.05 default). */
+  /** uGrain amplitude (0.02 default — softened per owner feedback, 3b). */
   grain: number;
   /** vUv of the sampled pixel; [0.5, 0.5] is the vignette center. */
   uv: readonly [number, number];

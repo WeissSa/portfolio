@@ -15,6 +15,7 @@ import {
   createBookInstances,
   createBookshelf,
   createChair,
+  createClutterInstances,
   createLibraryBooks,
   createDesk,
   createFramedSilhouette,
@@ -33,7 +34,9 @@ import {
   disposeParts,
   geometryChecksum,
   MAX_BOOK_INSTANCES,
+  MAX_CLUTTER_INSTANCES,
   NARRATIVE_PROP_IDS,
+  paintEdgeAO,
   SPINE_LABEL_VERTICES,
   withPulledOutLabel,
   type RoomPart,
@@ -363,6 +366,77 @@ describe('authored silhouettes (art-overhaul commit 3a)', () => {
     };
     const envelopes = familyPrefixes.map(envelopeOf);
     expect(new Set(envelopes).size).toBe(7);
+  });
+});
+
+describe('instanced clutter + vertex AO (art-overhaul commit 3b)', () => {
+  it('curated families are deterministic, capped, and colored from tokens', () => {
+    const a = createClutterInstances('clut');
+    const b = createClutterInstances('clut');
+    expect(a).toEqual(b);
+    expect(a.pencils.length).toBeGreaterThanOrEqual(3);
+    expect(a.tins.length).toBeGreaterThanOrEqual(3);
+    expect(a.pencils.length + a.tins.length).toBeLessThanOrEqual(
+      MAX_CLUTTER_INSTANCES,
+    );
+    for (const instance of [...a.pencils, ...a.tins]) {
+      expect(instance.color).toMatch(/^#[0-9a-f]{6}$/i);
+      expect(instance.scale.every((s) => s > 0)).toBe(true);
+    }
+    // Pencils lean in the mug (euler set); unique scales, never clones.
+    expect(a.pencils.every((p) => p.rotation !== undefined)).toBe(true);
+    const scales = new Set(
+      [...a.pencils, ...a.tins].map((i) => i.scale.join(',')),
+    );
+    expect(scales.size).toBe(a.pencils.length + a.tins.length);
+  });
+
+  it('paintEdgeAO darkens boundary vertices, spares the interior', () => {
+    const plane = new THREE.PlaneGeometry(8, 7, 12, 10);
+    paintEdgeAO(plane, { falloff: 0.3, strength: 0.55 });
+    const color = plane.getAttribute('color') as THREE.BufferAttribute;
+    const position = plane.getAttribute('position');
+    expect(color).toBeDefined();
+    expect(color.count).toBe(position.count);
+    let min = Number.POSITIVE_INFINITY;
+    let max = 0;
+    let centerAo: number | null = null;
+    for (let i = 0; i < color.count; i += 1) {
+      const ao = color.getX(i);
+      // Neutral gray AO: r == g == b.
+      expect(color.getY(i)).toBeCloseTo(ao, 6);
+      expect(color.getZ(i)).toBeCloseTo(ao, 6);
+      expect(ao).toBeGreaterThanOrEqual(0.45 - 1e-6);
+      expect(ao).toBeLessThanOrEqual(1);
+      min = Math.min(min, ao);
+      max = Math.max(max, ao);
+      if (
+        Math.abs(position.getX(i)) < 0.1 &&
+        Math.abs(position.getY(i)) < 0.1
+      ) {
+        centerAo = ao;
+      }
+    }
+    expect(min).toBeCloseTo(0.45, 5); // corners: full AO strength
+    expect(max).toBe(1); // interior untouched
+    expect(centerAo).toBe(1);
+    plane.dispose();
+  });
+
+  it('paintEdgeAO is a no-op for degenerate geometry (no position data)', () => {
+    const empty = new THREE.BufferGeometry();
+    expect(paintEdgeAO(empty)).toBe(empty);
+    expect(empty.getAttribute('color')).toBeUndefined();
+  });
+
+  it('the room shell floor uses the vertex-color AO material', () => {
+    const floor = createRoomShell().find((p) => p.id === 'floor');
+    expect(floor?.material).toBe('floor');
+    expect(floor?.geometry.getAttribute('color')).toBeDefined();
+    // Subdivided so the AO gradient has vertices to paint on.
+    expect(
+      floor?.geometry.getAttribute('position')?.count ?? 0,
+    ).toBeGreaterThan(100);
   });
 });
 

@@ -233,6 +233,41 @@
 }
 
 /*
+ * Mobile grade parity (art-overhaul commit 3b): the WebGL painterly pass
+ * (grain/vignette/grade) is desktop-only, so mobile/low tiers used to render
+ * RAW ungraded primitives. This zero-GPU CSS overlay approximates the desktop
+ * grade mood on the canvas layer: a warm hue wash from above, a purple-tinted
+ * corner vignette (owner palette), matching the GLSL shadow/highlight tints.
+ * It is pointer-transparent, aria-hidden, sits above the canvas (later in DOM
+ * at equal z-index) and below the DOM shell (.app-3d .app-shell z-index:1),
+ * and fades in together with the scene layer.
+ */
+.scene-grade-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 520ms ease-out;
+  background:
+    radial-gradient(
+      120% 100% at 50% 42%,
+      transparent 52%,
+      color-mix(in srgb, var(--p5-link) 9%, transparent) 88%,
+      color-mix(in srgb, var(--p5-black) 38%, transparent) 100%
+    ),
+    linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--p5-yellow) 6%, transparent),
+      transparent 46%
+    );
+}
+
+.scene-grade-overlay--ready {
+  opacity: 1;
+}
+
+/*
  * Commit 6: only a fine pointer in 3D mode can pick books. The layer stays
  * aria-hidden and the canvas has no tabindex, so enabling pointer events never
  * makes the scene a keyboard/screen-reader requirement.

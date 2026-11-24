@@ -15,6 +15,7 @@ import type { TextureKey } from './textures';
 export type MaterialKey =
   | 'wood'
   | 'woodDark'
+  | 'floor'
   | 'plaster'
   | 'brass'
   | 'paper'
@@ -96,6 +97,17 @@ export function createRoomMaterials(
       color: textures.wood ? DESIGN_TOKENS.material.woodTint : PALETTE.woodDark,
       roughness: 0.85,
       metalness: 0.04,
+    }),
+    // The room floor shares the wood map but adds baked vertex-color edge AO
+    // (commit 3b) so the plane grounds against the walls/skirting.
+    floor: standard({
+      map: textures.wood,
+      color: textures.wood
+        ? DESIGN_TOKENS.material.textureNeutral
+        : PALETTE.woodMid,
+      roughness: 0.85,
+      metalness: 0.04,
+      vertexColors: true,
     }),
     plaster: standard({
       map: withRepeat(textures.plaster, [2.5, 1.5], clones),

@@ -26,3 +26,26 @@ describe('SceneLayer loading fallback', () => {
     expect(screen.getByText('Loading the 3D room')).toBeInTheDocument();
   });
 });
+
+describe('SceneLayer mobile grade parity (art-overhaul commit 3b)', () => {
+  it('renders the CSS grade overlay for the mobile tier, hidden until ready', () => {
+    renderWithProviders(<SceneLayer quality="mobile" />);
+    const overlay = screen.getByTestId('scene-grade-overlay');
+    expect(overlay).toBeInTheDocument();
+    expect(overlay).toHaveAttribute('aria-hidden', 'true');
+    // Room is mocked as never-resolving, so the layer is still loading: the
+    // overlay must NOT be faded in before the canvas it grades exists.
+    expect(overlay.className).not.toContain('scene-grade-overlay--ready');
+    expect(overlay.className).toContain('scene-grade-overlay');
+  });
+
+  it('renders the overlay for the low tier too (no GLSL pass there either)', () => {
+    renderWithProviders(<SceneLayer quality="low" />);
+    expect(screen.getByTestId('scene-grade-overlay')).toBeInTheDocument();
+  });
+
+  it('renders NO overlay on desktop — the GLSL painterly pass grades there', () => {
+    renderWithProviders(<SceneLayer quality="desktop" />);
+    expect(screen.queryByTestId('scene-grade-overlay')).toBeNull();
+  });
+});

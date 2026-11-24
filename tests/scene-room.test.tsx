@@ -28,11 +28,23 @@ const stubTextureFactory: TextureFactory = () => new THREE.Texture();
 describe('room materials', () => {
   it('creates every material key without textures (graceful degradation)', () => {
     const materials = createRoomMaterials({});
-    expect(Object.keys(materials).length).toBe(19);
+    expect(Object.keys(materials).length).toBe(20);
     for (const material of Object.values(materials)) {
       expect(material).toBeInstanceOf(THREE.Material);
     }
     expect(() => disposeRoomMaterials(materials)).not.toThrow();
+  });
+
+  it('gives the floor vertex-color AO its own material (commit 3b)', () => {
+    const materials = createRoomMaterials({});
+    const floor = materials.floor as THREE.MeshStandardMaterial;
+    expect(floor.vertexColors).toBe(true);
+    // The shared wood material must NOT opt into vertex colors: most wood
+    // geometry carries no color attribute and would render black.
+    expect((materials.wood as THREE.MeshStandardMaterial).vertexColors).toBe(
+      false,
+    );
+    disposeRoomMaterials(materials);
   });
 
   it('wires texture maps when provided', () => {
@@ -50,7 +62,7 @@ describe('room materials', () => {
     const materials = createRoomMaterials({ wood, plaster });
 
     // Non-enumerable: key count and Object.values() loop stay unchanged.
-    expect(Object.keys(materials)).toHaveLength(19);
+    expect(Object.keys(materials)).toHaveLength(20);
     const clones = materials.textureClones ?? [];
     expect(clones).toHaveLength(2);
     expect((materials.woodDark as THREE.MeshStandardMaterial).map).toBe(
@@ -75,6 +87,8 @@ describe('painterly post pass (§3.5)', () => {
     expect(defaults.uGrain.value).toBe(PAINTERLY_DEFAULTS.grain);
     expect(defaults.uVignette.value).toBe(PAINTERLY_DEFAULTS.vignette);
     expect(defaults.uGrade.value).toBe(PAINTERLY_DEFAULTS.grade);
+    expect(defaults.uEdge.value).toBe(PAINTERLY_DEFAULTS.edge);
+    expect(defaults.uStroke.value).toBe(PAINTERLY_DEFAULTS.stroke);
     expect(defaults.uTime.value).toBe(0);
     const custom = createPainterlyUniforms({ grain: 0.1 });
     expect(custom.uGrain.value).toBe(0.1);
@@ -93,6 +107,11 @@ describe('painterly post pass (§3.5)', () => {
     expect(PAINTERLY_FRAGMENT_SHADER).toContain('uVignette');
     expect(PAINTERLY_FRAGMENT_SHADER).toContain('uGrain');
     expect(PAINTERLY_FRAGMENT_SHADER).toContain('uGrade');
+    // Commit 3b grade upgrades: edge darkening + posterized paint-stroke feel.
+    expect(PAINTERLY_FRAGMENT_SHADER).toContain('uEdge');
+    expect(PAINTERLY_FRAGMENT_SHADER).toContain('uStroke');
+    // The owner's purple shadow tint (r<b, g lowest) replaces the teal lean.
+    expect(PAINTERLY_FRAGMENT_SHADER).toContain('vec3 shadowTint = vec3(');
   });
 
   it('encodes the final linear color to output space (review fix A)', () => {
@@ -141,22 +160,27 @@ describe('RoomScene headless render', () => {
       expect((light.instance as THREE.Light).castShadow).toBe(false);
     }
 
-    // THREE.InstancedMesh keeps .type === 'Mesh'; detect via the flag. Two:
-    // decorative filler books + the 13 pickable Library post-books (commit 6).
+    // THREE.InstancedMesh keeps .type === 'Mesh'; detect via the flag. Four
+    // (commit 3b): decorative filler books, the 13 pickable Library
+    // post-books, plus the two curated clutter families (pencils, tins).
     const instanced = renderer.scene.findAll((node) =>
       Boolean(
         (node.instance as THREE.InstancedMesh | undefined)?.isInstancedMesh,
       ),
     );
-    expect(instanced).toHaveLength(2);
+    expect(instanced).toHaveLength(4);
     const heroMesh = instanced.find(
       (node) =>
         (node.instance as THREE.InstancedMesh | undefined)?.count === 13,
     );
     expect(heroMesh).toBeDefined();
-    expect(
-      (instanced[0]?.instance as THREE.InstancedMesh | undefined)?.count,
-    ).toBeGreaterThan(0);
+    const counts = instanced
+      .map((node) => (node.instance as THREE.InstancedMesh).count)
+      .sort((a, b) => a - b);
+    // filler books (>0), pencils (3), tins (4), hero books (13)
+    expect(counts[0]).toBeGreaterThan(0);
+    expect(counts).toContain(3);
+    expect(counts).toContain(4);
 
     const groups = renderer.scene.findAll(
       (node) => node.type === 'Group' && typeof node.props.name === 'string',
@@ -169,6 +193,7 @@ describe('RoomScene headless render', () => {
       'chair',
       'pc-tower',
       'floor-props',
+      'clutter-tins',
       'bookshelf',
       'library-books',
       'floor-lamp',

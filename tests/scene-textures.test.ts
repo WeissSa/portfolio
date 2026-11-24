@@ -110,6 +110,20 @@ describe('texture budgets (§3.8/§4.3)', () => {
     }
   });
 
+  it('rich plans paint curved brush strokes via the Bézier op (3b)', () => {
+    const curveCount = (plan: TexturePlan): number =>
+      plan.ops.filter((op) => op.kind === 'curve').length;
+    // Wood: 3 grain swirls per plank × 4 planks; plaster: curved cracks
+    // (4 × 6 segments) + 12 trowel strokes; brass: 10 edge-wear arcs.
+    expect(curveCount(plans.wood)).toBeGreaterThanOrEqual(8);
+    expect(curveCount(plans.plaster)).toBeGreaterThanOrEqual(20);
+    expect(curveCount(plans.brass)).toBeGreaterThanOrEqual(8);
+    // The richer plans still respect the op budget (asserted above too).
+    for (const plan of [plans.wood, plans.plaster, plans.brass]) {
+      expect(plan.ops.length).toBeLessThanOrEqual(MAX_TEXTURE_OPS);
+    }
+  });
+
   it('every plan starts with an opaque base fill', () => {
     for (const plan of Object.values(plans)) {
       expect(plan.ops[0]?.kind).toBe('fill');

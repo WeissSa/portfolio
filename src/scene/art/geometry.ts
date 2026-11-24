@@ -88,17 +88,68 @@ function part(
 
 /* ---------------------------------------------------------------- shell -- */
 
+/**
+ * Baked vertex-color ambient occlusion (art-overhaul commit 3b): darkens
+ * vertices that sit close to the geometry's bounding-box edges, so big flat
+ * surfaces (the floor) read as grounded against the walls instead of floating
+ * under a flat light. Writes an RGB `color` attribute in [1-strength, 1];
+ * the consuming material must set vertexColors: true. Returns the same
+ * geometry for chaining; pure CPU math, unit-testable headlessly.
+ */
+export function paintEdgeAO(
+  geometry: THREE.BufferGeometry,
+  options: { falloff?: number; strength?: number } = {},
+): THREE.BufferGeometry {
+  const falloff = options.falloff ?? 0.3;
+  const strength = options.strength ?? 0.5;
+  geometry.computeBoundingBox();
+  const bounds = geometry.boundingBox ?? new THREE.Box3();
+  const size = bounds.getSize(new THREE.Vector3());
+  const position = geometry.getAttribute('position');
+  // Flat geometry (a plane's zero-thickness axis) must NOT count as "at the
+  // edge" — only non-degenerate extents measure distance-to-edge, and the
+  // falloff band is a fraction of the smaller real extent so wide floors get
+  // a proportionate darkened border.
+  const spans = [size.x, size.y, size.z].filter((span) => span > 1e-4);
+  if (!position || position.count === 0 || spans.length === 0) {
+    return geometry;
+  }
+  const colors = new Float32Array(position.count * 3);
+  const band = Math.max(1e-6, falloff * Math.min(...spans) * 0.5);
+  for (let i = 0; i < position.count; i += 1) {
+    const x = position.getX(i);
+    const y = position.getY(i);
+    const z = position.getZ(i);
+    let distance = Number.POSITIVE_INFINITY;
+    if (size.x > 1e-4) {
+      distance = Math.min(distance, x - bounds.min.x, bounds.max.x - x);
+    }
+    if (size.y > 1e-4) {
+      distance = Math.min(distance, y - bounds.min.y, bounds.max.y - y);
+    }
+    if (size.z > 1e-4) {
+      distance = Math.min(distance, z - bounds.min.z, bounds.max.z - z);
+    }
+    const ao = 1 - strength * (1 - Math.min(1, Math.max(0, distance / band)));
+    colors[i * 3] = ao;
+    colors[i * 3 + 1] = ao;
+    colors[i * 3 + 2] = ao;
+  }
+  geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  return geometry;
+}
+
 /** Floor, three walls (front stays open for the camera), ceiling, skirting. */
 export function createRoomShell(dims: RoomDims = ROOM_DIMS): RoomPart[] {
   const { width: w, depth: d, height: h } = dims;
+  // The floor gets a subdivided plane + baked edge AO (commit 3b) so the room
+  // grounds against the walls; the 'floor' material enables vertexColors.
+  const floorGeometry = paintEdgeAO(new THREE.PlaneGeometry(w, d, 12, 10), {
+    falloff: 0.3,
+    strength: 0.55,
+  });
   const parts: RoomPart[] = [
-    part(
-      'floor',
-      new THREE.PlaneGeometry(w, d),
-      'wood',
-      [0, 0, 0],
-      [-Math.PI / 2, 0, 0],
-    ),
+    part('floor', floorGeometry, 'floor', [0, 0, 0], [-Math.PI / 2, 0, 0]),
     part(
       'ceiling',
       new THREE.PlaneGeometry(w, d),
@@ -618,6 +669,97 @@ export function createNarrativeProps(seed: string | number): NarrativeProps {
   ];
 
   return { desk, monitor, floor, tower, shelf };
+}
+
+/* ----------------------------------------------------- instanced clutter -- */
+
+/**
+ * One instance of a clutter family (art-overhaul commit 3b): same shape as a
+ * BookInstance plus a full euler, rendered via ONE InstancedMesh per family
+ * with per-instance color (§3.8 instancing discipline — repeated small items
+ * are instanced; the 7 narrative props above stay authored singles).
+ */
+export interface ClutterInstance {
+  position: Vec3;
+  /** Euler XYZ radians (tilt/lean), optional. */
+  rotation?: Vec3;
+  scale: Vec3;
+  color: string;
+}
+
+export interface ClutterFamilies {
+  /** Pencils standing in the desk mug (desk-group LOCAL coordinates). */
+  pencils: ClutterInstance[];
+  /** Small tins/jars: shelf crown, tower top, window sill (WORLD space). */
+  tins: ClutterInstance[];
+}
+
+/** Hard cap across all clutter families (draw-call + vertex discipline). */
+export const MAX_CLUTTER_INSTANCES = 24;
+
+/**
+ * Curated instanced clutter. Positions are art-directed anchors (not scatter):
+ * three pencils lean in the mug under the lamp pool; tins sit on the shelf
+ * crown beside the flask, on the PC tower top and on the window sill. The
+ * seed only drives small hue/lean variation between instances.
+ */
+export function createClutterInstances(seed: string | number): ClutterFamilies {
+  const rng = createRng(
+    typeof seed === 'string' ? `${seed}:clutter` : seed + 145,
+  );
+  const mugY = DESK_TOP_HEIGHT + 0.035;
+  const pencils: ClutterInstance[] = [
+    {
+      position: [-0.615, mugY + 0.045, 0.135],
+      rotation: [0.18, 0.3, -0.16],
+      scale: [0.007, 0.095, 0.007],
+      color: PALETTE.brassLight,
+    },
+    {
+      position: [-0.585, mugY + 0.05, 0.152],
+      rotation: [-0.21, -0.4, 0.12],
+      scale: [0.006, 0.105, 0.006],
+      color: PALETTE.woodWarm,
+    },
+    {
+      position: [-0.6, mugY + 0.04, 0.155],
+      rotation: [0.1, 1.2, -0.26],
+      scale: [0.008, 0.085, 0.008],
+      color: rng.chance(0.5) ? PALETTE.p5Red : PALETTE.brassDark,
+    },
+  ];
+  const tins: ClutterInstance[] = [
+    // Shelf crown, right of the flask (world-space; shelf group is rotated).
+    {
+      position: [-3.59, 2.33, 0.16],
+      scale: [0.05, 0.07, 0.05],
+      color: PALETTE.brassDark,
+    },
+    {
+      position: [-3.5, 2.325, -0.06],
+      scale: [0.04, 0.06, 0.04],
+      color: PALETTE.metalDark,
+    },
+    // On the PC tower top.
+    {
+      position: [3.29, 0.555, -2.95],
+      scale: [0.045, 0.065, 0.045],
+      color: PALETTE.brass,
+    },
+    // On the window sill.
+    {
+      position: [3.86, 0.9, -0.7],
+      scale: [0.05, 0.075, 0.05],
+      color: PALETTE.rugRust,
+    },
+  ];
+  const total = pencils.length + tins.length;
+  if (total > MAX_CLUTTER_INSTANCES) {
+    throw new Error(
+      `createClutterInstances: ${total} instances exceed the cap ${MAX_CLUTTER_INSTANCES}`,
+    );
+  }
+  return { pencils, tins };
 }
 
 /* ------------------------------------------------------------ bookshelf -- */

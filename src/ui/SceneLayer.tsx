@@ -32,6 +32,13 @@ export function SceneLayer({ quality }: { quality: RoomQuality }) {
   // the canvas is never focusable; keyboard/SR users use the DOM list + overlay.
   const pointerFine = usePortfolioStore((state) => state.pointerFine);
   const interactive = ready && pointerFine;
+  // Mobile grade parity (art-overhaul commit 3b): the GLSL painterly pass is
+  // desktop-only, so mobile/low tiers used to show RAW ungraded primitives.
+  // A zero-GPU CSS radial-gradient vignette + warm/purple hue overlay (p5.css
+  // `.scene-grade-overlay`) approximates the desktop grade mood. It renders
+  // AFTER the Suspense block so it stacks above the canvas at equal z-index,
+  // stays pointer-transparent, aria-hidden, and fades in with the room.
+  const needsCssGrade = quality !== 'desktop';
 
   return (
     <>
@@ -50,6 +57,15 @@ export function SceneLayer({ quality }: { quality: RoomQuality }) {
           <Room quality={quality} className="scene-canvas" onReady={onReady} />
         </div>
       </Suspense>
+      {needsCssGrade && (
+        <div
+          data-testid="scene-grade-overlay"
+          className={`scene-grade-overlay${
+            ready ? ' scene-grade-overlay--ready' : ''
+          }`}
+          aria-hidden="true"
+        />
+      )}
     </>
   );
 }

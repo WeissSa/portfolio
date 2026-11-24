@@ -16,10 +16,11 @@
  *
  * Assumptions are explicit: lamp k is a relative illumination multiplier on
  * the linear input, vignette is the shipped uVignette=0.55 sampled at vUv,
- * grain is uGrain=0.05 × a hash sample in [-0.5, 0.5]. A corner vignette
- * genuinely compresses contrast; the known sub-3 brass-border case there is
- * recorded (not hidden) below — DOM borders stay ungraded and use the
- * tokenized 1–2px brass panel border (ink/panel themselves are only 1.15:1).
+ * grain is the SOFTENED uGrain=0.02 (commit 3b, owner feedback) × a hash
+ * sample in [-0.5, 0.5]. A corner vignette genuinely compresses contrast; the
+ * known sub-3 brass-border case there is recorded (not hidden) below — DOM
+ * borders stay ungraded and use the tokenized 1–2px brass panel border
+ * (ink/panel themselves are only 1.15:1).
  */
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -284,7 +285,7 @@ export const PAIR_TABLE: readonly Pair[] = [
   },
 ];
 
-const GRADE_DEFAULTS = { grade: 0.55, vignette: 0.55, grain: 0.05 } as const;
+const GRADE_DEFAULTS = { grade: 0.55, vignette: 0.55, grain: 0.02 } as const;
 const LAMPS = [LAMP_K.dim, 1, LAMP_K.bright] as const;
 const UVS: readonly (readonly [number, number])[] = [
   [0.5, 0.5],
@@ -293,6 +294,13 @@ const UVS: readonly (readonly [number, number])[] = [
   [0, 1],
   [1, 0],
 ];
+/**
+ * hash21() samples span [-0.5, 0.5]; multiplied by the SOFTENED uGrain=0.02
+ * (owner feedback 2026-11-23, commit 3b — was 0.05) the effective grain
+ * extremes are now ±0.01 linear instead of ±0.025. The sample bounds stay at
+ * the hash function's full range so the extremes re-derive automatically from
+ * whatever amplitude ships.
+ */
 const GRAINS = [-0.5, 0, 0.5] as const;
 
 function gradedWorst(pair: Pair): number {
@@ -521,6 +529,17 @@ describe('grade math <-> GLSL shader parity', () => {
       vignette: PAINTERLY_DEFAULTS.vignette,
       grain: PAINTERLY_DEFAULTS.grain,
     });
+  });
+
+  it('enforces the softened film-grain ceiling (owner feedback 2026-11-23)', () => {
+    // "kinda grainy" — the amplitude was softened 0.05 → 0.02 in commit 3b.
+    // This numeric ceiling makes re-hardening the grain a CI failure until an
+    // explicit new decision raises it (and re-derives the extremes above).
+    expect(PAINTERLY_DEFAULTS.grain).toBeLessThanOrEqual(0.02);
+    expect(GRADE_DEFAULTS.grain).toBe(PAINTERLY_DEFAULTS.grain);
+    // The softened extremes must still be sample-scale noise, never a wash:
+    // worst-case grain shift (0.5 × amplitude) stays under 0.015 linear.
+    expect(0.5 * GRADE_DEFAULTS.grain).toBeLessThanOrEqual(0.015);
   });
 
   it('is deterministic, pure, and finite across the sampled grid', () => {

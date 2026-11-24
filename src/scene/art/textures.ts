@@ -252,6 +252,28 @@ export function planWood(seed: string | number, size = 512): TexturePlan {
         alpha: 0.5,
       });
     }
+    // Curved grain swirls (commit 3b): cubic Bézier strokes bowing across the
+    // plank, layered over the straight grain — growth rings, not ruler lines.
+    for (let c = 0; c < 3; c += 1) {
+      const sx = rng.range(-20, size * 0.6);
+      const sy = y0 + rng.range(plankHeight * 0.15, plankHeight * 0.85);
+      const len = rng.range(size * 0.25, size * 0.5);
+      const bow = rng.range(6, 22) * (rng.chance(0.5) ? 1 : -1);
+      ops.push({
+        kind: 'curve',
+        x1: sx,
+        y1: sy,
+        cx1: sx + len * 0.33,
+        cy1: sy + bow,
+        cx2: sx + len * 0.66,
+        cy2: sy - bow * 0.6,
+        x2: sx + len,
+        y2: sy + rng.range(-3, 3),
+        width: rng.range(1, 2.4),
+        color: rng.chance(0.5) ? PALETTE.woodGrain : PALETTE.woodWarm,
+        alpha: rng.range(0.07, 0.16),
+      });
+    }
   }
   ops.push(edgeDarken(0.4));
   return { name: 'wood', width: size, height: size, ops };
@@ -280,7 +302,8 @@ export function planPlaster(seed: string | number, size = 512): TexturePlan {
     alphaRange: [0.03, 0.1],
     shade: 0.12,
   });
-  // Hairline cracks.
+  // Hairline cracks — curved Bézier segments (commit 3b) read as settling
+  // plaster, not ruler lines.
   for (let c = 0; c < 4; c += 1) {
     let x = rng.range(0, size);
     let y = rng.range(0, size);
@@ -288,9 +311,11 @@ export function planPlaster(seed: string | number, size = 512): TexturePlan {
       const nx = x + rng.range(-40, 40);
       const ny = y + rng.range(10, 50);
       ops.push({
-        kind: 'line',
+        kind: 'curve',
         x1: x,
         y1: y,
+        cx1: x + rng.range(-24, 24),
+        cy1: y + (ny - y) * 0.5,
         x2: nx,
         y2: ny,
         width: 1,
@@ -300,6 +325,24 @@ export function planPlaster(seed: string | number, size = 512): TexturePlan {
       x = nx;
       y = ny;
     }
+  }
+  // Broad curved trowel strokes layered over the mottling (commit 3b): the
+  // aged-painted plaster now carries the sweep of the plasterer's float.
+  for (let t = 0; t < 12; t += 1) {
+    const tx = rng.range(-40, size);
+    const ty = rng.range(0, size);
+    ops.push({
+      kind: 'curve',
+      x1: tx,
+      y1: ty,
+      cx1: tx + rng.range(30, 90),
+      cy1: ty + rng.range(-40, 40),
+      x2: tx + rng.range(80, 180),
+      y2: ty + rng.range(-30, 30),
+      width: rng.range(5, 13),
+      color: shadeHex(base, rng.range(-0.05, 0.05)),
+      alpha: rng.range(0.03, 0.07),
+    });
   }
   ops.push(edgeDarken(0.35));
   return { name: 'plaster', width: size, height: size, ops };
@@ -334,6 +377,26 @@ export function planBrass(seed: string | number, size = 256): TexturePlan {
       r: rng.range(4, 18),
       color: PALETTE.plasterDark,
       alpha: rng.range(0.04, 0.1),
+    });
+  }
+  // Edge wear (commit 3b): bright worn arcs hugging the top/bottom edges —
+  // brushed brass loses its patina first where hands and frames rub.
+  for (let e = 0; e < 10; e += 1) {
+    const top = rng.chance(0.5);
+    const ey = top ? rng.range(2, 26) : size - rng.range(2, 26);
+    const ex = rng.range(-20, size * 0.6);
+    const len = rng.range(size * 0.2, size * 0.55);
+    ops.push({
+      kind: 'curve',
+      x1: ex,
+      y1: ey,
+      cx1: ex + len * 0.5,
+      cy1: ey + (top ? 1 : -1) * rng.range(4, 16),
+      x2: ex + len,
+      y2: ey + rng.range(-4, 4),
+      width: rng.range(1, 3),
+      color: rng.chance(0.6) ? PALETTE.brassLight : PALETTE.brassDark,
+      alpha: rng.range(0.12, 0.32),
     });
   }
   ops.push(edgeDarken(0.3));

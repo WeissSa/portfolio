@@ -46,31 +46,60 @@ uniform float uTime;
 uniform float uGrain;
 uniform float uVignette;
 uniform float uGrade;
+uniform float uEdge;
+uniform float uStroke;
 varying vec2 vUv;
 
 float hash21(vec2 p) {
   return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
 }
 
+// Shader-grade luma (Rec.601 — an artistic choice; WCAG math lives in
+// grade-math.ts with Rec.709 and is kept strictly separate).
+float luma601(vec3 c) {
+  return dot(c, vec3(0.299, 0.587, 0.114));
+}
+
 void main() {
   vec3 color = texture2D(tDiffuse, vUv).rgb;
-  float luma = dot(color, vec3(0.299, 0.587, 0.114));
+  float luma = luma601(color);
 
-  // Oil-painting grade: teal-ish shadows, warm sepia highlights (Dishonored).
-  vec3 shadowTint = vec3(0.04, 0.09, 0.10);
-  vec3 highlightTint = vec3(0.11, 0.07, 0.02);
+  // Oil-painting grade (commit 3b): PURPLE-tinted shadows + warmer sepia
+  // highlights — the owner's unified Dishonored+purple palette carried into
+  // the grade itself. Shadow tint loses the old teal lean (b: 0.10 -> 0.11,
+  // g: 0.09 -> 0.05, r: 0.04 -> 0.065).
+  vec3 shadowTint = vec3(0.065, 0.05, 0.11);
+  vec3 highlightTint = vec3(0.12, 0.075, 0.025);
   vec3 graded = color + uGrade * (shadowTint * (1.0 - luma) + highlightTint * luma - 0.04 * color);
 
   // Gentle desaturation + S-curve contrast, like aged varnish.
-  float gradedLuma = dot(graded, vec3(0.299, 0.587, 0.114));
+  float gradedLuma = luma601(graded);
   graded = mix(vec3(gradedLuma), graded, 0.92);
   graded = (graded - 0.5) * 1.06 + 0.5;
+
+  // Paint-stroke feel (commit 3b): subtle tonal posterization toward banded
+  // oil paint. Amplitude is bounded (step 1/16, mixed at uStroke) so text
+  // contrast stays inside the graded-contrast contract's noise floor.
+  graded = mix(graded, (floor(graded * 16.0) + 0.5) / 16.0, uStroke);
+
+  // Edge darkening (commit 3b): a 4-tap luma gradient darkens drawn edges,
+  // like ink rubbed into the contours of a painting. Interior flat fields
+  // (gradient ~ 0) are untouched, so large-area contrast is preserved.
+  vec2 texel = 1.0 / uResolution;
+  float lumaN = luma601(texture2D(tDiffuse, vUv + vec2(0.0, texel.y)).rgb);
+  float lumaS = luma601(texture2D(tDiffuse, vUv - vec2(0.0, texel.y)).rgb);
+  float lumaE = luma601(texture2D(tDiffuse, vUv + vec2(texel.x, 0.0)).rgb);
+  float lumaW = luma601(texture2D(tDiffuse, vUv - vec2(texel.x, 0.0)).rgb);
+  float edge = abs(lumaN - luma) + abs(lumaS - luma) + abs(lumaE - luma) + abs(lumaW - luma);
+  graded *= 1.0 - uEdge * clamp(edge * 1.6, 0.0, 1.0);
 
   // Vignette.
   vec2 q = vUv - 0.5;
   graded *= clamp(1.0 - uVignette * dot(q, q) * 1.9, 0.0, 1.0);
 
-  // Animated film grain (slow shimmer, photosensitivity-safe amplitude).
+  // Animated film grain (slow shimmer). SOFTENED per owner feedback
+  // 2026-11-23 ("kinda grainy"): default amplitude 0.05 -> 0.02, and the
+  // grade-contrast test asserts the numeric ceiling so it cannot re-harden.
   float grain = hash21(vUv * uResolution + fract(uTime * 0.7) * 191.0);
   graded += (grain - 0.5) * uGrain;
 
@@ -89,17 +118,31 @@ export interface PainterlyUniforms {
   uGrain: { value: number };
   uVignette: { value: number };
   uGrade: { value: number };
+  uEdge: { value: number };
+  uStroke: { value: number };
 }
 
 export const PAINTERLY_DEFAULTS = {
-  grain: 0.05,
+  /** Owner feedback 2026-11-23: softened from 0.05 — do NOT re-harden
+   *  without a new decision (grade-contrast.test.ts pins this ceiling). */
+  grain: 0.02,
   vignette: 0.55,
   grade: 0.55,
+  /** Edge-darkening amplitude (commit 3b). */
+  edge: 0.16,
+  /** Posterization/"brush stroke" mix (commit 3b). */
+  stroke: 0.12,
 } as const;
 
 /** Plain-data uniform factory (unit-testable without a GL context). */
 export function createPainterlyUniforms(
-  overrides: Partial<{ grain: number; vignette: number; grade: number }> = {},
+  overrides: Partial<{
+    grain: number;
+    vignette: number;
+    grade: number;
+    edge: number;
+    stroke: number;
+  }> = {},
 ): PainterlyUniforms {
   return {
     tDiffuse: { value: null },
@@ -108,6 +151,8 @@ export function createPainterlyUniforms(
     uGrain: { value: overrides.grain ?? PAINTERLY_DEFAULTS.grain },
     uVignette: { value: overrides.vignette ?? PAINTERLY_DEFAULTS.vignette },
     uGrade: { value: overrides.grade ?? PAINTERLY_DEFAULTS.grade },
+    uEdge: { value: overrides.edge ?? PAINTERLY_DEFAULTS.edge },
+    uStroke: { value: overrides.stroke ?? PAINTERLY_DEFAULTS.stroke },
   };
 }
 
@@ -128,6 +173,8 @@ export interface PainterlyPassProps {
   grain?: number;
   vignette?: number;
   grade?: number;
+  edge?: number;
+  stroke?: number;
   children?: ReactNode;
 }
 
@@ -136,11 +183,19 @@ export function PainterlyPass({
   grain = PAINTERLY_DEFAULTS.grain,
   vignette = PAINTERLY_DEFAULTS.vignette,
   grade = PAINTERLY_DEFAULTS.grade,
+  edge = PAINTERLY_DEFAULTS.edge,
+  stroke = PAINTERLY_DEFAULTS.stroke,
   children,
 }: PainterlyPassProps): ReactNode {
   if (!enabled) return children ?? null;
   return (
-    <PainterlyPassInner grain={grain} vignette={vignette} grade={grade}>
+    <PainterlyPassInner
+      grain={grain}
+      vignette={vignette}
+      grade={grade}
+      edge={edge}
+      stroke={stroke}
+    >
       {children}
     </PainterlyPassInner>
   );
@@ -150,6 +205,8 @@ function PainterlyPassInner({
   grain = PAINTERLY_DEFAULTS.grain,
   vignette = PAINTERLY_DEFAULTS.vignette,
   grade = PAINTERLY_DEFAULTS.grade,
+  edge = PAINTERLY_DEFAULTS.edge,
+  stroke = PAINTERLY_DEFAULTS.stroke,
   children,
 }: Omit<PainterlyPassProps, 'enabled'>): ReactNode {
   const gl = useThree((state) => state.gl);
@@ -158,7 +215,7 @@ function PainterlyPassInner({
   const size = useThree((state) => state.size);
 
   const uniforms = useMemo(
-    () => createPainterlyUniforms({ grain, vignette, grade }),
+    () => createPainterlyUniforms({ grain, vignette, grade, edge, stroke }),
     // Strength changes are rare (tier switches); rebuilding the material is fine.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
@@ -167,7 +224,9 @@ function PainterlyPassInner({
     uniforms.uGrain.value = grain;
     uniforms.uVignette.value = vignette;
     uniforms.uGrade.value = grade;
-  }, [grain, vignette, grade, uniforms]);
+    uniforms.uEdge.value = edge;
+    uniforms.uStroke.value = stroke;
+  }, [grain, vignette, grade, edge, stroke, uniforms]);
 
   // Half-float + MSAA needs EXT_color_buffer_float. Query the live context and
   // default to the 8-bit fallback if the query is unavailable/throws (mock or

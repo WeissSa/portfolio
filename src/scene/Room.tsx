@@ -42,6 +42,7 @@ import {
   createBookInstances,
   createBookshelf,
   createChair,
+  createClutterInstances,
   createDesk,
   createFramedSilhouette,
   createGameCases,
@@ -58,6 +59,7 @@ import {
   disposeParts,
   LAMP_BULB_LOCAL,
   type BookInstance,
+  type ClutterInstance,
   type RoomPart,
   type Vec3,
 } from './art/geometry';
@@ -162,6 +164,54 @@ function Books({
   );
 }
 
+/**
+ * One InstancedMesh per repeated small-item family (art-overhaul commit 3b):
+ * the caller passes a UNIT geometry (instances carry their own scale/euler)
+ * and owns its disposal — Room.tsx memoizes one geometry per family.
+ */
+function ClutterFamily({
+  instances,
+  geometry,
+  material,
+  shadows = false,
+}: {
+  instances: readonly ClutterInstance[];
+  geometry: THREE.BufferGeometry;
+  material: THREE.Material;
+  shadows?: boolean;
+}): JSX.Element | null {
+  if (instances.length === 0) return null;
+  return (
+    <instancedMesh
+      ref={(mesh) => {
+        if (!mesh) return;
+        const matrix = new THREE.Matrix4();
+        const quaternion = new THREE.Quaternion();
+        const euler = new THREE.Euler();
+        const position = new THREE.Vector3();
+        const scale = new THREE.Vector3();
+        const color = new THREE.Color();
+        instances.forEach((instance, i) => {
+          position.set(...instance.position);
+          scale.set(...instance.scale);
+          euler.set(...(instance.rotation ?? [0, 0, 0]));
+          quaternion.setFromEuler(euler);
+          matrix.compose(position, quaternion, scale);
+          mesh.setMatrixAt(i, matrix);
+          color.set(instance.color);
+          mesh.setColorAt(i, color);
+        });
+        mesh.instanceMatrix.needsUpdate = true;
+        if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+      }}
+      args={[geometry, material, instances.length]}
+      frustumCulled={false}
+      castShadow={shadows}
+      receiveShadow={shadows}
+    />
+  );
+}
+
 /* ----------------------------------------------------------------- scene -- */
 
 /**
@@ -189,6 +239,13 @@ export function RoomScene({
     const windowParts = createWindow();
     const chair = createChair(seed);
     const props = createNarrativeProps(seed);
+    const clutter = createClutterInstances(seed);
+    // Unit geometries for the instanced clutter families (commit 3b):
+    // hexagonal pencils + slightly tapered tins; instances carry scale/euler.
+    const clutterGeometries = {
+      pencil: new THREE.CylinderGeometry(1, 1, 1, 6),
+      tin: new THREE.CylinderGeometry(1, 0.92, 1, 10),
+    };
     const frames = FRAME_POSITIONS.map(([pos, variant]) => ({
       position: pos,
       parts: createFramedSilhouette(seed, variant),
@@ -210,6 +267,8 @@ export function RoomScene({
       windowParts,
       chair,
       props,
+      clutter,
+      clutterGeometries,
       frames,
       rugGeometry,
       cases,
@@ -257,6 +316,8 @@ export function RoomScene({
       furniture.rugGeometry.dispose();
       furniture.screenCloth.dispose();
       furniture.screenBar.dispose();
+      furniture.clutterGeometries.pencil.dispose();
+      furniture.clutterGeometries.tin.dispose();
       disposeTextures(textures);
       disposeRoomMaterials(materials);
     };
@@ -364,6 +425,13 @@ export function RoomScene({
           materials={materials}
           shadows={keyLight}
         />
+        {/* Instanced pencils leaning in the mug (3b clutter family). */}
+        <ClutterFamily
+          instances={furniture.clutter.pencils}
+          geometry={furniture.clutterGeometries.pencil}
+          material={materials.book}
+          shadows={keyLight}
+        />
         {/* Pickable monitor (commit 7): offset from the desk via the same
             constant the desktop-zoom camera derives its close-up from. */}
         <group position={MONITOR_DESK_OFFSET}>
@@ -416,6 +484,17 @@ export function RoomScene({
         <Parts
           parts={furniture.props.floor}
           materials={materials}
+          shadows={keyLight}
+        />
+      </group>
+
+      {/* Instanced tins/jars (3b clutter family, world space): shelf crown,
+          tower top, window sill. */}
+      <group name="clutter-tins">
+        <ClutterFamily
+          instances={furniture.clutter.tins}
+          geometry={furniture.clutterGeometries.tin}
+          material={materials.book}
           shadows={keyLight}
         />
       </group>
