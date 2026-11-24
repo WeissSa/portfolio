@@ -9,6 +9,7 @@
  */
 import * as THREE from 'three';
 import type { Route } from '../lib/router';
+import type { Mode } from '../state/store';
 import type { Vec3 } from './art/geometry';
 import type { ZoneViewpoint } from './viewpoints';
 
@@ -58,24 +59,24 @@ export const DIEGETIC_ROWS: readonly DiegeticRow[] = [
  */
 export const PLAQUE = {
   // Back wall is z = -3.5 (ROOM_DIMS.depth / 2); the face sits 6cm forward.
-  position: [2.4, 2.0, -3.44] as Vec3,
+  position: [2.4, 2.35, -3.44] as Vec3,
   width: 1.6,
-  height: 1.0,
+  // Round-3 review: the board read as a SQUISHED blackboard — 1.6×1.0 m with
+  // five tightly packed rows. Make the physical board TALLER (1.6×1.4) and
+  // re-space the texel rows (52px face, 56px pitch): glyph boxes gain 12px of
+  // air, projected caps stay ~25px, and the texture pixel budget is unchanged.
+  height: 1.4,
   textureWidth: 512,
   textureHeight: 320,
-  fontPx: 60,
-  // Review fix (2026-11-24): the old first baseline (38) put a 60px glyph's
-  // top ABOVE the texture and across the purple rule at y=32–35. Move the rule
-  // up under the frame and re-space all five rows so every glyph box (and its
-  // pick plane) fits inside the inlay with margin.
-  rowBaselines: [72, 124, 176, 228, 280] as const,
-  purpleRuleY: 16,
+  fontPx: 52,
+  rowBaselines: [62, 118, 174, 230, 286] as const,
+  purpleRuleY: 20,
   purpleRuleThickness: 3,
   /** Conservative Anton glyph box, in em units (ascent / descent). */
   glyphAscentEm: 0.72,
   glyphDescentEm: 0.12,
-  /** Pick plane height in world metres (< row pitch of height/5 = 0.2). */
-  hitHeight: 0.16,
+  /** Pick plane height in world metres (< row pitch of height/5 = 0.28). */
+  hitHeight: 0.2,
   minCapPx: 20,
 } as const;
 
@@ -176,6 +177,19 @@ export interface ProjectedRect {
   bottom: number;
   width: number;
   height: number;
+}
+
+/**
+ * Round-3 review: an in-world HOME control must be reachable in EVERY zone
+ * without Tab. Fine-pointer live 3D, any zone except home; the DOM menu stays
+ * the keyboard/screen-reader path and the plaque HOME row remains in home.
+ */
+export function homeControlVisible(
+  mode: Mode,
+  zone: Route,
+  pointerFine: boolean,
+): boolean {
+  return mode === '3d' && pointerFine && zone !== '/';
 }
 
 /**

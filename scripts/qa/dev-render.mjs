@@ -171,6 +171,14 @@ try {
     path: resolve('qa-evidence/screenshots/dev_3d_zone_spotlight.png'),
   });
 
+  // Blur the keyboard menu to expose the in-world HOME control (round-3
+  // feedback): pointer users get a diegetic way back in every zone.
+  await page.evaluate(() => document.activeElement?.blur());
+  await page.waitForTimeout(300);
+  await page.screenshot({
+    path: resolve('qa-evidence/screenshots/dev_3d_home-control.png'),
+  });
+
   console.log(
     JSON.stringify({
       state,
@@ -183,6 +191,7 @@ try {
         resolve('qa-evidence/screenshots/dev_3d_diegetic_room.png'),
         resolve('qa-evidence/screenshots/dev_3d_keyboard_menu.png'),
         resolve('qa-evidence/screenshots/dev_3d_zone_spotlight.png'),
+        resolve('qa-evidence/screenshots/dev_3d_home-control.png'),
       ],
     }),
   );

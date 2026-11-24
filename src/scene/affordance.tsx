@@ -21,6 +21,7 @@ import { useDeferredDispose } from '../lib/deferred-dispose';
 import type { Route } from '../lib/router';
 import { DESIGN_TOKENS } from '../styles/design-tokens';
 import { usePortfolioStore } from '../state/store';
+import { PALETTE } from './art/palette';
 
 export type PickAffordance = 'idle' | 'zone' | 'hover' | 'selected';
 
@@ -82,7 +83,7 @@ export interface PickableEdgesProps {
 }
 
 /**
- * Thin gold edge outline, rendered ONLY for non-idle states. The geometry and
+ * Hand-inlaid brass/gold edge outline, rendered ONLY for non-idle states. The geometry and
  * material are memoized and deferred-disposed, so StrictMode's dev double-
  * invoke cannot free a GPU buffer that the remounted scene still draws.
  */
@@ -94,28 +95,51 @@ export function PickableEdges({
   state,
   name,
 }: PickableEdgesProps): ReactNode {
-  const edges = useMemo(
-    () => new THREE.EdgesGeometry(geometry, 25),
-    [geometry],
-  );
+  // Hand-inlaid look: a deterministic 2% wobble on every edge vertex plus a
+  // dashed brass stroke for the ambient zone state (gold only on active pick).
+  // A raw EdgesGeometry rectangle read as a geometric/CAD outline (round-3
+  // review), so neither the wobble nor the dash pattern depend on frame time.
+  const edgeRig = useMemo(() => {
+    const edges = new THREE.EdgesGeometry(geometry, 25);
+    edges.computeBoundingSphere();
+    const radius = edges.boundingSphere?.radius ?? 1;
+    const position = edges.getAttribute('position') as THREE.BufferAttribute;
+    const wobble = radius * 0.02;
+    for (let index = 0; index < position.count; index += 1) {
+      const jitter = (axis: number): number =>
+        (((index * 31 + axis * 17) % 101) / 101 - 0.5) * wobble;
+      position.setXYZ(
+        index,
+        position.getX(index) + jitter(1),
+        position.getY(index) + jitter(2),
+        position.getZ(index) + jitter(3),
+      );
+    }
+    position.needsUpdate = true;
+    return { edges, radius };
+  }, [geometry]);
   const material = useMemo(
     () =>
-      new THREE.LineBasicMaterial({
-        color: DESIGN_TOKENS.state.focus,
+      new THREE.LineDashedMaterial({
+        color:
+          state === 'zone' ? PALETTE.brassLight : DESIGN_TOKENS.state.focus,
+        dashSize: Math.max(0.012, edgeRig.radius * 0.14),
+        gapSize: Math.max(0.006, edgeRig.radius * 0.05),
         transparent: true,
         opacity: affordanceOpacity(state),
         depthWrite: false,
       }),
-    [state],
+    [state, edgeRig.radius],
   );
-  const line = useMemo(
-    () => new THREE.LineSegments(edges, material),
-    [edges, material],
-  );
+  const line = useMemo(() => {
+    const segments = new THREE.LineSegments(edgeRig.edges, material);
+    segments.computeLineDistances();
+    return segments;
+  }, [edgeRig.edges, material]);
   useDeferredDispose(() => {
-    edges.dispose();
+    edgeRig.edges.dispose();
     material.dispose();
-  }, [edges, material]);
+  }, [edgeRig, material]);
 
   if (state === 'idle') return null;
   return (

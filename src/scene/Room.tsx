@@ -20,6 +20,7 @@ import { usePrefersReducedMotion } from '../lib/a11y';
 import { useDeferredDispose } from '../lib/deferred-dispose';
 import { DESIGN_TOKENS } from '../styles/design-tokens';
 import { CameraRig } from './CameraRig';
+import { HomeControl } from './HomeControl';
 import { PLAQUE } from './diegetic';
 import { PainterlyPass } from './effects/PainterlyPass';
 import { createCoalescedPointerEvents } from './perf-events';
@@ -826,6 +827,8 @@ export default function Room({
         tier={quality}
       />
       <SceneReadySignal onReady={onReady} />
+      {/* Round-3 review: diegetic HOME control in every zone (fine pointer). */}
+      <HomeControl />
       <RoomScene
         seed={seed}
         quality={quality}

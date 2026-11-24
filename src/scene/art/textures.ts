@@ -1058,7 +1058,9 @@ export function planProjectorScreen(
  * CANONICAL DIEGETIC NAV (commit 4): gilt route names on a DARK inlay panel —
  * never gold-on-brass (1.51:1). The board's brass inlay / rosettes / jag
  * motifs are separate geometry; this texture is the lettered face only.
- * 60px Anton on a 320px-tall strip => ~21px caps from HOME_VIEWPOINT.
+ * 52px Anton on a 320px-tall face stretched over a 1.4 m board => ~25px caps
+ * from HOME_VIEWPOINT, with a 56px row pitch so no glyph box touches its
+ * neighbour (round-3 squished-board fix; texture pixels unchanged).
  */
 export function planWallPlaque(
   seed: string | number,

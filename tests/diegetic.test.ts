@@ -21,6 +21,7 @@ import {
   PLAQUE,
   PROJECTED_PANEL,
   framingCamera,
+  homeControlVisible,
   isWithinView,
   plaqueGlyphBox,
   plaqueProjection,
@@ -209,6 +210,17 @@ describe('bidirectional DOM ↔ in-world sync', () => {
     usePortfolioStore.getState().setMode('2d');
     expect(usePortfolioStore.getState().menuFocusRoute).toBeNull();
     expect(usePortfolioStore.getState().menuHoverRoute).toBeNull();
+  });
+});
+
+describe('diegetic HOME affordance (round-3 review)', () => {
+  it('is always available in pointer-driven zones, never in 2D/home', () => {
+    expect(homeControlVisible('3d', '/experience', true)).toBe(true);
+    expect(homeControlVisible('3d', '/projects', true)).toBe(true);
+    expect(homeControlVisible('3d', '/climate', true)).toBe(true);
+    expect(homeControlVisible('3d', '/', true)).toBe(false); // plaque is HOME
+    expect(homeControlVisible('2d', '/experience', true)).toBe(false);
+    expect(homeControlVisible('3d', '/experience', false)).toBe(false);
   });
 });
 

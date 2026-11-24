@@ -286,6 +286,8 @@ describe('ClimateProjector R3F zone (headless, structural)', () => {
     // Unmount disposes every cached texture once.
     const disposeSecond = vi.spyOn(secondTexture, 'dispose');
     await renderer.unmount();
+    // Disposal is deferred one macrotask (StrictMode-safe); don't race it.
+    await new Promise((resolveDelay) => setTimeout(resolveDelay, 10));
     expect(disposeFirst).toHaveBeenCalledTimes(1);
     expect(disposeSecond).toHaveBeenCalledTimes(1);
     disposeRoomMaterials(materials);
