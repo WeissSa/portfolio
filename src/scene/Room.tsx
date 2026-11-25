@@ -50,6 +50,7 @@ import {
   WINDOW_ROTATION,
 } from './placement';
 import {
+  beamEnvelope,
   DESK_TOP_HEIGHT,
   LAMP_BULB_LOCAL,
   type BookInstance,
@@ -257,6 +258,14 @@ export function RoomScene({
     [seed, quality, textureFactory, usesCache],
   );
   const { furniture, materials } = resources;
+
+  // polish(e): the mote cloud lives INSIDE the light cone. Derive its envelope
+  // from the beam geometry actually used (production calls
+  // createLightCone(3.85, 0.62)), so the two can never hardcode-drift apart.
+  const beam = useMemo(
+    () => beamEnvelope(furniture.beam.geometry),
+    [furniture.beam.geometry],
+  );
 
   // Deferred release (NOT a synchronous refcount decrement): StrictMode's dev
   // simulated unmount cancels this on same-generation re-setup, so the remount
@@ -570,8 +579,13 @@ export function RoomScene({
             matrixAutoUpdate={false}
           />
           {/* polish(e): GPU-animated motes in the beam. Zero extra frames,
-              zero new lights/textures; frozen with reduced motion. */}
-          <DustMotes freezeTime={freezeTime} />
+              zero new lights/textures; frozen with reduced motion. Length and
+              radius come from the cone above, not duplicated constants. */}
+          <DustMotes
+            freezeTime={freezeTime}
+            beamLength={beam.length}
+            beamRadius={beam.radius}
+          />
         </group>
       </group>
 

@@ -22,8 +22,24 @@ import { advancePainterlyTime } from '../diegetic';
 import { PALETTE } from '../art/palette';
 
 const MOTE_COUNT = 22;
-const BEAM_LENGTH = 2.4; // matches createLightCone(); cone opens toward -z.
-const BEAM_RADIUS = 0.75;
+
+/**
+ * Max lateral offset of a mote, as a fraction of the cone radius at its depth.
+ * The wobble is scaled by `t*t` in the shader so it vanishes at the narrow
+ * apex; exported so the headless envelope test can prove containment against
+ * the REAL beam geometry instead of trusting a hardcoded number.
+ */
+export const MOTE_RADIAL_FRACTION = 0.5;
+export const MOTE_WOBBLE_X = 0.018;
+export const MOTE_WOBBLE_Y = 0.012;
+
+/** Shader motion envelope mirrored in JS (single source for the test). */
+export function moteRadialEnvelope(t: number, radius: number): number {
+  const spread = t;
+  return (
+    MOTE_RADIAL_FRACTION * radius * spread + MOTE_WOBBLE_X * spread * spread
+  );
+}
 
 const DUST_VERTEX_SHADER = /* glsl */ `
 attribute float aSeed;
@@ -35,12 +51,17 @@ void main() {
   float s = aSeed;
   // Slow travel down the beam, wrapped so motes recycle at the screen.
   float t = fract(s * 0.731 + uTime * 0.035);
+  // Cone radius grows LINEARLY from the lens (apex, t=0) to the screen (t=1).
+  // The old INVERTED spread grew the CLOUD while the cone shrank toward the
+  // lens, so motes escaped the beam and the cloud stopped short of the screen.
   float z = -t * uLength;
-  float spread = 1.0 - (z / uLength) * 0.75;
+  float spread = t;
   float x = (fract(s * 91.7) - 0.5) * uRadius * spread;
   float y = (fract(s * 47.3) - 0.5) * uRadius * 0.55 * spread;
-  x += 0.018 * sin(uTime * 0.7 + s * 30.0);
-  y += 0.012 * cos(uTime * 0.55 + s * 17.0);
+  // Wobble fades out at the apex where the cone is too narrow to contain it.
+  float wobble = spread * spread;
+  x += ${MOTE_WOBBLE_X.toFixed(3)} * wobble * sin(uTime * 0.7 + s * 30.0);
+  y += ${MOTE_WOBBLE_Y.toFixed(3)} * wobble * cos(uTime * 0.55 + s * 17.0);
   vec4 mv = modelViewMatrix * vec4(x, y, z, 1.0);
   gl_Position = projectionMatrix * mv;
   gl_PointSize = clamp(2.6 / max(0.2, -mv.z), 1.0, 3.2);
@@ -63,9 +84,18 @@ void main() {
 export interface DustMotesProps {
   /** Freeze the mote clock (reduced-motion 3D opt-in). */
   freezeTime?: boolean;
+  /** Throw length of the beam the motes live in (metres). Supplied by the
+   *  room from the real cone geometry so the two can never hardcode-drift. */
+  beamLength: number;
+  /** End radius of the beam the motes live in (metres), same source. */
+  beamRadius: number;
 }
 
-export function DustMotes({ freezeTime = false }: DustMotesProps): JSX.Element {
+export function DustMotes({
+  freezeTime = false,
+  beamLength,
+  beamRadius,
+}: DustMotesProps): JSX.Element {
   // Hold the time uniform object directly so useFrame never indexes an
   // optional `uniforms.uTime` (noUncheckedIndexedAccess) and never allocates.
   const uTime = useMemo(() => ({ value: 0 }), []);
@@ -80,8 +110,8 @@ export function DustMotes({ freezeTime = false }: DustMotesProps): JSX.Element {
     const material = new THREE.ShaderMaterial({
       uniforms: {
         uTime,
-        uLength: { value: BEAM_LENGTH },
-        uRadius: { value: BEAM_RADIUS },
+        uLength: { value: beamLength },
+        uRadius: { value: beamRadius },
         uColor: { value: new THREE.Color(PALETTE.lampWarm) },
       },
       vertexShader: DUST_VERTEX_SHADER,
@@ -91,7 +121,7 @@ export function DustMotes({ freezeTime = false }: DustMotesProps): JSX.Element {
       blending: THREE.AdditiveBlending,
     });
     return { geometry, material };
-  }, [uTime]);
+  }, [uTime, beamLength, beamRadius]);
 
   useDeferredDispose(() => {
     resources.geometry.dispose();

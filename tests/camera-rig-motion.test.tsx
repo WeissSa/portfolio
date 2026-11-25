@@ -1,33 +1,49 @@
 /**
  * polish(e): R3F wiring for camera personality. The pure amplitude/envelope
- * contracts live in camera-motion.test.ts; here we pin the two behavioural
- * guarantees that only the component can provide:
+ * contracts live in camera-motion.test.ts; here we pin the behavioural
+ * guarantees only the component can provide:
  *   1. reduced motion (instant) never drifts — the camera sits at the exact
  *      authored pose even across extra frames;
- *   2. a normal flight returns to the EXACT viewpoint once settled, so the
- *      diegetic frustum/legibility tests still measure an un-drifted camera.
+ *   2. drift/bank/overshoot are applied MID-FLIGHT (not just at the snap), the
+ *      pass-past crosses the authored pose, and the final pose is exact;
+ *   3. the shared perf clock is frozen for instant/paused and advances for a
+ *      live flight, and a settled camera requests ZERO more frames (idle).
  */
 import { useLayoutEffect } from 'react';
 import ReactThreeTestRenderer, { act } from '@react-three/test-renderer';
-import { useThree } from '@react-three/fiber';
+import { useStore, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { Route } from '../src/lib/router';
 import { CameraRig } from '../src/scene/CameraRig';
 import { HOME_VIEWPOINT, ZONE_VIEWPOINTS } from '../src/scene/viewpoints';
 import { usePortfolioStore } from '../src/state/store';
 
 let capturedCamera: THREE.Camera | null = null;
+let capturedStore: ReturnType<typeof useStore> | null = null;
 
 function CameraProbe(): null {
   const camera = useThree((state) => state.camera);
+  const store = useStore();
   useLayoutEffect(() => {
     capturedCamera = camera;
-  }, [camera]);
+    capturedStore = store;
+  }, [camera, store]);
   return null;
 }
 
-async function mountRig(instant: boolean, zone: Route) {
+const { advanceSpy } = vi.hoisted(() => ({
+  advanceSpy: vi.fn((current: number, delta: number, frozen = false) =>
+    frozen ? current : current + delta,
+  ),
+}));
+
+vi.mock('../src/scene/diegetic', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../src/scene/diegetic')>();
+  return { ...actual, advancePainterlyTime: advanceSpy };
+});
+
+async function mountRig(instant: boolean, zone: Route, paused = false) {
   act(() => {
     usePortfolioStore.setState({
       activeZone: zone,
@@ -37,9 +53,10 @@ async function mountRig(instant: boolean, zone: Route) {
       climatePanelOpen: false,
     });
   });
+  advanceSpy.mockClear();
   return ReactThreeTestRenderer.create(
     <>
-      <CameraRig instant={instant} />
+      <CameraRig instant={instant} paused={paused} />
       <CameraProbe />
     </>,
     { frameloop: 'never' },
@@ -53,31 +70,102 @@ describe('CameraRig personality wiring', () => {
     expect(camera.position.toArray()).toEqual([...HOME_VIEWPOINT.position]);
     expect(usePortfolioStore.getState().cameraSettled).toBe(true);
 
-    // Extra frames on an already-settled instant rig must not introduce wobble.
+    // The shared clock is stepped with frozen=true and never advances.
     await act(async () => {
       await renderer.advanceFrames(8, 0.05);
     });
+    expect(advanceSpy).toHaveBeenCalled();
+    expect(advanceSpy.mock.calls.every((call) => call[2] === true)).toBe(true);
+    expect(advanceSpy.mock.calls[0]![0]).toBe(0);
     expect(camera.position.toArray()).toEqual([...HOME_VIEWPOINT.position]);
     await renderer.unmount();
   });
 
-  it('returns to the exact in-zone viewpoint after a drift/bank flight', async () => {
+  it('freezes the clock while paused', async () => {
+    const renderer = await mountRig(false, '/about', true);
+    advanceSpy.mockClear();
+    await act(async () => {
+      await renderer.advanceFrames(3, 0.05);
+    });
+    expect(advanceSpy).toHaveBeenCalledTimes(3);
+    expect(advanceSpy.mock.calls.every((call) => call[2] === true)).toBe(true);
+    await renderer.unmount();
+  });
+
+  it('applies drift/bank/overshoot mid-flight, crosses the pose, then snaps exact', async () => {
     const renderer = await mountRig(false, '/about');
     const camera = capturedCamera!;
-    // Establishes at home first, then flies to the landing zone.
+    const from = new THREE.Vector3(...HOME_VIEWPOINT.position);
+    const to = new THREE.Vector3(...ZONE_VIEWPOINTS['/about'].position);
+    const direction = to.clone().sub(from).normalize();
     expect(camera.position.toArray()).toEqual([...HOME_VIEWPOINT.position]);
 
-    await act(async () => {
-      await renderer.advanceFrames(200, 0.05);
-    });
+    let banked = false;
+    let drifted = false;
+    let crossedPose = false;
+    // Step frame-by-frame so the transient behaviour is observable.
+    for (let frame = 0; frame < 60; frame += 1) {
+      await act(async () => {
+        await renderer.advanceFrames(1, 0.05);
+      });
+      const pos = camera.position.clone();
+      if (frame > 2 && frame < 60) {
+        // Mid-flight: not the start pose, not yet the final pose.
+        if (pos.distanceTo(from) > 0.01 && pos.distanceTo(to) > 0.01)
+          drifted = true;
+        // Arrival bank is actually rotated onto the camera mid-flight.
+        if (Math.abs(camera.rotation.z) > 1e-4) banked = true;
+        // Render-only pass-past: projection onto the travel vector exceeds
+        // the authored pose at least once (overshoot crosses the target).
+        if (pos.clone().sub(from).dot(direction) > from.distanceTo(to) + 1e-4)
+          crossedPose = true;
+      }
+    }
+    expect(drifted).toBe(true);
+    expect(banked).toBe(true);
+    expect(crossedPose).toBe(true);
+    expect(advanceSpy.mock.calls.some((call) => call[2] === false)).toBe(true);
 
+    await act(async () => {
+      await renderer.advanceFrames(160, 0.05);
+    });
     const target = ZONE_VIEWPOINTS['/about'].position;
-    expect(camera.position.x).toBeCloseTo(target[0], 6);
-    expect(camera.position.y).toBeCloseTo(target[1], 6);
-    expect(camera.position.z).toBeCloseTo(target[2], 6);
-    // Bit-exact authored pose (the snap on settle), not just "near" it.
     expect(camera.position.toArray()).toEqual([...target]);
+    // No residual arrival bank: the roll matches a plain lookAt at the pose
+    // (Euler z is not necessarily 0 after lookAt, so compare to the reference).
+    const reference = new THREE.PerspectiveCamera();
+    reference.position.set(...target);
+    reference.lookAt(new THREE.Vector3(...ZONE_VIEWPOINTS['/about'].target));
+    expect(camera.rotation.z).toBeCloseTo(reference.rotation.z, 6);
     expect(usePortfolioStore.getState().cameraSettled).toBe(true);
+    await renderer.unmount();
+  });
+
+  it('requests zero frames once settled (idle = 0 frames)', async () => {
+    const renderer = await mountRig(false, '/about');
+    const store = capturedStore!;
+    // Replace the store's invalidate with a spy. CameraRig subscribes through
+    // useThree, so the state swap re-renders it and it captures the spy.
+    const original = store.getState().invalidate;
+    const invalidateSpy = vi.fn((...args: Parameters<typeof original>) =>
+      original(...args),
+    );
+    act(() => store.setState({ invalidate: invalidateSpy }));
+
+    await act(async () => {
+      await renderer.advanceFrames(120, 0.05);
+    });
+    expect(usePortfolioStore.getState().cameraSettled).toBe(true);
+    // Absorb any RAF/effect invalidation from the spy swap, then prove a
+    // settled rig requests NO more frames across further rendered frames.
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    });
+    invalidateSpy.mockClear();
+    await act(async () => {
+      await renderer.advanceFrames(20, 0.05);
+    });
+    expect(invalidateSpy).not.toHaveBeenCalled();
     await renderer.unmount();
   });
 });

@@ -32,17 +32,20 @@ const TAU = Math.PI * 2;
  * periods/phases so the result reads as organic parallax rather than a rigid
  * slide. Each component is bounded by `amplitude`; the vector is deterministic
  * for a given clock value.
+ *
+ * `out` lets the render loop pass a preallocated Vec3 so useFrame allocates
+ * ZERO objects per frame (the default still returns a fresh vector for tests).
  */
 export function idleDriftOffset(
   seconds: number,
   amplitude = IDLE_DRIFT_AMPLITUDE,
+  out: Vec3 = [0, 0, 0],
 ): Vec3 {
   const w = TAU / IDLE_DRIFT_PERIOD_SECONDS;
-  return [
-    amplitude * Math.sin(seconds * w),
-    amplitude * 0.55 * Math.sin(seconds * w * 0.73 + 1.2),
-    amplitude * 0.35 * Math.sin(seconds * w * 0.51 + 2.4),
-  ];
+  out[0] = amplitude * Math.sin(seconds * w);
+  out[1] = amplitude * 0.55 * Math.sin(seconds * w * 0.73 + 1.2);
+  out[2] = amplitude * 0.35 * Math.sin(seconds * w * 0.51 + 2.4);
+  return out;
 }
 
 /** Bounded roll on arrival, derived from the same clock. */
@@ -61,15 +64,32 @@ export function driftEnvelope(remaining: number): number {
 }
 
 /**
- * Brief, render-only overshoot along the travel direction. Zero far away AND
- * at the target, peaking mid-window; never participates in the settle check, so
- * it cannot extend settle time or stall the demand loop.
+ * Arrival window for the camera "personality". ZERO at departure (large
+ * remaining) and at exact settle, peaking mid-arrival. Drift and bank are both
+ * gated by this: the old code applied full drift/bank on the flight's first
+ * frame (~2 cm / ~0.8° pose jump) and the bank all the way through departure.
+ * Zero at both ends means no first-frame discontinuity and an exact rest pose.
+ */
+export function motionWindow(remaining: number): number {
+  if (remaining <= 0 || remaining >= DRIFT_FADE_DISTANCE) return 0;
+  return Math.sin((Math.PI * remaining) / DRIFT_FADE_DISTANCE);
+}
+
+/**
+ * Render-only pass-past along the travel direction, in metres. The camera is
+ * drawn from its damped base toward the pose (`remaining * approach`), then a
+ * small bump carries it a few centimetres PAST the pose near arrival before it
+ * decays to EXACTLY 0 with `remaining` so the settle snap lands on the authored
+ * viewpoint. Zero at departure (no first-frame jump). Never participates in
+ * the settle check (which measures `basePosition`), so it cannot stall the
+ * demand loop.
  */
 export function settleOvershoot(remaining: number): number {
   if (remaining <= 0 || remaining >= DRIFT_FADE_DISTANCE) return 0;
+  const ratio = remaining / DRIFT_FADE_DISTANCE; // 1 at window edge → 0 at settle
+  const approach = 1 - ratio * ratio; // 0 at edge → 1 at settle (early ramp)
   return (
-    SETTLE_OVERSHOOT_METRES *
-    Math.sin((Math.PI * remaining) / DRIFT_FADE_DISTANCE)
+    remaining * approach + SETTLE_OVERSHOOT_METRES * Math.sin(Math.PI * ratio)
   );
 }
 

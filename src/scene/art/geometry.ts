@@ -1435,6 +1435,31 @@ export function createLightCone(length = 2.4, endRadius = 0.75): RoomPart {
   return part('projector-beam', geometry, 'beam');
 }
 
+/**
+ * Derive a cone's throw length + end radius from the ACTUAL produced geometry
+ * (apex at the local origin, opening at -z). Ambient motes consume these values
+ * as props, so a future change to `createLightCone(...)` cannot leave their
+ * envelope hardcode-drifted from the beam they are supposed to live inside.
+ * Bounding-box based so it stays correct for any cone tessellation.
+ */
+export function beamEnvelope(geometry: THREE.BufferGeometry): {
+  length: number;
+  radius: number;
+} {
+  if (!geometry.boundingBox) geometry.computeBoundingBox();
+  const box = geometry.boundingBox;
+  if (!box) return { length: 0, radius: 0 };
+  return {
+    length: box.max.z - box.min.z,
+    radius: Math.max(
+      Math.abs(box.min.x),
+      Math.abs(box.max.x),
+      Math.abs(box.min.y),
+      Math.abs(box.max.y),
+    ),
+  };
+}
+
 /* --------------------------------------------------------------- frames -- */
 
 /** Framed silhouette portrait: wood frame, brass slip, paper mat, bust shape. */

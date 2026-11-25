@@ -39,9 +39,10 @@ import { usePortfolioStore } from '../state/store';
 import { advancePainterlyTime } from './diegetic';
 import {
   arrivalBank,
-  driftEnvelope,
+  IDLE_DRIFT_AMPLITUDE,
   idleDriftOffset,
   motionAllowed,
+  motionWindow,
   settleOvershoot,
 } from './camera-motion';
 import {
@@ -105,6 +106,9 @@ export function CameraRig({
   const currentTarget = useMemo(() => new THREE.Vector3(), []);
   const basePosition = useMemo(() => new THREE.Vector3(), []);
   const travelDirection = useMemo(() => new THREE.Vector3(), []);
+  // Preallocated drift output: idleDriftOffset writes here so useFrame never
+  // allocates a Vec3 per frame.
+  const driftScratch = useMemo<[number, number, number]>(() => [0, 0, 0], []);
   const flying = useRef(false);
   const mounted = useRef(false);
   const clock = useRef(0);
@@ -213,11 +217,18 @@ export function CameraRig({
     const remaining =
       basePosition.distanceTo(desiredPosition) +
       currentTarget.distanceTo(desiredTarget);
+    // Gated by the ARRIVAL window: zero on the flight's first frame (no
+    // ~2 cm / 0.8° jump at departure) and zero at settle (exact rest pose).
     const envelope =
-      driftEnvelope(remaining) * (motionAllowed(instant, paused) ? 1 : 0);
-    const drift = idleDriftOffset(clock.current);
+      motionWindow(remaining) * (motionAllowed(instant, paused) ? 1 : 0);
+    const drift = idleDriftOffset(
+      clock.current,
+      IDLE_DRIFT_AMPLITUDE,
+      driftScratch,
+    );
 
-    // Settle overshoot pushes slightly past the target along the flight vector
+    // Settle overshoot draws the rendered camera along the flight vector, a
+    // few centimetres PAST the pose near arrival, then back to exact at settle
     // (render-only; the settle gate below measures `basePosition`, untouched).
     travelDirection.subVectors(desiredPosition, basePosition);
     if (travelDirection.lengthSq() > 1e-8) travelDirection.normalize();
