@@ -212,3 +212,28 @@ The 2D-first shell stays instant (three/R3F remain behind the existing `React.la
 - Dev-path check: `npm run qa:dev-render` against a fresh `npm run dev` (port 5176; 5173–5175 were already occupied) — `canvas=true`, `glLost=false`, `layerOpacity=1`, `consoleErrors=0`, luma contrast 240.3, `mainLeft=720`. No disposed-resource regression under StrictMode dev double-invoke.
 - Scene chunk: **225.13 kB brotli** (was 225.21 kB, Δ **−0.08 kB**, well inside the ≤8 kB commit budget); headroom to the 260 KB hard gate: **34.87 kB**. Shell: **178.76 kB brotli** (unchanged). `cachedRoomCount()` stays at 1 for the single seed/quality and never exceeds the two-idle-entry cap.
 - Commit / push / blockers: see the PR #6 head commit message and the draft PR notes (no blockers; the SwiftShader absolute-frame-time caveat from the previous section still applies and is unchanged by this commit).
+
+## polish(c) — diegetic in-world detail + a11y mirror (commit 66eed95, follow-up fixes at HEAD)
+
+### What
+
+- **Feature (66eed95):** in fine-pointer live 3D the book (Experience), lifted case (Projects), CRT (About) and projector INFO card (Climate) render as textured, animated `DetailPlane`s inside the room. The SAME verbatim copy survives as a visually-hidden DOM `DetailMirror` in the a11y tree/tab order — revealed only by real keyboard `:focus-visible`, never for pointer users. Every fallback (2D, coarse pointer, reduced motion, no drawn frame, scene failure) keeps the ordinary visible Mantine dialog. Cache, StrictMode-deferred disposal, zone gates and 2D-first shell are unchanged.
+- **Follow-up fixes (this HEAD):** (1) `#detail-return` now precedes the overlays in `App.tsx`, so one natural **forward Tab** from the trigger reaches the open mirror — the old 40× Shift+Tab wrap-around in `scripts/qa/detail-mirror.spec.ts` is removed and replaced by the real path (all four surfaces + DOM-card open are unit-tested in `tests/detail-forward-tab.test.tsx`). (2) Detail-texture eyebrow/footer moved from gold to the lettering token; (3) body-line budget derives from the space left after a two-line title so the footer no longer overlaps; (4) detail planes swallow `onPointerDown`/`onClick` so clicks never reach picks behind them; (5) forced-3D axe scans set `sceneReady: true` and now scan the four mirrors, not fallback dialogs; (6) `HomeControl` clears hover/cursor on unmount or when it becomes non-interactive; (7) the global 15s Vitest timeout is replaced by a file-local limit on the slow axe suite only.
+
+### Why
+
+- Owner review (2026-11-24) required clicked-into content to stay in-world with a visually-hidden DOM mirror, and round-3 polish review found the remaining MEDIUM/LOW defects above before merge. Forward-Tab is the keyboard contract a screen-reader user actually follows; gold-on-ink grades to 2.82:1 (below the 3.9 in-world floor); a sticky hover cursor/gold badge misleads pointer users after a zone change.
+
+### Verification / measurements
+
+- `npm run verify` green: typecheck, lint + CSS hex guard, format, **545 tests (57 files)**, build, size. Brotli: shell **179.41 kB ≤185**, scene **227.56 kB ≤260** (Δ +2.43 kB; 32.44 kB headroom), flat book **7.75 kB ≤16**, deferred WebGL **51.16 kB ≤70**.
+- `npx playwright test scripts/qa/detail-mirror.spec.ts` **3/3 passed** (19.6 s) in headless Chromium/SwiftShader, including the new forward-Tab path; `desktop_3d_detail-mirror-focus.png` re-captured through it. Coarse-pointer and reduced-motion fallbacks still show the visible dialog.
+- Contrast (true WCAG Rec.709, shipped grade): lettering/ink **14.64:1 pre-grade / 4.23:1 graded-worst** (≥3.9 floor); gold/ink **8.69 / 2.82** — gold is now the non-text frame rule only. `LEVEL_COLORS`, WCAG floors, size caps, cache/StrictMode/disposal and 2D-first unchanged.
+- New/updated tests: forward-Tab for all four surfaces + DOM-card open, four axe mirror scans, body/footer separation with a two-line title, pointer-hit swallowing, live↔fallback handover + focus restore, per-zone appearance gates with fallback suppression (all four planes), and HomeControl hover cleanup on zone change / mode toggle.
+
+### Notes for reviewer
+
+- **Deliberate a11y tradeoff:** in live 3D the mirror is **non-modal** — no `aria-modal`, no inert background, no focus trap (the room stays live behind it). The visible fallback dialogs keep the full modal contract. Escape closes the mirror and F2 restores focus to `#detail-return`; `jsdom` cannot assert `inert`/`:focus-visible`, so those are covered by the browser spec instead.
+- **Test-timeout scoping:** the previous global `testTimeout: 15_000` in `vite.config.ts` could mask real hangs; it is now `vi.setConfig({ testTimeout: 15_000 })` inside `tests/axe.test.tsx` only (the ~6 s climate heatmap scan). All other files use the 5 s default.
+- **Minor a11y addition:** `ClimateView` accepts an optional `regionLabel`; the projector copy is named "Our Climate, Our Future — Projector Feed" so the mirror's landmark is unique beside the live 2D zone view (axe `landmark-unique` was otherwise violated when both are mounted).
+- **Risk:** the browser QA still uses fixed-pixel 3D picks for other surfaces; the mirror forward-Tab spec drives the projector via its DOM trigger plus the F2 proxy, and the jsdom suite covers the other three surfaces deterministically. The SwiftShader absolute-frame-time caveat from earlier sections is unchanged by this commit. PR stays DRAFT — no merge/force-push.

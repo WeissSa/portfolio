@@ -227,18 +227,12 @@ export default function App() {
           </SceneErrorBoundary>
         )}
 
-        {/* Shared DOM detail overlay for a picked 3D book (renders null when no
-          book is selected). Content lives here, never inside the canvas. */}
-        <PostDetailOverlay />
-
-        {/* Shared DOM detail dialog for a picked 3D game case (renders null when
-          no case is selected). Like the book overlay it sits outside the shell
-          so 3D pointer gating never disables its links/buttons. */}
-        <ProjectDetailOverlay />
-
         {/* polish(c) F2: in-world detail is picked on an aria-hidden canvas, so
             every 3D pick focuses this sr-only DOM proxy of the trigger; closing
-            a detail mirror restores focus here. Absent in fallback modes. */}
+            a detail mirror restores focus here. Absent in fallback modes.
+            POLISH(C) FIX: the proxy MUST precede the overlays in DOM order so a
+            natural forward Tab from it lands inside the open a11y mirror (the
+            old trailing position required a 40× Shift+Tab wrap-around hack). */}
         {diegeticDetail && (
           <button
             id="detail-return"
@@ -248,6 +242,15 @@ export default function App() {
             className="sr-only"
           />
         )}
+
+        {/* Shared DOM detail overlay for a picked 3D book (renders null when no
+          book is selected). Content lives here, never inside the canvas. */}
+        <PostDetailOverlay />
+
+        {/* Shared DOM detail dialog for a picked 3D game case (renders null when
+          no case is selected). Like the book overlay it sits outside the shell
+          so 3D pointer gating never disables its links/buttons. */}
+        <ProjectDetailOverlay />
 
         {/* Monitor zoom: full-screen DOM About desktop, shared with 2D mode.
           Only in 3D — a stale flag can never double-render the 2D About zone.

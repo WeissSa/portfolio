@@ -9,7 +9,7 @@
  * injected via the zone's canvasFactory seam.
  */
 import { act, screen, waitFor, within } from '@testing-library/react';
-import { renderWithProviders } from './helpers';
+import { fakeDetail2dContext, renderWithProviders } from './helpers';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as THREE from 'three';
@@ -577,5 +577,58 @@ describe('keyboard path in 3D + unchanged 2D route', () => {
     expect(
       screen.getByRole('link', { name: 'Open-Meteo.com' }),
     ).toBeInTheDocument();
+  });
+});
+
+describe('polish(c) in-world projector appearance gate', () => {
+  it('paints the INFO plane only for fine-pointer live 3D', async () => {
+    const getContext = vi
+      .spyOn(HTMLCanvasElement.prototype, 'getContext')
+      .mockImplementation(() => fakeDetail2dContext());
+    const materials = createRoomMaterials({});
+    const screenGeometry = new THREE.PlaneGeometry(1.9, 1.07);
+    try {
+      act(() =>
+        usePortfolioStore.setState({
+          mode: '3d',
+          sceneReady: true,
+          pointerFine: true,
+          climatePanelOpen: true,
+        }),
+      );
+      const renderer = await ReactThreeTestRenderer.create(
+        <ClimateProjector
+          screenGeometry={screenGeometry}
+          materials={materials}
+          canvasFactory={recordingFactory().factory}
+        />,
+        { frameloop: 'never' },
+      );
+      const planes = () =>
+        renderer.scene.findAll(
+          (node) => node.props.name === 'projector-info-plane',
+        );
+      expect(planes()).toHaveLength(1);
+      act(() => usePortfolioStore.setState({ climatePanelOpen: false }));
+      expect(planes()).toHaveLength(0);
+      act(() =>
+        usePortfolioStore.setState({
+          mode: '3d',
+          sceneReady: true,
+          pointerFine: true,
+          climatePanelOpen: true,
+          activeZone: '/',
+        }),
+      );
+      // activeZone does not gate the plane; a scene that never drew does.
+      expect(planes()).toHaveLength(1);
+      act(() => usePortfolioStore.setState({ sceneReady: false }));
+      expect(planes()).toHaveLength(0);
+      await renderer.unmount();
+    } finally {
+      getContext.mockRestore();
+      disposeRoomMaterials(materials);
+      screenGeometry.dispose();
+    }
   });
 });

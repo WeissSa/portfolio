@@ -9,7 +9,7 @@
  * the camera pose into one group; the demand loop already invalidates during
  * every camera flight.
  */
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
 import { useDeferredDispose } from '../lib/deferred-dispose';
@@ -54,6 +54,29 @@ export function HomeControl() {
   const [hovered, setHovered] = useState(false);
   const group = useRef<THREE.Group>(null);
   const visible = homeControlVisible(mode, activeZone, pointerFine);
+
+  // R3F does not fire onPointerOut when the badge unmounts (zone change / mode
+  // toggle) or slides out from under a stationary cursor. Without this cleanup
+  // the body cursor stays 'pointer' and the gold hover tint sticks on re-entry.
+  // Cleanup also runs whenever `visible` flips to false, so the non-interactive
+  // state can never retain hover. Only clear a cursor WE set, never another
+  // component's pointer state.
+  useEffect(() => {
+    const clearHover = () => {
+      setHovered(false);
+      if (
+        typeof document !== 'undefined' &&
+        document.body.style.cursor === 'pointer'
+      ) {
+        document.body.style.cursor = '';
+      }
+    };
+    if (!visible) {
+      clearHover(); // became non-interactive while hovered
+      return;
+    }
+    return clearHover; // unmount / next visibility change
+  }, [visible]);
 
   const geometry = useMemo(
     () =>

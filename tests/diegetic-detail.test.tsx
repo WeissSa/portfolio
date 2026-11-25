@@ -256,3 +256,42 @@ describe('mirror focus state is 3D-only state', () => {
     expect(usePortfolioStore.getState().detailMirrorFocused).toBe(false);
   });
 });
+
+describe('live ↔ pointer/fallback handover while a detail is open', () => {
+  it('swaps mirror/dialog, keeps the content, and restores the F2 trigger', async () => {
+    const trigger = installTrigger();
+    const post = POSTS[0]!;
+    live3d();
+    usePortfolioStore.setState({ selectedPostId: postId(post) });
+    const view = renderWithProviders(<PostDetailOverlay />);
+
+    const mirror = await screen.findByRole('dialog', {
+      name: new RegExp(post.title),
+    });
+    expect(mirror).toHaveClass('detail-mirror');
+    expect(mirror).not.toHaveAttribute('aria-modal');
+
+    // Live 3D → fallback while the book is still selected: the modal dialog
+    // takes over (inert/focus-trap restored), the mirror leaves the DOM.
+    act(() => usePortfolioStore.setState({ mode: '2d' }));
+    const dialog = await screen.findByRole('dialog', {
+      name: new RegExp(post.title),
+    });
+    expect(dialog).toHaveAttribute('aria-modal', 'true');
+    expect(document.querySelector('.post-detail-overlay')).not.toBeNull();
+    expect(document.querySelector('.detail-mirror')).toBeNull();
+
+    // Back into live fine-pointer 3D: the in-world view owns the detail again.
+    act(() => live3d());
+    const mirrorAgain = await screen.findByRole('dialog', {
+      name: new RegExp(post.title),
+    });
+    expect(mirrorAgain).toHaveClass('detail-mirror');
+    expect(document.querySelector('.post-detail-overlay')).toBeNull();
+
+    await userEvent.keyboard('{Escape}');
+    expect(usePortfolioStore.getState().selectedPostId).toBeNull();
+    await waitFor(() => expect(trigger).toHaveFocus());
+    view.unmount();
+  });
+});

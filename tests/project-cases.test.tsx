@@ -10,6 +10,7 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as THREE from 'three';
 import ReactThreeTestRenderer from '@react-three/test-renderer';
+import { fakeDetail2dContext } from './helpers';
 import App from '../src/App';
 import { PROJECTS, displayTags, postId } from '../src/content/posts';
 import { createGameCases } from '../src/scene/art/geometry';
@@ -339,5 +340,46 @@ describe('keyboard-operable DOM equivalent (unchanged)', () => {
     await user.keyboard('{Enter}');
     expect(toggle).toHaveAttribute('aria-expanded', 'true');
     expect(await screen.findByTestId('post-description')).toBeInTheDocument();
+  });
+});
+
+describe('polish(c) in-world case appearance gate', () => {
+  let materials: RoomMaterials;
+
+  beforeEach(() => {
+    materials = createRoomMaterials({});
+    usePortfolioStore.setState({
+      mode: '3d',
+      sceneReady: true,
+      pointerFine: true,
+      selectedProjectId: firstId,
+    });
+  });
+
+  it('paints the lifted case card only for fine-pointer live 3D', async () => {
+    const getContext = vi
+      .spyOn(HTMLCanvasElement.prototype, 'getContext')
+      .mockImplementation(() => fakeDetail2dContext());
+    try {
+      const renderer = await ReactThreeTestRenderer.create(
+        <ProjectCases cases={cases} materials={materials} />,
+        { frameloop: 'never' },
+      );
+      const planes = () =>
+        renderer.scene.findAll(
+          (node) => node.props.name === 'case-detail-card',
+        );
+      expect(planes()).toHaveLength(1);
+      act(() => usePortfolioStore.setState({ sceneReady: false }));
+      expect(planes()).toHaveLength(0);
+      act(() =>
+        usePortfolioStore.setState({ sceneReady: true, pointerFine: false }),
+      );
+      expect(planes()).toHaveLength(0);
+      await renderer.unmount();
+    } finally {
+      getContext.mockRestore();
+      disposeRoomMaterials(materials);
+    }
   });
 });

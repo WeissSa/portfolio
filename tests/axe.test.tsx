@@ -3,8 +3,13 @@ import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import axe from 'axe-core';
 import App from '../src/App';
-import { POSTS, postId } from '../src/content/posts';
+import { POSTS, PROJECTS, postId } from '../src/content/posts';
 import { usePortfolioStore } from '../src/state/store';
+
+// The climate heatmap + sr-only table scan is the one slow axe pass (~6s under
+// worker fan-out). Extend its limit in THIS file only; a global 15s timeout in
+// vite.config would mask real hangs in the rest of the suite.
+vi.setConfig({ testTimeout: 15_000 });
 
 // jsdom has no WebGL: the lazy Canvas is replaced by a marker so forced-3D
 // scans exercise the real DOM shell, sr-only menu and dialogs over the canvas.
@@ -107,6 +112,10 @@ describe('axe-core accessibility scans (forced 3D over canvas)', () => {
     act(() =>
       usePortfolioStore.setState({
         mode: '3d',
+        // A frame must actually have drawn: sceneReady is what flips the shell
+        // into diegetic mode, so these scans exercise the DOM mirrors, not the
+        // fallback dialogs (the QA spec covers those fallbacks in a browser).
+        sceneReady: true,
         pointerFine: true,
         desktopOpen: false,
         selectedPostId: null,
@@ -132,25 +141,51 @@ describe('axe-core accessibility scans (forced 3D over canvas)', () => {
     expect(await runAxe(container)).toEqual([]);
   });
 
-  it('scans a dialog open over the canvas (book detail)', async () => {
-    const { container } = renderForced3d('#/experience', {
-      selectedPostId: postId(POSTS[0]!),
-    });
-    await screen.findByRole('dialog');
-    expect(await runAxe(container)).toEqual([]);
-  });
+  // All four diegetic surfaces: the live-3D detail is a visually-hidden DOM
+  // MIRROR (non-modal — no aria-modal/inert/focus trap). These scans used to
+  // hit the fallback dialogs because renderForced3d omitted sceneReady.
+  const mirrorCases: readonly [
+    string,
+    string,
+    Record<string, unknown>,
+    RegExp,
+    string,
+  ][] = [
+    [
+      'book',
+      '#/experience',
+      { selectedPostId: postId(POSTS[0]!) },
+      new RegExp(POSTS[0]!.title),
+      'book',
+    ],
+    [
+      'case',
+      '#/projects',
+      { selectedProjectId: postId(PROJECTS[0]!) },
+      new RegExp(PROJECTS[0]!.title),
+      'case',
+    ],
+    ['monitor', '#/about', { desktopOpen: true }, /About desktop/, 'monitor'],
+    [
+      'projector',
+      '#/climate',
+      { climatePanelOpen: true },
+      /Projector Feed/,
+      'projector',
+    ],
+  ];
 
-  it('scans a dialog open over the canvas (monitor desktop)', async () => {
-    const { container } = renderForced3d('#/about', { desktopOpen: true });
-    await screen.findByRole('dialog', { name: 'About desktop — full screen' });
-    expect(await runAxe(container)).toEqual([]);
-  });
-
-  it('scans a dialog open over the canvas (climate panel)', async () => {
-    const { container } = renderForced3d('#/climate', {
-      climatePanelOpen: true,
-    });
-    await screen.findByRole('dialog');
-    expect(await runAxe(container)).toEqual([]);
-  });
+  it.each(mirrorCases)(
+    'scans the %s a11y mirror over the canvas',
+    async (_name, hash, dialogState, namePattern, surface) => {
+      const { container } = renderForced3d(hash, dialogState);
+      const mirror = await screen.findByRole('dialog', {
+        name: namePattern,
+      });
+      expect(mirror).toHaveClass('detail-mirror');
+      expect(mirror).toHaveAttribute('data-detail-surface', surface);
+      expect(mirror).not.toHaveAttribute('aria-modal'); // non-modal by design
+      expect(await runAxe(container)).toEqual([]);
+    },
+  );
 });

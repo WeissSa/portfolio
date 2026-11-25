@@ -17,6 +17,7 @@ import {
   homeControlPlacement,
 } from '../src/scene/HomeControl';
 import { HOME_FOV_DEGREES } from '../src/scene/diegetic';
+import { DESIGN_TOKENS } from '../src/styles/design-tokens';
 
 beforeEach(() => {
   window.location.hash = '';
@@ -221,6 +222,72 @@ describe('in-world HOME control', () => {
       expect(disposeTexture).toHaveBeenCalledTimes(1);
     } finally {
       getContext.mockRestore();
+    }
+  });
+
+  it('clears a stuck hover on unmount / zone change / mode toggle', async () => {
+    const getContext = vi
+      .spyOn(HTMLCanvasElement.prototype, 'getContext')
+      .mockImplementation(function (this: HTMLCanvasElement) {
+        return fake2dContext(this) as unknown as CanvasRenderingContext2D;
+      });
+    try {
+      act(() =>
+        usePortfolioStore.setState({
+          mode: '3d',
+          activeZone: '/experience',
+          pointerFine: true,
+        }),
+      );
+      const renderer = await ReactThreeTestRenderer.create(<HomeControl />, {
+        frameloop: 'never',
+      });
+      const control = () =>
+        renderer.scene.findAll(
+          (node) => node.props.name === 'diegetic-home-control',
+        )[0]!;
+      const tint = () =>
+        (
+          (control().instance as THREE.Mesh).material as THREE.MeshBasicMaterial
+        ).color.getHexString();
+      const gold = new THREE.Color(DESIGN_TOKENS.state.focus).getHexString();
+
+      await act(async () => {
+        control().props.onPointerOver({ stopPropagation: vi.fn() });
+      });
+      expect(document.body.style.cursor).toBe('pointer');
+      expect(tint()).toBe(gold);
+
+      // Zone change unmounts the badge; R3F fires no onPointerOut for a
+      // stationary cursor, so the cleanup must reset both pieces of state.
+      await act(async () => {
+        usePortfolioStore.setState({ activeZone: '/' });
+      });
+      expect(
+        renderer.scene.findAll(
+          (node) => node.props.name === 'diegetic-home-control',
+        ),
+      ).toHaveLength(0);
+      expect(document.body.style.cursor).toBe('');
+
+      await act(async () => {
+        usePortfolioStore.setState({ activeZone: '/experience' });
+      });
+      expect(tint()).not.toBe(gold); // re-entry is idle, not gold-tinted
+
+      // Same cleanup on a mode toggle while hovered.
+      await act(async () => {
+        control().props.onPointerOver({ stopPropagation: vi.fn() });
+      });
+      expect(document.body.style.cursor).toBe('pointer');
+      await act(async () => {
+        usePortfolioStore.setState({ mode: '2d' });
+      });
+      expect(document.body.style.cursor).toBe('');
+      await renderer.unmount();
+    } finally {
+      getContext.mockRestore();
+      document.body.style.cursor = '';
     }
   });
 });

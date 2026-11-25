@@ -6,7 +6,7 @@
 import { act } from '@testing-library/react';
 import ReactThreeTestRenderer from '@react-three/test-renderer';
 import * as THREE from 'three';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { CLIMATE_TITLE } from '../src/content/climate';
 import { POSTS, postId } from '../src/content/posts';
 import { usePortfolioStore } from '../src/state/store';
@@ -124,11 +124,15 @@ describe('paintDetailTexture', () => {
       // Token-derived hex only — no ad-hoc palette drift (AA on deep ink).
       expect(item.color).toMatch(/^#[0-9a-f]{6}$/i);
     }
-    expect(texts.some((item) => item.color.toUpperCase() === '#F0E8D6')).toBe(
-      true,
-    );
+    // polish(c) contrast fix: EVERY painted glyph is lettering on ink
+    // (graded-worst 4.23 ≥ 3.9). Gold grades to 2.82 on ink, so it is the
+    // non-text frame rule only — never eyebrow/body/footer copy.
+    expect(texts.length).toBeGreaterThan(0);
+    for (const item of texts) {
+      expect(item.color.toUpperCase()).toBe('#F0E8D6');
+    }
     expect(texts.some((item) => item.color.toUpperCase() === '#D4B06A')).toBe(
-      true,
+      false,
     );
     texture?.dispose();
   });
@@ -143,6 +147,35 @@ describe('paintDetailTexture', () => {
       footer: 'footer',
     };
     const texture = paintDetailTexture(spec, factory);
+    expect(texts.some((item) => item.text === '…')).toBe(true);
+    texture?.dispose();
+  });
+
+  it('keeps the footer clear of the last body line for a two-line title', () => {
+    const { factory, texts } = recordingCanvas();
+    const texture = paintDetailTexture(
+      {
+        key: 'two-line-title',
+        eyebrow: 'TEST',
+        title: 'A Very Long Experience Post Title That Wraps',
+        lines: Array.from({ length: 60 }, () => 'a long line of detail copy'),
+        footer: 'footer',
+      },
+      factory,
+    );
+    // Distinct font sizes make each band identifiable in the recording canvas.
+    const titles = texts.filter((item) => item.size === 38);
+    const body = texts.filter((item) => item.size === DETAIL_TEXTURE.fontPx);
+    const footer = texts.filter((item) => item.size === 18);
+    expect(titles).toHaveLength(2);
+    expect(body.length).toBeGreaterThan(0);
+    expect(body.length).toBeLessThanOrEqual(DETAIL_TEXTURE.maxLines);
+    expect(footer).toHaveLength(1);
+    const lastBody = body[body.length - 1]!;
+    // The body budget shrinks to fit a two-line title; no overlapping glyphs.
+    expect(footer[0]!.y - (lastBody.y + lastBody.size)).toBeGreaterThanOrEqual(
+      6,
+    );
     expect(texts.some((item) => item.text === '…')).toBe(true);
     texture?.dispose();
   });
@@ -199,6 +232,32 @@ describe('DetailPlane animation + focus highlight', () => {
         (node) => node.props.name === 'detail-plane-focus',
       ),
     ).toHaveLength(0);
+    await renderer.unmount();
+  });
+
+  it('swallows pointer hits so clicks never reach picks behind the plane', async () => {
+    const { factory } = recordingCanvas();
+    const renderer = await ReactThreeTestRenderer.create(
+      <DetailPlane
+        spec={caseDetailSpec(first)}
+        position={[0, 0, 0]}
+        active
+        canvasFactory={factory}
+        name="case-detail-card"
+      />,
+      { frameloop: 'never' },
+    );
+    const plane = renderer.scene
+      .findAll((node) => node.type === 'Mesh')
+      .find((node) => node.props.name !== 'case-detail-card-focus')!;
+    expect(typeof plane.props.onPointerDown).toBe('function');
+    expect(typeof plane.props.onClick).toBe('function');
+    const stopDown = vi.fn();
+    const stopClick = vi.fn();
+    plane.props.onPointerDown({ stopPropagation: stopDown });
+    plane.props.onClick({ stopPropagation: stopClick });
+    expect(stopDown).toHaveBeenCalledTimes(1);
+    expect(stopClick).toHaveBeenCalledTimes(1);
     await renderer.unmount();
   });
 });

@@ -10,7 +10,7 @@
  */
 import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
-import { useFrame, useThree } from '@react-three/fiber';
+import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
 import { useDeferredDispose } from '../lib/deferred-dispose';
 import { DESIGN_TOKENS } from '../styles/design-tokens';
 import { usePortfolioStore } from '../state/store';
@@ -98,6 +98,16 @@ export function DetailPlane({
 
   useEffect(() => invalidate(), [active, focused, invalidate]);
 
+  // A detail plane is readout, not a pick target: swallow pointer hits so a
+  // click on the open book/case/CRT/projector card never falls through to the
+  // pickable geometry behind it (all four surfaces share this component).
+  const swallowPointer = (event: ThreeEvent<PointerEvent>) => {
+    event.stopPropagation();
+  };
+  const swallowClick = (event: ThreeEvent<MouseEvent>) => {
+    event.stopPropagation();
+  };
+
   useFrame((_state, delta) => {
     const target = active ? 1 : 0;
     const next = THREE.MathUtils.damp(
@@ -131,6 +141,8 @@ export function DetailPlane({
           geometry={geometry}
           material={material}
           position={motion === 'turn' ? [width / 2, 0, 0] : [0, 0, 0]}
+          onPointerDown={swallowPointer}
+          onClick={swallowClick}
         />
       </group>
       {focused && (
@@ -140,6 +152,8 @@ export function DetailPlane({
           material={focusMaterial}
           scale={[1.06, 1.06, 1]}
           position={[motion === 'turn' ? width / 2 : 0, 0, -0.004]}
+          onPointerDown={swallowPointer}
+          onClick={swallowClick}
         />
       )}
     </group>

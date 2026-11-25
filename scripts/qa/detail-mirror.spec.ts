@@ -87,21 +87,22 @@ test('fine-pointer live 3D: F1 reveal-on-focus + F2 focus restore', async ({
   await expect(page.locator('.climate-projector-overlay')).toHaveCount(0);
   await expect(page.locator('.post-detail-backdrop')).toHaveCount(0);
 
-  // Real keyboard Shift+Tab (a programmatic focus() never sets :focus-visible).
-  let reached = false;
-  for (let attempt = 0; attempt < 40; attempt += 1) {
-    await page.keyboard.press('Shift+Tab');
-    reached = await page.evaluate(
-      () =>
-        !!document
-          .querySelector('.detail-mirror')
-          ?.contains(document.activeElement),
-    );
-    if (reached) break;
-  }
-  expect(reached, 'keyboard focus must reach the hidden detail mirror').toBe(
-    true,
-  );
+  // NATURAL FORWARD TAB from the F2 trigger proxy. The proxy precedes the
+  // overlays in App's DOM, so one Tab reaches the mirror (the old 40× Shift+Tab
+  // wrap-around hack is gone). Tab sets :focus-visible on the newly focused
+  // close button, which is what reveals the mirror; a bare focus() would not.
+  await page.locator('#detail-return').focus();
+  await page.keyboard.press('Tab');
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          !!document
+            .querySelector('.detail-mirror')
+            ?.contains(document.activeElement),
+      ),
+    )
+    .toBe(true);
   await expect(mirror).toHaveCSS('position', 'fixed');
   await expect(mirror.locator('.detail-mirror__chip')).toBeVisible();
   const revealed = await mirror.boundingBox();

@@ -260,3 +260,38 @@ describe('R3F book zone (headless, structural only)', () => {
     disposeRoomMaterials(materials);
   });
 });
+
+describe('polish(c) in-world book appearance gate', () => {
+  const cells = createBookshelf('detail-gate-test').cells;
+  let materials: RoomMaterials;
+
+  beforeEach(() => {
+    materials = createRoomMaterials({ bookAtlas: new THREE.Texture() });
+    usePortfolioStore.setState({
+      mode: '3d',
+      sceneReady: true,
+      pointerFine: true,
+      selectedPostId: postId(first),
+    });
+  });
+
+  it('paints the open book only for fine-pointer live 3D (fallback suppressed)', async () => {
+    const renderer = await ReactThreeTestRenderer.create(
+      <LibraryZone cells={cells} materials={materials} />,
+      { frameloop: 'never' },
+    );
+    const planes = () =>
+      renderer.scene.findAll((node) => node.props.name === 'open-book-detail');
+    expect(planes()).toHaveLength(1);
+    act(() => usePortfolioStore.setState({ sceneReady: false }));
+    expect(planes()).toHaveLength(0);
+    act(() =>
+      usePortfolioStore.setState({ sceneReady: true, pointerFine: false }),
+    );
+    expect(planes()).toHaveLength(0);
+    act(() => usePortfolioStore.setState({ pointerFine: true, mode: '2d' }));
+    expect(planes()).toHaveLength(0);
+    await renderer.unmount();
+    disposeRoomMaterials(materials);
+  });
+});

@@ -4,8 +4,10 @@
  * The detail a visitor used to see in a DOM dialog is painted as a CanvasTexture
  * onto 3D planes: book pages, a lifted case's content card, the CRT screen and
  * the projected INFO card. Colors come ONLY from the canonical design tokens —
- * in-world lettering (#f0e8d6) and gold on deep ink are ≥8.7:1 (AA legible at
- * the detail camera viewpoints). Pure painters with an injected canvas factory
+ * ALL in-world lettering (#f0e8d6) sits on deep ink (14.64:1 pre-grade, 4.23:1
+ * graded-worst ≥ the 3.9 floor). Gold (#d4b06a) is the non-text frame rule only:
+ * gold-on-ink grades to 2.82:1 (< floor), so it is never used for painted copy.
+ * Pure painters with an injected canvas factory
  * keep this unit-testable headlessly (jsdom has no 2D context), mirroring the
  * ClimateProjector seam. The full verbatim copy stays in the a11y DOM mirror;
  * these planes carry a legible, truncated rendition for the room.
@@ -175,7 +177,8 @@ export function paintDetailTexture(
   const ctx = canvas.getContext('2d');
   if (!ctx) return null;
 
-  // Parchment-on-ink: in-world lettering + gold on deep ink, never gold-on-brass.
+  // Ink inlay + lettering glyphs + a gold (non-text) frame rule — never
+  // gold-on-brass, and never gold COPY on ink (2.82:1 graded-worst < 3.9 floor).
   ctx.fillStyle = DESIGN_TOKENS.p5.black;
   ctx.fillRect(0, 0, width, height);
   ctx.strokeStyle = DESIGN_TOKENS.scene.brassLight;
@@ -184,7 +187,7 @@ export function paintDetailTexture(
 
   ctx.textBaseline = 'top';
   ctx.textAlign = 'left';
-  ctx.fillStyle = DESIGN_TOKENS.p5.yellow;
+  ctx.fillStyle = DESIGN_TOKENS.climate.projectorPlaqueText;
   ctx.font = `bold 20px ${DESIGN_TOKENS.type.display}`;
   ctx.fillText(spec.eyebrow, margin, margin);
 
@@ -200,23 +203,29 @@ export function paintDetailTexture(
   ctx.fillRect(margin, y + 4, width - margin * 2, 3);
   y += 24;
 
+  // The footer owns a fixed baseline. A two-line title costs an extra 42px,
+  // so derive the body budget from the space that ACTUALLY remains instead of
+  // always drawing `maxLines` (which overlapped the footer on long titles).
+  const footerY = height - margin - 22;
+  const FOOTER_GAP = 10;
+  const bodyBudget = Math.max(
+    1,
+    Math.floor((footerY - y - FOOTER_GAP) / lineHeight),
+  );
+  const bodyLimit = Math.min(maxLines, bodyBudget);
   ctx.font = `${fontPx}px ${DESIGN_TOKENS.type.body}`;
   ctx.fillStyle = DESIGN_TOKENS.climate.projectorPlaqueText;
   const bodyLines = wrapDetailText(spec.lines.join('  '), maxChars);
-  const shown = bodyLines.slice(0, maxLines);
-  if (bodyLines.length > maxLines) shown[maxLines - 1] = '…';
+  const shown = bodyLines.slice(0, bodyLimit);
+  if (bodyLines.length > bodyLimit) shown[bodyLimit - 1] = '…';
   for (const line of shown) {
     ctx.fillText(line, margin, y);
     y += lineHeight;
   }
 
-  ctx.fillStyle = DESIGN_TOKENS.p5.yellow;
+  ctx.fillStyle = DESIGN_TOKENS.climate.projectorPlaqueText;
   ctx.font = `bold 18px ${DESIGN_TOKENS.type.body}`;
-  ctx.fillText(
-    wrapDetailText(spec.footer, maxChars)[0] ?? '',
-    margin,
-    height - margin - 22,
-  );
+  ctx.fillText(wrapDetailText(spec.footer, maxChars)[0] ?? '', margin, footerY);
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;

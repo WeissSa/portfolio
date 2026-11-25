@@ -10,6 +10,7 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as THREE from 'three';
 import ReactThreeTestRenderer from '@react-three/test-renderer';
+import { fakeDetail2dContext } from './helpers';
 import App from '../src/App';
 import { createMonitor } from '../src/scene/art/geometry';
 import {
@@ -167,5 +168,42 @@ describe('2D About stays authoritative', () => {
     expect(
       screen.getByRole('dialog', { name: 'Bio window' }),
     ).toBeInTheDocument();
+  });
+});
+
+describe('polish(c) in-world CRT appearance gate', () => {
+  it('paints the CRT detail only for fine-pointer live 3D', async () => {
+    const getContext = vi
+      .spyOn(HTMLCanvasElement.prototype, 'getContext')
+      .mockImplementation(() => fakeDetail2dContext());
+    const materials = createRoomMaterials({ monitor: new THREE.Texture() });
+    const monitor = createMonitor('crt-detail-gate');
+    try {
+      act(() =>
+        usePortfolioStore.setState({
+          mode: '3d',
+          sceneReady: true,
+          pointerFine: true,
+          desktopOpen: true,
+        }),
+      );
+      const renderer = await ReactThreeTestRenderer.create(
+        <DeskZone monitor={monitor} materials={materials} />,
+        { frameloop: 'never' },
+      );
+      const planes = () =>
+        renderer.scene.findAll(
+          (node) => node.props.name === 'crt-detail-screen',
+        );
+      expect(planes()).toHaveLength(1);
+      act(() => usePortfolioStore.setState({ mode: '2d' }));
+      expect(planes()).toHaveLength(0);
+      act(() => usePortfolioStore.setState({ mode: '3d', pointerFine: false }));
+      expect(planes()).toHaveLength(0);
+      await renderer.unmount();
+    } finally {
+      getContext.mockRestore();
+      disposeRoomMaterials(materials);
+    }
   });
 });

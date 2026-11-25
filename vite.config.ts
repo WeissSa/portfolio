@@ -26,9 +26,8 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     globals: true,
-    // The heaviest axe scan (climate heatmap + sr-only table + legend) runs
-    // ~6s when the suite fans out over more workers; the 5s default flaked.
-    testTimeout: 15_000,
+    // NOTE: no global testTimeout. The one slow axe scan extends its own limit
+    // locally (tests/axe.test.tsx); a global 15s would mask real hangs.
     setupFiles: ['./tests/setup.ts'],
     include: ['src/**/*.test.{ts,tsx}', 'tests/**/*.test.{ts,tsx}'],
     css: false,

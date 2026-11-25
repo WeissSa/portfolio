@@ -31,7 +31,16 @@ import { HeatmapCanvas } from './HeatmapCanvas';
  * year selector), Open-Meteo attribution and the Climate Defense Fund of
  * Ontario link always visible (REWORK_PLAN §3.2.4).
  */
-export function ClimateView({ idPrefix = '' }: { idPrefix?: string }) {
+export function ClimateView({
+  idPrefix = '',
+  regionLabel,
+}: {
+  idPrefix?: string;
+  /** Distinct landmark name when a second copy is mounted (3D projector
+   *  mirror alongside the live 2D zone view) — axe landmark-unique requires
+   *  two same-role landmarks to have different accessible names. */
+  regionLabel?: string;
+}) {
   const climate = usePortfolioStore((s) => s.climate);
   const loadClimate = usePortfolioStore((s) => s.loadClimate);
   // Shared with the 3D projector dial (commit 9): one year across both modes.
@@ -94,7 +103,12 @@ export function ClimateView({ idPrefix = '' }: { idPrefix?: string }) {
     climate.fetchedAt !== null ? formatDataAge(climate.fetchedAt) : null;
 
   return (
-    <section aria-labelledby={headingId} className="p5-cut-in">
+    <section
+      {...(regionLabel
+        ? { 'aria-label': regionLabel }
+        : { 'aria-labelledby': headingId })}
+      className="p5-cut-in"
+    >
       <DisplayTitle level={2} className="mb-4 text-p5-red">
         <span id={headingId}>{CLIMATE_TITLE}</span>
       </DisplayTitle>

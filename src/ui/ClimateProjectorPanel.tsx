@@ -64,7 +64,10 @@ export function ClimateProjectorPanel() {
         surface="projector"
         onClose={closeClimatePanel}
       >
-        <ClimateView idPrefix="projector-panel" />
+        <ClimateView
+          idPrefix="projector-panel"
+          regionLabel={`${CLIMATE_TITLE} — Projector Feed`}
+        />
         <p role="status" aria-live="polite" className="sr-only">
           Climate projector panel opened
         </p>
@@ -97,7 +100,10 @@ export function ClimateProjectorPanel() {
       }}
       styles={{ content: { maxHeight: '90vh', overflowY: 'auto' } }}
     >
-      <ClimateView idPrefix="projector-panel" />
+      <ClimateView
+        idPrefix="projector-panel"
+        regionLabel={`${CLIMATE_TITLE} — Projector Feed`}
+      />
       <p role="status" aria-live="polite" className="sr-only">
         Climate projector panel opened
       </p>
