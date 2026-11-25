@@ -15,10 +15,17 @@
 import { useEffect, useMemo, useRef, useState, type JSX } from 'react';
 import * as THREE from 'three';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { POSTS, PROJECTS } from '../content/index';
 import { usePrefersReducedMotion } from '../lib/a11y';
 import { useDeferredDispose } from '../lib/deferred-dispose';
 import { DESIGN_TOKENS } from '../styles/design-tokens';
+import {
+  acquireRoomResources,
+  createRoomResources,
+  disposeRoomResources,
+  factoryUsesCache,
+  releaseRoomResources,
+  type RoomResources,
+} from './art/static-cache';
 import { CameraRig } from './CameraRig';
 import { HomeControl } from './HomeControl';
 import { PLAQUE } from './diegetic';
@@ -28,7 +35,6 @@ import {
   CHAIR_POSITION,
   CHAIR_ROTATION,
   DESK_POSITION,
-  FRAME_POSITIONS,
   LAMP_POSITION,
   MONITOR_DESK_OFFSET,
   PROJECTOR_POSITION,
@@ -43,48 +49,20 @@ import {
   WINDOW_ROTATION,
 } from './placement';
 import {
-  createBookInstances,
-  createBookshelf,
-  createChair,
-  createClutterInstances,
-  createDesk,
-  createFramedSilhouette,
-  createGameCases,
-  createLamp,
-  createLightCone,
-  createMonitor,
-  createNarrativeProps,
-  createPcTower,
-  createProjector,
-  createRoomShell,
-  createRugGeometry,
-  createWallPlaque,
-  createWindow,
   DESK_TOP_HEIGHT,
-  disposeParts,
   LAMP_BULB_LOCAL,
   type BookInstance,
   type ClutterInstance,
   type RoomPart,
   type Vec3,
 } from './art/geometry';
-import {
-  createRoomMaterials,
-  disposeRoomMaterials,
-  type RoomMaterials,
-} from './art/materials';
+import type { RoomMaterials } from './art/materials';
 import { LibraryZone } from './zones/Library';
 import { WallPlaque } from './zones/WallPlaque';
 import { DeskZone } from './zones/Desk';
 import { ProjectCases } from './zones/ProjectCases';
 import { ClimateProjector } from './zones/ClimateProjector';
-import {
-  createPlanTexture,
-  createTexturePlans,
-  disposeTextures,
-  renderTexturePlans,
-  type TextureFactory,
-} from './art/textures';
+import { createPlanTexture, type TextureFactory } from './art/textures';
 
 /** Rendering tier; commit 5 derives this from the device-tier check. */
 export type RoomQuality = 'desktop' | 'mobile' | 'low';
@@ -264,109 +242,29 @@ export function RoomScene({
   textureFactory = createPlanTexture,
   freezeTime = false,
 }: RoomSceneProps): JSX.Element {
-  const furniture = useMemo(() => {
-    const shell = createRoomShell();
-    const desk = createDesk(seed);
-    const monitor = createMonitor(seed);
-    const tower = createPcTower(seed);
-    const bookshelf = createBookshelf(seed);
-    const books = createBookInstances(seed, bookshelf.cells, {
-      // Feature the shelf cells of ★ posts (rough mapping; commit 6 refines).
-      featured: [0, 3, 6],
-      // 3c mobile: half the filler volumes, same shelf silhouette/anchor posts.
-      ...(quality === 'desktop' ? {} : { maxBooks: 80 }),
-    });
-    const lamp = createLamp(seed);
-    const projector = createProjector(seed);
-    const beam = createLightCone(3.85, 0.62);
-    const windowParts = createWindow();
-    const chair = createChair(seed);
-    const props = createNarrativeProps(seed);
-    const clutter = createClutterInstances(seed);
-    // Unit geometries for the instanced clutter families (commit 3b):
-    // hexagonal pencils + slightly tapered tins; instances carry scale/euler.
-    const clutterGeometries = {
-      pencil: new THREE.CylinderGeometry(1, 1, 1, 6),
-      tin: new THREE.CylinderGeometry(1, 0.92, 1, 10),
-    };
-    const frames = FRAME_POSITIONS.map(([pos, variant]) => ({
-      position: pos,
-      parts: createFramedSilhouette(seed, variant),
-    }));
-    const rugGeometry = createRugGeometry();
-    const cases = createGameCases(seed, PROJECTS.length);
-    const screenCloth = new THREE.PlaneGeometry(1.9, 1.07);
-    const screenBar = new THREE.BoxGeometry(2.02, 0.05, 0.04);
-    const plaque = createWallPlaque(seed);
-    return {
-      shell,
-      desk,
-      monitor,
-      tower,
-      bookshelf,
-      books,
-      lamp,
-      projector,
-      beam,
-      windowParts,
-      chair,
-      props,
-      clutter,
-      clutterGeometries,
-      frames,
-      rugGeometry,
-      cases,
-      screenCloth,
-      screenBar,
-      plaque,
-    };
-  }, [seed, quality]);
+  // Seeded static cache (polish/b): the default browser painter produces
+  // deterministic resources, so every mount shares one immutable set. An
+  // injected stub factory (headless tests) bypasses the cache entirely and
+  // keeps the old per-mount ownership + teardown contract.
+  const owner = useRef<object>({});
+  const usesCache = factoryUsesCache(textureFactory);
+  const resources = useMemo<RoomResources>(
+    () =>
+      usesCache
+        ? acquireRoomResources(seed, quality, textureFactory, owner.current)
+        : createRoomResources(seed, quality, textureFactory),
+    [seed, quality, textureFactory, usesCache],
+  );
+  const { furniture, materials } = resources;
 
-  const textures = useMemo(() => {
-    const plans = createTexturePlans(seed, {
-      books: POSTS.map((post) => ({
-        title: post.title,
-        featured: post.featured,
-      })),
-      cases: PROJECTS.map((project) => project.title),
-    });
-    return renderTexturePlans(plans, textureFactory);
-  }, [seed, textureFactory]);
-
-  const materials = useMemo(() => createRoomMaterials(textures), [textures]);
-
-  // Full teardown on REAL unmount (or seed/factory change): geometries,
-  // textures, materials. Deferred so StrictMode's dev-only simulated unmount
-  // cannot dispose resources that useMemo will still hand to the remount.
+  // Deferred release (NOT a synchronous refcount decrement): StrictMode's dev
+  // simulated unmount cancels this on same-generation re-setup, so the remount
+  // never receives disposed/cached GPU objects. A real unmount drops one owner;
+  // idle entries stay cached for a zero-work remount (see static-cache.ts).
   useDeferredDispose(() => {
-    disposeParts([
-      ...furniture.shell,
-      ...furniture.desk,
-      ...furniture.monitor,
-      ...furniture.tower,
-      ...furniture.bookshelf.parts,
-      ...furniture.lamp,
-      ...furniture.projector,
-      furniture.beam,
-      ...furniture.windowParts,
-      ...furniture.chair,
-      ...furniture.props.desk,
-      ...furniture.props.monitor,
-      ...furniture.props.floor,
-      ...furniture.props.tower,
-      ...furniture.props.shelf,
-      ...furniture.frames.flatMap((frame) => frame.parts),
-      ...furniture.cases,
-      ...furniture.plaque,
-    ]);
-    furniture.rugGeometry.dispose();
-    furniture.screenCloth.dispose();
-    furniture.screenBar.dispose();
-    furniture.clutterGeometries.pencil.dispose();
-    furniture.clutterGeometries.tin.dispose();
-    disposeTextures(textures);
-    disposeRoomMaterials(materials);
-  }, [furniture, textures, materials]);
+    if (usesCache) releaseRoomResources(resources.key, owner.current);
+    else disposeRoomResources(resources);
+  }, [resources, usesCache]);
 
   const lampLight: Vec3 = [
     LAMP_POSITION[0] + LAMP_BULB_LOCAL[0],
