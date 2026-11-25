@@ -26,6 +26,7 @@ import {
   releaseRoomResources,
   type RoomResources,
 } from './art/static-cache';
+import { DustMotes } from './ambient/DustMotes';
 import { CameraRig } from './CameraRig';
 import { HomeControl } from './HomeControl';
 import { PLAQUE } from './diegetic';
@@ -568,6 +569,9 @@ export function RoomScene({
             material={materials[furniture.beam.material]}
             matrixAutoUpdate={false}
           />
+          {/* polish(e): GPU-animated motes in the beam. Zero extra frames,
+              zero new lights/textures; frozen with reduced motion. */}
+          <DustMotes freezeTime={freezeTime} />
         </group>
       </group>
 
