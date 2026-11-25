@@ -16,11 +16,29 @@ import { useDeferredDispose } from '../lib/deferred-dispose';
 import { navigate } from '../lib/router';
 import { DESIGN_TOKENS } from '../styles/design-tokens';
 import { usePortfolioStore } from '../state/store';
-import { homeControlVisible } from './diegetic';
+import { HOME_FOV_DEGREES, homeControlVisible } from './diegetic';
 import { PALETTE } from './art/palette';
 
-/** Camera-space placement: bottom-left, inside the 50° desktop frustum. */
-const PLACEMENT: [number, number, number] = [-0.62, -0.36, -1.1];
+/** Plate size + camera-space depth used by the frustum fit below. */
+export const HOME_BADGE_SIZE = { width: 0.32, height: 0.12 } as const;
+const BADGE_X = -0.62;
+const BADGE_Y = -0.36;
+const BADGE_Z = -1.1;
+/** Air gap (world units) between the plate edge and the frustum edge. */
+const EDGE_MARGIN = 0.03;
+
+/**
+ * Aspect-aware camera-space placement. At narrow viewports (QA 900px, aspect
+ * 0.75–1.125) the old fixed x pushed the ◀ HOME glyphs OUT of the frustum, so
+ * pull the plate inward until its left edge clears the frustum half-extent.
+ * Wide viewports keep the original bottom-left placement.
+ */
+export function homeControlPlacement(aspect: number): [number, number, number] {
+  const halfWidth =
+    Math.abs(BADGE_Z) * Math.tan((HOME_FOV_DEGREES * Math.PI) / 360) * aspect;
+  const minX = EDGE_MARGIN + HOME_BADGE_SIZE.width / 2 - halfWidth;
+  return [Math.max(BADGE_X, minX), BADGE_Y, BADGE_Z];
+}
 
 export function HomeControl() {
   const mode = usePortfolioStore((state) => state.mode);
@@ -28,11 +46,20 @@ export function HomeControl() {
   const pointerFine = usePortfolioStore((state) => state.pointerFine);
   const camera = useThree((state) => state.camera);
   const invalidate = useThree((state) => state.invalidate);
+  const size = useThree((state) => state.size);
+  const placement = useMemo(
+    () => homeControlPlacement(size.width / size.height),
+    [size.width, size.height],
+  );
   const [hovered, setHovered] = useState(false);
   const group = useRef<THREE.Group>(null);
   const visible = homeControlVisible(mode, activeZone, pointerFine);
 
-  const geometry = useMemo(() => new THREE.PlaneGeometry(0.32, 0.12), []);
+  const geometry = useMemo(
+    () =>
+      new THREE.PlaneGeometry(HOME_BADGE_SIZE.width, HOME_BADGE_SIZE.height),
+    [],
+  );
   const texture = useMemo(() => {
     if (typeof document === 'undefined') return null;
     const canvas = document.createElement('canvas');
@@ -64,11 +91,16 @@ export function HomeControl() {
       }),
     [texture, hovered],
   );
+  // A hover flip replaces ONLY the colour material. The plate geometry and
+  // canvas texture are stable, so they must stay GPU-resident until the badge
+  // truly unmounts — disposing them on hover frees buffers still in use.
+  useDeferredDispose(() => {
+    material.dispose();
+  }, [material]);
   useDeferredDispose(() => {
     geometry.dispose();
-    material.dispose();
     texture?.dispose();
-  }, [geometry, material, texture]);
+  }, [geometry, texture]);
 
   useFrame(() => {
     if (!group.current) return;
@@ -103,7 +135,7 @@ export function HomeControl() {
         name="diegetic-home-control"
         geometry={geometry}
         material={material}
-        position={PLACEMENT}
+        position={placement}
         onClick={onClick}
         onPointerOver={onOver}
         onPointerOut={onOut}

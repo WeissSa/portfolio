@@ -54,8 +54,8 @@ export function WallPlaque({ parts, materials }: WallPlaqueProps) {
   // has settled; hover/keyboard focus still own the brighter wash + outline.
   const spotlight = useZoneSpotlight('/');
 
-  // Pitch is height/5 = 0.2 m; planes are 0.16 m so the five hit zones never
-  // overlap after the glyph-bounds re-spacing (52px ≈ 0.1625 m).
+  // Nominal pitch is height/5 = 0.28 m (the re-spaced 56px baselines are
+  // ≈0.245 m apart); 0.2 m hit planes keep the five zones from overlapping.
   const hitGeometry = useMemo(
     () => new THREE.PlaneGeometry(PLAQUE.width - 0.3, PLAQUE.hitHeight),
     [],

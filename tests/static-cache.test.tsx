@@ -18,9 +18,15 @@ import {
   asCacheableFactory,
   cachedRoomCount,
   clearRoomResourceCache,
+  factoryUsesCache,
   releaseRoomResources,
+  resourceKey,
   type RoomResources,
 } from '../src/scene/art/static-cache';
+import {
+  createPlanTexture,
+  type TextureFactory,
+} from '../src/scene/art/textures';
 
 async function flushTimers(): Promise<void> {
   await act(async () => {
@@ -36,7 +42,7 @@ function makeFactory(): ReturnType<typeof vi.fn<() => THREE.Texture>> {
 function probeResources(
   seed: string,
   quality: 'desktop' | 'mobile',
-  factory: () => THREE.Texture,
+  factory: TextureFactory,
 ): RoomResources {
   const probeOwner = {};
   const resources = acquireRoomResources(seed, quality, factory, probeOwner);
@@ -47,7 +53,7 @@ function probeResources(
 async function mount(
   seed: string,
   quality: 'desktop' | 'mobile',
-  factory: () => THREE.Texture,
+  factory: TextureFactory,
 ) {
   return ReactThreeTestRenderer.create(
     <RoomScene seed={seed} quality={quality} textureFactory={factory} />,
@@ -208,5 +214,201 @@ describe('seeded static cache — refcount + cap', () => {
     expect(disposeB).toHaveBeenCalledTimes(1);
     expect(disposeC).toHaveBeenCalledTimes(1);
     expect(cachedRoomCount()).toBe(0);
+  });
+});
+
+/** Minimal 2D context for the REAL createPlanTexture production-path test. */
+function fakePaintContext(canvas: HTMLCanvasElement): CanvasRenderingContext2D {
+  const noop = () => {};
+  const gradient = { addColorStop: noop };
+  return {
+    canvas,
+    fillStyle: '',
+    strokeStyle: '',
+    lineWidth: 1,
+    font: '',
+    textAlign: 'left',
+    textBaseline: 'alphabetic',
+    globalAlpha: 1,
+    lineCap: 'butt',
+    clearRect: noop, // climate-draw's heatmap shares this context stub
+    fillRect: noop,
+    strokeRect: noop,
+    fillText: noop,
+    beginPath: noop,
+    closePath: noop,
+    moveTo: noop,
+    lineTo: noop,
+    quadraticCurveTo: noop,
+    bezierCurveTo: noop,
+    arc: noop,
+    fill: noop,
+    stroke: noop,
+    save: noop,
+    restore: noop,
+    translate: noop,
+    rotate: noop,
+    createRadialGradient: () => gradient,
+  } as unknown as CanvasRenderingContext2D;
+}
+
+interface DisposeSpy {
+  mock: { calls: unknown[][] };
+}
+
+/** Spy on EVERY cached GPU resource (10 textures + every geometry/material family). */
+function spyAllDisposals(resources: RoomResources): DisposeSpy[] {
+  const spies: DisposeSpy[] = [];
+  const seen = new Set<object>();
+  const spy = (resource: { dispose: () => void }) => {
+    if (seen.has(resource)) return;
+    seen.add(resource);
+    spies.push(vi.spyOn(resource, 'dispose'));
+  };
+  for (const texture of Object.values(resources.textures)) spy(texture);
+  // textureClones is non-enumerable at runtime, so Object.values sees only
+  // materials (the cast drops the optional array field from the static type).
+  for (const material of Object.values(
+    resources.materials,
+  ) as THREE.Material[]) {
+    spy(material);
+  }
+  const f = resources.furniture;
+  const parts = [
+    ...f.shell,
+    ...f.desk,
+    ...f.monitor,
+    ...f.tower,
+    ...f.bookshelf.parts,
+    ...f.lamp,
+    ...f.projector,
+    f.beam,
+    ...f.windowParts,
+    ...f.chair,
+    ...f.props.desk,
+    ...f.props.monitor,
+    ...f.props.floor,
+    ...f.props.tower,
+    ...f.props.shelf,
+    ...f.frames.flatMap((frame) => frame.parts),
+    ...f.cases,
+    ...f.plaque,
+  ];
+  for (const part of parts) spy(part.geometry);
+  for (const geometry of [
+    f.rugGeometry,
+    f.screenCloth,
+    f.screenBar,
+    f.clutterGeometries.pencil,
+    f.clutterGeometries.tin,
+  ]) {
+    spy(geometry);
+  }
+  return spies;
+}
+
+describe('seeded static cache — real factory + key identity', () => {
+  it('accepts the real production painter but not an untagged injected stub', () => {
+    expect(factoryUsesCache(createPlanTexture)).toBe(true);
+    expect(factoryUsesCache(makeFactory())).toBe(false);
+  });
+
+  it('keys entries by factory identity as well as seed and quality', () => {
+    const a = asCacheableFactory(makeFactory());
+    const b = asCacheableFactory(makeFactory());
+    expect(resourceKey('k', 'desktop', a)).not.toBe(
+      resourceKey('k', 'desktop', b),
+    );
+    expect(acquireRoomResources('k', 'desktop', a)).not.toBe(
+      acquireRoomResources('k', 'desktop', b),
+    );
+    expect(cachedRoomCount()).toBe(2);
+    clearRoomResourceCache(true);
+  });
+
+  it('routes RoomScene through the cached production path across a remount', async () => {
+    const getContext = vi
+      .spyOn(HTMLCanvasElement.prototype, 'getContext')
+      .mockImplementation(function (this: HTMLCanvasElement) {
+        return fakePaintContext(this) as unknown as CanvasRenderingContext2D;
+      });
+    try {
+      const first = await mount('prod-path', 'desktop', createPlanTexture);
+      const geometryRef = firstGeometry(first);
+      // 10 room plans + the climate heatmap share this stubbed 2D context.
+      const painted = getContext.mock.calls.filter(
+        (args) => args[0] === '2d',
+      ).length;
+      expect(painted).toBeGreaterThanOrEqual(10);
+      await first.unmount();
+      await flushTimers();
+
+      const second = await mount('prod-path', 'desktop', createPlanTexture);
+      expect(firstGeometry(second)).toBe(geometryRef);
+      // Only the zone-local climate heatmap repaints on remount (it is not
+      // cached); the 10 room plans are reused, so no second batch of paints.
+      const paintedAfter = getContext.mock.calls.filter(
+        (args) => args[0] === '2d',
+      ).length;
+      expect(paintedAfter - painted).toBe(1);
+      expect(cachedRoomCount()).toBe(1);
+      await second.unmount();
+      await flushTimers();
+      clearRoomResourceCache(true);
+    } finally {
+      getContext.mockRestore();
+    }
+  });
+});
+
+describe('seeded static cache — full teardown + genuine key change', () => {
+  it('frees all 10 textures and every family on a non-force clear after a real unmount', async () => {
+    const factory = asCacheableFactory(makeFactory());
+    const resources = probeResources('full-disposal', 'desktop', factory);
+    expect(Object.keys(resources.textures)).toHaveLength(10);
+    const spies = spyAllDisposals(resources);
+
+    const view = await mount('full-disposal', 'desktop', factory);
+    await view.unmount();
+    await flushTimers();
+    expect(spies.every((spy) => spy.mock.calls.length === 0)).toBe(true);
+
+    clearRoomResourceCache(); // non-force: the entry is idle
+    expect(spies.every((spy) => spy.mock.calls.length === 1)).toBe(true);
+    expect(cachedRoomCount()).toBe(0);
+  });
+
+  it('deferred-releases the old owner and acquires a new entry on a real seed/quality change', async () => {
+    const factory = asCacheableFactory(makeFactory());
+    const first = probeResources('key-change', 'desktop', factory);
+    const disposeFirst = vi.spyOn(first.textures.wood, 'dispose');
+    const view = await mount('key-change', 'desktop', factory);
+    const firstGeometryRef = firstGeometry(view);
+
+    await view.update(
+      <RoomScene
+        seed="key-change-2"
+        quality="mobile"
+        textureFactory={factory}
+      />,
+    );
+    await flushTimers();
+    const probe = {};
+    const second = acquireRoomResources(
+      'key-change-2',
+      'mobile',
+      factory,
+      probe,
+    );
+    expect(firstGeometry(view)).toBe(second.furniture.shell[0]!.geometry);
+    expect(firstGeometry(view)).not.toBe(firstGeometryRef);
+    expect(cachedRoomCount()).toBe(2);
+    expect(disposeFirst).not.toHaveBeenCalled(); // old entry only idle, not freed
+    releaseRoomResources(second.key, probe);
+
+    await view.unmount();
+    await flushTimers();
+    clearRoomResourceCache(true);
+    expect(disposeFirst).toHaveBeenCalledTimes(1);
   });
 });

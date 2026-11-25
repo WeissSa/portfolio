@@ -6,13 +6,14 @@
  */
 import { renderHook } from '@testing-library/react';
 import ReactThreeTestRenderer, { act } from '@react-three/test-renderer';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as THREE from 'three';
 import { POSTS, postId } from '../src/content/posts';
 import { usePortfolioStore } from '../src/state/store';
 import {
   affordanceOpacity,
   affordanceTint,
+  PickableEdges,
   pickAffordance,
   useZoneSpotlight,
 } from '../src/scene/affordance';
@@ -39,6 +40,12 @@ beforeEach(() => {
   });
   document.body.style.cursor = '';
 });
+
+async function flushTimers(): Promise<void> {
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  });
+}
 
 describe('affordance primitives', () => {
   it('ramps neutral → gold for zone / hover / selected', () => {
@@ -169,5 +176,44 @@ describe('diegetic pick affordance in the R3F scene', () => {
 
     await renderer.unmount();
     disposeRoomMaterials(materials);
+  });
+
+  it('keeps the shared edge geometry alive across hover/selection changes', async () => {
+    const source = new THREE.PlaneGeometry(1, 0.6);
+    const renderer = await ReactThreeTestRenderer.create(
+      <PickableEdges
+        geometry={source}
+        position={[0, 0, 0]}
+        state="zone"
+        name="edges-disposal-test"
+      />,
+      { frameloop: 'never' },
+    );
+    const lineOf = () =>
+      renderer.scene.find((node) => node.props.name === 'edges-disposal-test')!
+        .instance as THREE.LineSegments;
+    const edges = lineOf().geometry as THREE.EdgesGeometry;
+    const material = lineOf().material as THREE.LineDashedMaterial;
+    const disposeEdges = vi.spyOn(edges, 'dispose');
+
+    for (const state of ['hover', 'selected', 'zone'] as const) {
+      await renderer.update(
+        <PickableEdges
+          geometry={source}
+          position={[0, 0, 0]}
+          state={state}
+          name="edges-disposal-test"
+        />,
+      );
+      await flushTimers();
+      expect(lineOf().geometry).toBe(edges); // same GPU buffer reused
+      expect(lineOf().material).not.toBe(material); // only the material changed
+      expect(disposeEdges).not.toHaveBeenCalled();
+    }
+
+    await renderer.unmount();
+    await flushTimers();
+    expect(disposeEdges).toHaveBeenCalledTimes(1); // true unmount frees it
+    source.dispose();
   });
 });

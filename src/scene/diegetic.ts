@@ -195,7 +195,7 @@ export function homeControlVisible(
 /**
  * Pure grain-clock step (review fix 2026-11-24). Kept here — not in
  * PainterlyPass — so the Playwright QA harness can assert the freeze logic
- * without importing R3F/three's CJS loader. The pass calls this exact step.
+ * without importing R3F's CJS loader. The pass calls this exact step.
  */
 export function advancePainterlyTime(
   current: number,

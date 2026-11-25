@@ -83,9 +83,11 @@ export interface PickableEdgesProps {
 }
 
 /**
- * Hand-inlaid brass/gold edge outline, rendered ONLY for non-idle states. The geometry and
- * material are memoized and deferred-disposed, so StrictMode's dev double-
- * invoke cannot free a GPU buffer that the remounted scene still draws.
+ * Hand-inlaid brass/gold edge outline, rendered ONLY for non-idle states. The
+ * geometry and material are memoized and deferred-disposed, so StrictMode's
+ * dev double-invoke cannot free a GPU buffer that the remounted scene still
+ * draws. A state change frees only the replaced material — the outline
+ * geometry stays bound to the new line until a true unmount.
  */
 export function PickableEdges({
   geometry,
@@ -118,33 +120,43 @@ export function PickableEdges({
     position.needsUpdate = true;
     return { edges, radius };
   }, [geometry]);
-  const material = useMemo(
-    () =>
-      new THREE.LineDashedMaterial({
-        color:
-          state === 'zone' ? PALETTE.brassLight : DESIGN_TOKENS.state.focus,
-        dashSize: Math.max(0.012, edgeRig.radius * 0.14),
-        gapSize: Math.max(0.006, edgeRig.radius * 0.05),
-        transparent: true,
-        opacity: affordanceOpacity(state),
-        depthWrite: false,
-      }),
-    [state, edgeRig.radius],
-  );
-  const line = useMemo(() => {
-    const segments = new THREE.LineSegments(edgeRig.edges, material);
-    segments.computeLineDistances();
-    return segments;
-  }, [edgeRig.edges, material]);
+  /**
+   * ONE memo owns the state-dependent line resources (material + line) so the
+   * deferred-dispose hook has a single generation to track per state change.
+   * The wobble geometry is BORROWED from edgeRig: a hover/state flip replaces
+   * the material but reuses those edges, so they must never be freed here.
+   */
+  const rig = useMemo(() => {
+    const material = new THREE.LineDashedMaterial({
+      color: state === 'zone' ? PALETTE.brassLight : DESIGN_TOKENS.state.focus,
+      dashSize: Math.max(0.012, edgeRig.radius * 0.14),
+      gapSize: Math.max(0.006, edgeRig.radius * 0.05),
+      transparent: true,
+      opacity: affordanceOpacity(state),
+      depthWrite: false,
+    });
+    const line = new THREE.LineSegments(edgeRig.edges, material);
+    line.computeLineDistances();
+    return { material, line };
+  }, [edgeRig, state]);
+
+  // A state change replaces ONLY the material: the new line still draws the
+  // borrowed edges, so disposing them here would churn/free an in-use buffer.
+  // Depending on [rig] queues exactly one disposal per replaced generation.
+  useDeferredDispose(() => {
+    rig.material.dispose();
+  }, [rig]);
+
+  // Edges belong to the SOURCE GEOMETRY generation, not to hover state: free
+  // them only on a true unmount (or a genuine source-geometry change).
   useDeferredDispose(() => {
     edgeRig.edges.dispose();
-    material.dispose();
-  }, [edgeRig, material]);
+  }, [edgeRig]);
 
   if (state === 'idle') return null;
   return (
     <primitive
-      object={line}
+      object={rig.line}
       name={name}
       position={[...position]}
       rotation={rotation ? [...rotation] : undefined}

@@ -9,10 +9,13 @@
  *
  * Ownership is conservative: a release only drops an owner; an idle (zero
  * owner) entry stays cached so a remount reuses the identical objects, which
- * is what makes toggles free. Entries are freed by cap eviction, HMR, or an
- * explicit clear — NEVER while a consumer still references them. Memory is
- * bounded by the two-key cap and the existing 1.8 M-pixel texture budget
- * (a single seed/room in production keeps one entry for the whole session).
+ * is what makes toggles free. At most TWO IDLE entries are retained — the cap
+ * applies to idle entries only, NEVER to live ones. Eviction on a cache miss
+ * is insertion-order, NOT LRU (no last-use tracking). Entries are freed by
+ * that idle eviction, HMR, or an explicit clear — never while a consumer still
+ * references them. Memory is bounded by the two-idle-entry cap and the
+ * existing 1.8 M-pixel texture budget (one seed/room in production keeps one
+ * entry for the whole session).
  *
  * StrictMode safety lives in Room.tsx: release is scheduled through
  * useDeferredDispose, so the dev double-invoke's simulated unmount cannot drop
@@ -95,7 +98,10 @@ export interface RoomResources {
   materials: RoomMaterials;
 }
 
-/** Safety bound: a session holds at most two (seed, quality) resource sets. */
+/**
+ * Safety bound: at most two IDLE (zero-owner) resource sets are retained. Live
+ * entries are never evicted, so the cache can temporarily hold more than two.
+ */
 export const MAX_CACHED_ROOMS = 2;
 
 const CACHEABLE = Symbol('cacheableRoomFactory');
@@ -117,11 +123,28 @@ export function factoryUsesCache(factory: TextureFactory): boolean {
   );
 }
 
+/**
+ * Factory identity is part of the key: two different (even tagged) painters
+ * must never silently share textures. Production has a single painter, but the
+ * DI seam makes distinct stubs legitimate, so id them by function identity.
+ */
+const factoryIds = new WeakMap<TextureFactory, number>();
+let nextFactoryId = 0;
+function factoryId(factory: TextureFactory): number {
+  let id = factoryIds.get(factory);
+  if (id === undefined) {
+    id = ++nextFactoryId;
+    factoryIds.set(factory, id);
+  }
+  return id;
+}
+
 export function resourceKey(
   seed: string | number,
   quality: CacheQuality,
+  factory: TextureFactory = createPlanTexture,
 ): string {
-  return `${String(seed)}|${quality}`;
+  return `${String(seed)}|${quality}|f${factoryId(factory)}`;
 }
 
 /** Build one resource set. No cache involvement; caller owns disposal. */
@@ -237,7 +260,10 @@ const DEFAULT_OWNER: object = {};
 const cache = new Map<string, CacheEntry>();
 let insertionOrder = 0;
 
-/** Free the least-recently-inserted IDLE entry; never dispose a live one. */
+/**
+ * Free the least-recently-INSERTED idle entry (insertion-order, NOT LRU — no
+ * last-use tracking). Called only on a cache miss; a live entry is never freed.
+ */
 function evictIdleIfFull(): void {
   if (cache.size < MAX_CACHED_ROOMS) return;
   let oldest: [string, CacheEntry] | undefined;
@@ -267,7 +293,7 @@ export function acquireRoomResources(
   textureFactory: TextureFactory = createPlanTexture,
   owner: object = DEFAULT_OWNER,
 ): RoomResources {
-  const key = resourceKey(seed, quality);
+  const key = resourceKey(seed, quality, textureFactory);
   const existing = cache.get(key);
   if (existing) {
     existing.owners.add(owner);
@@ -283,7 +309,7 @@ export function acquireRoomResources(
 /**
  * Drop one owner. An idle entry stays cached — a same-key remount reuses the
  * exact objects without repainting or re-uploading. Disposal happens only via
- * cap eviction or clearRoomResourceCache(), never while someone still uses it.
+ * idle eviction or clearRoomResourceCache(), never while someone still uses it.
  */
 export function releaseRoomResources(
   key: string,
