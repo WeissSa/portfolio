@@ -18,8 +18,10 @@ import { useEffect } from 'react';
 import { Modal } from '@mantine/core';
 import { findPostById } from '../content/posts';
 import { useFocusRestore } from '../lib/a11y';
+import { useDiegeticDetail } from '../lib/detail-mode';
 import { useClearSceneHover, useInertBackground } from '../lib/dialog-effects';
 import { usePortfolioStore } from '../state/store';
+import { DetailMirror } from './DetailMirror';
 import { PostCard } from './PostCard';
 
 export function ProjectDetailOverlay() {
@@ -29,9 +31,10 @@ export function ProjectDetailOverlay() {
   const selectProject = usePortfolioStore((state) => state.selectProject);
   const project = findPostById(selectedProjectId);
   const open = Boolean(project);
-  useInertBackground(open);
+  const diegetic = useDiegeticDetail();
+  useInertBackground(open && !diegetic);
   useClearSceneHover(open);
-  useFocusRestore(open);
+  useFocusRestore(open && !diegetic);
 
   useEffect(() => {
     if (!project) return;
@@ -45,6 +48,24 @@ export function ProjectDetailOverlay() {
   }, [project, selectProject]);
 
   if (!project) return null;
+
+  // In-world case content is a 3D textured card in fine-pointer live 3D; the
+  // SAME PostCard content survives here as the hidden a11y mirror. Fallbacks
+  // (2D / coarse pointer / reduced motion / no scene) keep the visible dialog.
+  if (diegetic) {
+    return (
+      <DetailMirror
+        label={`Project details for ${project.title}`}
+        surface="case"
+        onClose={() => selectProject(null)}
+      >
+        <PostCard post={project} variant="case" expanded />
+        <p role="status" aria-live="polite" className="sr-only">
+          Project case opened for {project.title}
+        </p>
+      </DetailMirror>
+    );
+  }
 
   return (
     <Modal

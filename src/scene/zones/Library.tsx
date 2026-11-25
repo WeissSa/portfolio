@@ -21,7 +21,10 @@ import {
   useZoneSpotlight,
 } from '../affordance';
 import { useDeferredDispose } from '../../lib/deferred-dispose';
+import { focusDetailTrigger, useDiegeticDetail } from '../../lib/detail-mode';
 import { usePortfolioStore } from '../../state/store';
+import { DetailPlane } from '../DetailPlane';
+import { postDetailSpecs } from '../detail-texture';
 import {
   bookAtlasRows,
   createLibraryBooks,
@@ -53,6 +56,9 @@ export function LibraryZone({ cells, materials }: LibraryZoneProps) {
   const selectedPostId = usePortfolioStore((state) => state.selectedPostId);
   const setHoveredPost = usePortfolioStore((state) => state.setHoveredPost);
   const selectPost = usePortfolioStore((state) => state.selectPost);
+  // polish(c): fine-pointer live 3D renders the opened book in-world; every
+  // fallback keeps the ordinary visible DOM detail dialog.
+  const diegetic = useDiegeticDetail();
   // Experience-zone spotlight: all books get a subtle gold lift once the
   // camera settles; hover/selection keep the stronger shared affordance.
   const spotlight = useZoneSpotlight('/experience');
@@ -150,7 +156,11 @@ export function LibraryZone({ cells, materials }: LibraryZoneProps) {
   const onClick = (event: ThreeEvent<MouseEvent>) => {
     event.stopPropagation();
     const book = bookAt(event.instanceId);
-    if (book) selectPost(book.id);
+    if (book) {
+      // Pointer pick: focus the sr-only DOM proxy so F2 can restore focus.
+      focusDetailTrigger();
+      selectPost(book.id);
+    }
   };
 
   if (books.length === 0) return null;
@@ -160,6 +170,15 @@ export function LibraryZone({ cells, materials }: LibraryZoneProps) {
   const activeBook = books.find(
     (book) => book.id === selectedPostId || book.id === hoveredPostId,
   );
+
+  // The opened book floats in front of the shelf at the BOOK_VIEWPOINT framing.
+  // The selected volume keeps its pulled-out/spine highlight, while these two
+  // textured planes carry the cover → description page turn in-world.
+  const openPost =
+    diegetic && selectedPostId
+      ? POSTS.find((post) => postId(post) === selectedPostId)
+      : undefined;
+  const openSpecs = openPost ? postDetailSpecs(openPost) : null;
 
   return (
     <group name="library-books">
@@ -184,6 +203,27 @@ export function LibraryZone({ cells, materials }: LibraryZoneProps) {
           state={activeBook.id === selectedPostId ? 'selected' : 'hover'}
           name="book-affordance"
         />
+      )}
+      {openSpecs && (
+        <group name="open-book-detail" position={[0, 1.45, 0.38]}>
+          <DetailPlane
+            spec={openSpecs.body}
+            position={[0.3, 0, 0]}
+            width={0.7}
+            height={0.52}
+            active
+            name="book-page-body"
+          />
+          <DetailPlane
+            spec={openSpecs.cover}
+            position={[-0.36, 0, 0.004]}
+            width={0.68}
+            height={0.52}
+            active
+            motion="turn"
+            name="book-page-cover"
+          />
+        </group>
       )}
     </group>
   );

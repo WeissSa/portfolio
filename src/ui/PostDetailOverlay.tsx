@@ -19,8 +19,10 @@ import { Suspense, lazy, useEffect } from 'react';
 import { Modal } from '@mantine/core';
 import { findPostById } from '../content/posts';
 import { useFocusRestore } from '../lib/a11y';
+import { useDiegeticDetail } from '../lib/detail-mode';
 import { useClearSceneHover, useInertBackground } from '../lib/dialog-effects';
 import { usePortfolioStore } from '../state/store';
+import { DetailMirror } from './DetailMirror';
 import { PostCard } from './PostCard';
 
 const PostBook = lazy(() => import('./PostBook'));
@@ -30,9 +32,12 @@ export function PostDetailOverlay() {
   const selectPost = usePortfolioStore((state) => state.selectPost);
   const post = findPostById(selectedPostId);
   const open = Boolean(post);
-  useInertBackground(open);
+  const diegetic = useDiegeticDetail();
+  // The mirror is non-modal and never makes the shell inert (the room stays
+  // live behind it); the ordinary dialog keeps its original focus/stack model.
+  useInertBackground(open && !diegetic);
   useClearSceneHover(open);
-  useFocusRestore(open);
+  useFocusRestore(open && !diegetic);
 
   useEffect(() => {
     if (!post) return;
@@ -46,6 +51,27 @@ export function PostDetailOverlay() {
   }, [post, selectPost]);
 
   if (!post) return null;
+
+  // Fine-pointer live 3D: the book opens as textured pages IN-WORLD; this is
+  // the a11y-only DOM mirror (visually hidden until keyboard focus reveals it).
+  // Every other mode keeps the visible Mantine dialog below — content is never
+  // 3D-only.
+  if (diegetic) {
+    return (
+      <DetailMirror
+        label={`Details for ${post.title}`}
+        surface="book"
+        onClose={() => selectPost(null)}
+      >
+        <Suspense fallback={<PostCard post={post} expanded />}>
+          <PostBook post={post} />
+        </Suspense>
+        <p role="status" aria-live="polite" className="sr-only">
+          Details opened for {post.title}
+        </p>
+      </DetailMirror>
+    );
+  }
 
   return (
     <Modal

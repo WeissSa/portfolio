@@ -15,18 +15,21 @@ import { useEffect } from 'react';
 import { Modal } from '@mantine/core';
 import { CLIMATE_TITLE } from '../content/climate';
 import { useFocusRestore } from '../lib/a11y';
+import { useDiegeticDetail } from '../lib/detail-mode';
 import { useClearSceneHover, useInertBackground } from '../lib/dialog-effects';
 import { usePortfolioStore } from '../state/store';
 import { ClimateView } from './ClimateView';
+import { DetailMirror } from './DetailMirror';
 
 export function ClimateProjectorPanel() {
   const open = usePortfolioStore((state) => state.climatePanelOpen);
   const closeClimatePanel = usePortfolioStore(
     (state) => state.closeClimatePanel,
   );
-  useInertBackground(open);
+  const diegetic = useDiegeticDetail();
+  useInertBackground(open && !diegetic);
   useClearSceneHover(open);
-  useFocusRestore(open);
+  useFocusRestore(open && !diegetic);
 
   useEffect(() => {
     if (!open) return;
@@ -50,6 +53,24 @@ export function ClimateProjectorPanel() {
   }, [open, closeClimatePanel]);
 
   if (!open) return null;
+
+  // The projected panel already lives in-world; INFO paints a fuller text plane
+  // beside it in fine-pointer live 3D. This mirror keeps the full ClimateView
+  // accessible; fallbacks show it in the ordinary visible dialog below.
+  if (diegetic) {
+    return (
+      <DetailMirror
+        label={`${CLIMATE_TITLE} — Projector Feed`}
+        surface="projector"
+        onClose={closeClimatePanel}
+      >
+        <ClimateView idPrefix="projector-panel" />
+        <p role="status" aria-live="polite" className="sr-only">
+          Climate projector panel opened
+        </p>
+      </DetailMirror>
+    );
+  }
 
   return (
     <Modal

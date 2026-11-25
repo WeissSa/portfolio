@@ -17,6 +17,8 @@ import {
   SHELF_POSITION,
 } from '../src/scene/placement';
 import {
+  BOOK_VIEWPOINT,
+  CASE_VIEWPOINT,
   getCameraViewpoint,
   getZoneViewpoint,
   HOME_VIEWPOINT,
@@ -163,5 +165,42 @@ describe('monitor desktop zoom viewpoint (commit 7)', () => {
     });
     expect(portrait.target).toBe(landscape.target);
     expect(portrait.position[2]).toBeGreaterThan(landscape.position[2]);
+  });
+});
+
+describe('in-world detail close-ups (polish(c))', () => {
+  it('derives book/case framings from the same furniture placement', () => {
+    expect(BOOK_VIEWPOINT.target[0]).toBeCloseTo(SHELF_POSITION[0] + 0.6);
+    expect(BOOK_VIEWPOINT.target[2]).toBeCloseTo(SHELF_POSITION[2] - 0.6);
+    // The camera stands in front of the shelf (larger world x).
+    expect(BOOK_VIEWPOINT.position[0]).toBeGreaterThan(
+      BOOK_VIEWPOINT.target[0],
+    );
+    expect(CASE_VIEWPOINT.target[0]).toBeCloseTo(DESK_POSITION[0] + 0.25);
+    expect(CASE_VIEWPOINT.target[1]).toBeCloseTo(DESK_TOP_HEIGHT + 0.5);
+    expect(CASE_VIEWPOINT.position[2]).toBeGreaterThan(
+      CASE_VIEWPOINT.target[2],
+    );
+    for (const vp of [BOOK_VIEWPOINT, CASE_VIEWPOINT]) {
+      for (const value of [...vp.position, ...vp.target]) {
+        expect(Number.isFinite(value)).toBe(true);
+      }
+    }
+  });
+
+  it('selects the detail viewpoint only when a detail is open', () => {
+    expect(getCameraViewpoint('/experience', false, {}, 'book')).toBe(
+      BOOK_VIEWPOINT,
+    );
+    expect(getCameraViewpoint('/projects', false, {}, 'case')).toBe(
+      CASE_VIEWPOINT,
+    );
+    expect(getCameraViewpoint('/about', true, {}, 'monitor')).toBe(
+      MONITOR_VIEWPOINT,
+    );
+    // No detail → the zone framing is untouched.
+    expect(getCameraViewpoint('/experience', false, {})).toBe(
+      getZoneViewpoint('/experience'),
+    );
   });
 });

@@ -227,7 +227,13 @@ async function driveRuns(
       await page
         .getByRole('button', { name: 'Open projector info panel' })
         .click();
-      await expect(page.getByRole('dialog')).toBeVisible();
+      // polish(c): the detail surface is an sr-hidden a11y mirror in fine
+      // pointer live 3D and a visible dialog in the coarse-pointer fallback.
+      // Both are in the a11y tree; assert presence, not pixel visibility, so
+      // the frame-time workload measures the same open/close in every tier.
+      await expect(page.locator('.detail-mirror, [role="dialog"]')).toHaveCount(
+        1,
+      );
       await page.waitForTimeout(350);
       await page.keyboard.press('Escape');
     });

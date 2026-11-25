@@ -11,6 +11,7 @@ import {
   type DeviceTier,
 } from './lib/device-tier';
 import { usePrefersReducedMotion } from './lib/a11y';
+import { useDiegeticDetail } from './lib/detail-mode';
 import { useRoute, type Route } from './lib/router';
 import { usePortfolioStore } from './state/store';
 import { MainMenu } from './ui/MainMenu';
@@ -91,6 +92,8 @@ export default function App() {
   const prefersReducedMotion = usePrefersReducedMotion();
   /** 3D while reduced motion is active: static cuts + HUD + frozen grain. */
   const static3d = sceneLive && prefersReducedMotion;
+  /** Fine-pointer live 3D only: detail lives in-world, DOM is an a11y mirror. */
+  const diegeticDetail = useDiegeticDetail();
   const initialRouteSynced = useRef(false);
   const [tier, setTier] = useState<DeviceTier>('desktop');
   // 3c P10 warm start: after the first 3D visit, DESKTOP keeps the Canvas
@@ -233,12 +236,27 @@ export default function App() {
           so 3D pointer gating never disables its links/buttons. */}
         <ProjectDetailOverlay />
 
+        {/* polish(c) F2: in-world detail is picked on an aria-hidden canvas, so
+            every 3D pick focuses this sr-only DOM proxy of the trigger; closing
+            a detail mirror restores focus here. Absent in fallback modes. */}
+        {diegeticDetail && (
+          <button
+            id="detail-return"
+            type="button"
+            tabIndex={-1}
+            aria-label="Return to the 3D room"
+            className="sr-only"
+          />
+        )}
+
         {/* Monitor zoom: full-screen DOM About desktop, shared with 2D mode.
-          Only in 3D — a stale flag can never double-render the 2D About zone. */}
+          Only in 3D — a stale flag can never double-render the 2D About zone.
+          In fine-pointer live 3D it renders as the visually-hidden a11y mirror. */}
         {mode === '3d' && desktopOpen && <DesktopZoom />}
 
         {/* Climate projector dialog: the same ClimateView as the 2D route, in a
-          focus-managed panel on top of the canvas (every fact reachable in DOM). */}
+          focus-managed panel on top of the canvas (every fact reachable in DOM).
+          A11y mirror in fine-pointer live 3D; visible in every fallback mode. */}
         {mode === '3d' && climatePanelOpen && <ClimateProjectorPanel />}
 
         <div className="app-shell mx-auto flex max-w-7xl flex-col gap-4 p-3 md:flex-row md:p-6">

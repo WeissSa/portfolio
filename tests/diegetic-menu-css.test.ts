@@ -62,3 +62,33 @@ describe('diegetic DOM menu reveal', () => {
     expect(block).toMatch(/color:\s*var\(--state-active-fg\)/);
   });
 });
+
+describe('diegetic detail a11y mirror reveal (polish(c))', () => {
+  it('sr-hides the mirror for fine pointers in a live scene', () => {
+    const hidden =
+      /\.app-scene-live\.app-fine-pointer \.detail-mirror\s*\{([^}]*)\}/.exec(
+        CSS,
+      )?.[1];
+    expect(hidden).toMatch(/clip-path:\s*inset\(50%\)/);
+    expect(hidden).toMatch(/width:\s*1px/);
+    // sr-only, never display:none: the mirror stays in the a11y tree/tab order.
+    expect(hidden).not.toMatch(/display:\s*none/);
+  });
+
+  it('reveals on keyboard focus only — never :focus-within (mouse clicks)', () => {
+    expect(CSS).toContain(
+      '.app-scene-live.app-fine-pointer .detail-mirror:has(:focus-visible)',
+    );
+    expect(CSS).not.toMatch(/\.detail-mirror:focus-within\s*\{/);
+    const revealed =
+      /\.app-scene-live\.app-fine-pointer \.detail-mirror:has\(:focus-visible\)\s*\{([^}]*)\}/.exec(
+        CSS,
+      )?.[1];
+    expect(revealed).toMatch(/position:\s*fixed/);
+    expect(revealed).toMatch(/border:\s*2px solid var\(--state-focus\)/);
+    expect(revealed).toMatch(/pointer-events:\s*auto/);
+    expect(CSS).toContain(
+      '.app-scene-live.app-fine-pointer\n  .detail-mirror:has(:focus-visible)\n  .detail-mirror__chip',
+    );
+  });
+});

@@ -92,6 +92,37 @@ export const MONITOR_VIEWPOINT: ZoneViewpoint = {
   ],
 };
 
+/**
+ * polish(c) detail close-ups. Derived from the same furniture placement as the
+ * in-world detail planes: the open book floats just in front of the shelf, the
+ * case card rises above the desk-shelf cases. Both face the entering camera so
+ * the painted text is legible; on close CameraRig flies back to the zone.
+ */
+export const BOOK_VIEWPOINT: ZoneViewpoint = {
+  // Aim past the open book so the readable page lands in the clean LEFT band,
+  // clear of the 50% DOM column; the camera is ~1.4 m from the page plane.
+  position: [SHELF_POSITION[0] + 1.95, 1.5, SHELF_POSITION[2] - 0.45],
+  target: [SHELF_POSITION[0] + 0.6, 1.45, SHELF_POSITION[2] - 0.6],
+};
+
+export const CASE_VIEWPOINT: ZoneViewpoint = {
+  // Pulled back from the cases so the lifted card fits the frame instead of
+  // overflowing it; the target sits at the card's world height.
+  position: [
+    DESK_POSITION[0] + 0.1,
+    DESK_TOP_HEIGHT + 0.95,
+    DESK_POSITION[2] + 1.8,
+  ],
+  target: [
+    DESK_POSITION[0] + 0.25,
+    DESK_TOP_HEIGHT + 0.5,
+    DESK_POSITION[2] + 0.18,
+  ],
+};
+
+/** Which in-world detail owns the camera (fine-pointer live 3D only). */
+export type DetailKind = 'book' | 'case' | 'monitor' | 'projector';
+
 export interface ViewpointOptions {
   /** True when the viewport is taller than wide (mobile portrait). */
   portrait?: boolean;
@@ -143,9 +174,15 @@ export function getCameraViewpoint(
   route: Route,
   desktopOpen: boolean,
   options: ViewpointOptions = {},
+  detail: DetailKind | null = null,
 ): ZoneViewpoint {
-  const base = desktopOpen
-    ? MONITOR_VIEWPOINT
-    : (ZONE_VIEWPOINTS[route] ?? HOME_VIEWPOINT);
+  const base =
+    detail === 'book'
+      ? BOOK_VIEWPOINT
+      : detail === 'case'
+        ? CASE_VIEWPOINT
+        : desktopOpen
+          ? MONITOR_VIEWPOINT
+          : (ZONE_VIEWPOINTS[route] ?? HOME_VIEWPOINT);
   return withPortrait(base, options);
 }

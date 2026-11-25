@@ -150,6 +150,57 @@ async function open(page: Page, route: string): Promise<void> {
 }
 
 /**
+ * polish(c): in fine-pointer live 3D the detail DOM survives as an a11y mirror
+ * but is sr-hidden (≤2px box, no backdrop/modal). Pointer users see ONLY the
+ * in-world object. The `#detail-return` proxy is the F2 focus target.
+ */
+/**
+ * Fixed-pixel picks are calibrated against the settled zone camera. SwiftShader
+ * can need more than SWIFT_SETTLE_MS frames after a hash jump, so retry the same
+ * pick a couple of times before declaring the coordinate stale.
+ */
+async function pickDetail(
+  page: Page,
+  x: number,
+  y: number,
+  surface: string,
+): Promise<void> {
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    await page.mouse.move(x, y);
+    await page.waitForTimeout(200);
+    await page.mouse.click(x, y);
+    try {
+      await expect(
+        page.locator(`.detail-mirror[data-detail-surface="${surface}"]`),
+      ).toHaveCount(1, { timeout: 1500 });
+      return;
+    } catch {
+      await page.waitForTimeout(1500);
+    }
+  }
+  throw new Error(`${surface}: fixed-pixel pick at (${x},${y}) never landed`);
+}
+
+async function expectHiddenMirror(page: Page, surface: string): Promise<void> {
+  const mirror = page.locator(
+    `.detail-mirror[data-detail-surface="${surface}"]`,
+  );
+  await expect(mirror).toHaveCount(1);
+  const box = await mirror.boundingBox();
+  expect(
+    box?.width ?? 0,
+    `${surface} mirror must be sr-hidden`,
+  ).toBeLessThanOrEqual(2);
+  expect(
+    box?.height ?? 0,
+    `${surface} mirror must be sr-hidden`,
+  ).toBeLessThanOrEqual(2);
+  await expect(page.locator('.post-detail-backdrop')).toHaveCount(0);
+  await expect(page.locator('.desktop-zoom')).toHaveCount(0);
+  await expect(page.locator('#detail-return')).toHaveCount(1);
+}
+
+/**
  * D6: detail/desktop dialogs call useInertBackground(true). A hash navigation
  * does NOT unmount them, so the next pick/trigger stays inert and the combined
  * dialog test used to time out at the projector trigger. Close every open
@@ -203,32 +254,39 @@ test.describe('key capture matrix (desktop / tablet / mobile)', () => {
     await context.close();
   });
 
-  test('desktop 3D dialogs', async ({ browser }) => {
+  test('desktop 3D in-world details (no visible DOM dialog)', async ({
+    browser,
+  }) => {
     // Fixed-pixel 3D picks are intentional real-pick evidence, but brittle:
     // recalibrate after geometry/layout changes (REPORT.md defect D4).
+    // polish(c): the detail is now painted on in-world objects. The screenshots
+    // capture the opened book / lifted case / CRT / projected card; DOM dialogs
+    // must NOT be visible to the pointer user (only the sr-only a11y mirror).
     const context = await newCaptureContext(browser, { viewport: DESKTOP });
     const page = await context.newPage();
 
     await open(page, 'experience');
     await capture(page, 'desktop_3d_experience', true);
-    await page.mouse.move(664, 378);
-    await page.waitForTimeout(200);
-    await page.mouse.click(664, 378);
-    await expect(page.getByRole('dialog')).toBeVisible();
-    await page.waitForTimeout(400);
+    await pickDetail(page, 664, 378, 'book');
+    await expectHiddenMirror(page, 'book');
+    // Camera flies to BOOK_VIEWPOINT and the cover page turns via damp.
+    await page.waitForTimeout(2600);
     await page.screenshot({
       path: resolve(SHOTS, 'desktop_3d_book-detail.png'),
     });
-    await closeDialogs(page);
+    await page.keyboard.press('Escape');
+    await expect(page.locator('.detail-mirror')).toHaveCount(0);
+    expect(
+      await page.evaluate(() => document.activeElement?.id),
+      'F2: focus returns to the 3D trigger proxy',
+    ).toBe('detail-return');
 
     await page.goto('#/projects');
     await page.locator('.scene-layer--ready').waitFor({ state: 'attached' });
     await page.waitForTimeout(SWIFT_SETTLE_MS);
-    await page.mouse.move(900, 440);
-    await page.waitForTimeout(200);
-    await page.mouse.click(900, 440);
-    await expect(page.getByRole('dialog')).toBeVisible();
-    await page.waitForTimeout(400);
+    await pickDetail(page, 900, 440, 'case');
+    await expectHiddenMirror(page, 'case');
+    await page.waitForTimeout(2600);
     await page.screenshot({
       path: resolve(SHOTS, 'desktop_3d_case-detail.png'),
     });
@@ -237,15 +295,11 @@ test.describe('key capture matrix (desktop / tablet / mobile)', () => {
     await page.goto('#/about');
     await page.locator('.scene-layer--ready').waitFor({ state: 'attached' });
     await page.waitForTimeout(SWIFT_SETTLE_MS);
-    await page.mouse.move(850, 350);
-    await page.waitForTimeout(200);
-    await page.mouse.click(850, 350);
-    // Assert the MONITOR dialog specifically — a generic dialog check let a
-    // stale/incorrect pick masquerade as a successful monitor capture (D6).
-    await expect(
-      page.getByRole('dialog', { name: 'About desktop — full screen' }),
-    ).toBeVisible();
-    await page.waitForTimeout(400);
+    // Assert the MONITOR mirror specifically (D6: a generic check let a stale
+    // pick masquerade as a successful monitor capture).
+    await pickDetail(page, 850, 350, 'monitor');
+    await expectHiddenMirror(page, 'monitor');
+    await page.waitForTimeout(2600);
     await page.screenshot({
       path: resolve(SHOTS, 'desktop_3d_monitor-zoom.png'),
     });
@@ -258,19 +312,15 @@ test.describe('key capture matrix (desktop / tablet / mobile)', () => {
     await page
       .getByRole('button', { name: 'Open projector info panel' })
       .click();
-    const projectorDialog = page.getByRole('dialog');
-    await expect(projectorDialog).toBeVisible();
-    // Wait for CONTENT, not just the dialog shell: a fast screenshot caught
-    // the panels mid cut-in and produced empty dark boxes as false evidence.
+    await expectHiddenMirror(page, 'projector');
+    const projectorMirror = page.locator('.detail-mirror');
+    // Wait for CONTENT inside the mirror, not just its shell.
     await expect(
-      projectorDialog.getByText(/Is Today Weirdly Hot/i),
-    ).toBeVisible();
-    await page.waitForTimeout(600);
+      projectorMirror.getByText(/Is Today Weirdly Hot/i),
+    ).toHaveCount(1);
+    await page.waitForTimeout(2600);
     await page.screenshot({
       path: resolve(SHOTS, 'desktop_3d_climate-projector-panel.png'),
-      // Finish the P5 cut-in (panels animate from opacity 0); without this the
-      // PNG can show empty dark boxes even though the content is in the DOM.
-      animations: 'disabled',
     });
     await context.close();
   });

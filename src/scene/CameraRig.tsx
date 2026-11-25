@@ -24,8 +24,13 @@ import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
 import type { DeviceTier } from '../lib/device-tier';
+import { useDiegeticDetail } from '../lib/detail-mode';
 import { usePortfolioStore } from '../state/store';
-import { getCameraViewpoint, HOME_VIEWPOINT } from './viewpoints';
+import {
+  getCameraViewpoint,
+  HOME_VIEWPOINT,
+  type DetailKind,
+} from './viewpoints';
 
 const DAMP_LAMBDA = 3.6;
 const MAX_DELTA = 0.1;
@@ -49,6 +54,25 @@ export function CameraRig({
   // Desktop zoom (commit 7): fly to the monitor close-up while the 2D desktop
   // overlay is open, and back to the zone viewpoint when it closes.
   const desktopOpen = usePortfolioStore((state) => state.desktopOpen);
+  const selectedPostId = usePortfolioStore((state) => state.selectedPostId);
+  const selectedProjectId = usePortfolioStore(
+    (state) => state.selectedProjectId,
+  );
+  const climatePanelOpen = usePortfolioStore((state) => state.climatePanelOpen);
+  // Only fine-pointer live 3D flies to a detail close-up; fallback modes keep
+  // the zone viewpoint (the visible DOM dialog does its own thing).
+  const diegetic = useDiegeticDetail();
+  const detail: DetailKind | null = diegetic
+    ? selectedPostId
+      ? 'book'
+      : selectedProjectId
+        ? 'case'
+        : desktopOpen
+          ? 'monitor'
+          : climatePanelOpen
+            ? 'projector'
+            : null
+    : null;
   const setCameraSettled = usePortfolioStore((state) => state.setCameraSettled);
   const camera = useThree((state) => state.camera);
   const invalidate = useThree((state) => state.invalidate);
@@ -63,10 +87,12 @@ export function CameraRig({
   const mounted = useRef(false);
 
   useEffect(() => {
-    const viewpoint = getCameraViewpoint(activeZone, desktopOpen, {
-      portrait,
-      tier,
-    });
+    const viewpoint = getCameraViewpoint(
+      activeZone,
+      desktopOpen,
+      { portrait, tier },
+      detail,
+    );
     desiredPosition.set(...viewpoint.position);
     desiredTarget.set(...viewpoint.target);
 
@@ -95,6 +121,7 @@ export function CameraRig({
   }, [
     activeZone,
     desktopOpen,
+    detail,
     instant,
     setCameraSettled,
     portrait,

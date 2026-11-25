@@ -20,11 +20,14 @@ import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
 import { PickableEdges, pickAffordance, useZoneSpotlight } from '../affordance';
 import { navigate } from '../../lib/router';
 import { useDeferredDispose } from '../../lib/deferred-dispose';
+import { focusDetailTrigger, useDiegeticDetail } from '../../lib/detail-mode';
 import { DESIGN_TOKENS } from '../../styles/design-tokens';
 import { usePortfolioStore } from '../../state/store';
 import { CRT_DOCK, DIEGETIC_ROWS } from '../diegetic';
 import { MONITOR_VIEWPOINT } from '../viewpoints';
-import type { RoomPart } from '../art/geometry';
+import { DetailPlane } from '../DetailPlane';
+import { monitorDetailSpec } from '../detail-texture';
+import { MONITOR_SCREEN_LOCAL_Y, type RoomPart } from '../art/geometry';
 import type { RoomMaterials } from '../art/materials';
 
 export interface DeskZoneProps {
@@ -40,6 +43,8 @@ export function crtDockX(textureX: number): number {
 
 export function DeskZone({ monitor, materials }: DeskZoneProps) {
   const openDesktop = usePortfolioStore((state) => state.openDesktop);
+  const desktopOpen = usePortfolioStore((state) => state.desktopOpen);
+  const diegetic = useDiegeticDetail();
   const pointerFine = usePortfolioStore((state) => state.pointerFine);
   const menuHoverRoute = usePortfolioStore((state) => state.menuHoverRoute);
   const menuFocusRoute = usePortfolioStore((state) => state.menuFocusRoute);
@@ -118,7 +123,9 @@ export function DeskZone({ monitor, materials }: DeskZoneProps) {
 
   const onClick = (event: ThreeEvent<MouseEvent>) => {
     event.stopPropagation();
-    // Content stays in DOM: this only flips the store flag.
+    // In-world CRT content is painted below; this flips the store flag and
+    // focuses the F2 trigger proxy (no-op when the DOM proxy is absent).
+    focusDetailTrigger();
     openDesktop();
   };
   const onPointerOver = (event: ThreeEvent<PointerEvent>) => {
@@ -227,6 +234,18 @@ export function DeskZone({ monitor, materials }: DeskZoneProps) {
             </group>
           );
         })}
+      {/* polish(c): the monitor's own screen carries the About detail texture
+          instead of a visible DOM desktop; camera already sits at the close-up. */}
+      {diegetic && desktopOpen && (
+        <DetailPlane
+          spec={monitorDetailSpec()}
+          position={[0, MONITOR_SCREEN_LOCAL_Y, 0.034]}
+          width={0.88}
+          height={0.5}
+          active
+          name="crt-detail-screen"
+        />
+      )}
     </group>
   );
 }

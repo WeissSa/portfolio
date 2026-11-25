@@ -489,6 +489,59 @@
   font-weight: 700;
 }
 
+/* --------------------------------------------------------------------------
+ * polish(c): diegetic detail views. In fine-pointer live 3D the detail is
+ * painted on in-world objects; the DOM mirror below stays in the a11y tree and
+ * tab order but is visually hidden. ONLY genuine keyboard focus reveals it —
+ * `:focus-visible` (not `:focus-within`, which a mouse click also sets) — so a
+ * pointer pick never flashes a dialog over the room. Coarse pointers / 2D /
+ * failed scene never hide the ordinary Mantine dialog at all (the overlays
+ * render that dialog instead of this mirror outside live fine-pointer 3D).
+ * ------------------------------------------------------------------------ */
+.detail-mirror__chip {
+  display: none;
+}
+
+.app-scene-live.app-fine-pointer .detail-mirror {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.app-scene-live.app-fine-pointer .detail-mirror:has(:focus-visible) {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  z-index: 12;
+  width: min(92%, 44rem);
+  height: auto;
+  max-height: 86vh;
+  margin: 0;
+  padding: var(--space-lg);
+  overflow: auto;
+  clip-path: none;
+  white-space: normal;
+  transform: translate(-50%, -50%);
+  background: var(--p5-black);
+  border: 2px solid var(--state-focus);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--p5-black) 60%, transparent);
+  pointer-events: auto;
+}
+
+.app-scene-live.app-fine-pointer
+  .detail-mirror:has(:focus-visible)
+  .detail-mirror__chip {
+  display: block;
+  margin-bottom: var(--space-sm);
+  color: var(--state-focus);
+  font-weight: 700;
+}
+
 /* Review fix: the diegetic right-column layout now starts at Tailwind's `md`
    breakpoint (768px). Below 1024px the old rule left the sr-only menu hidden
    AND no right column, so the plaque was covered by an empty gutter. */

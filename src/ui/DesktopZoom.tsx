@@ -13,16 +13,19 @@
 import { useEffect } from 'react';
 import { Button } from '@mantine/core';
 import { useFocusTrap } from '../lib/a11y';
+import { useDiegeticDetail } from '../lib/detail-mode';
 import { useClearSceneHover, useInertBackground } from '../lib/dialog-effects';
 import { usePortfolioStore } from '../state/store';
 import { AboutDesktop } from './AboutDesktop';
+import { DetailMirror } from './DetailMirror';
 
 export function DesktopZoom() {
   const closeDesktop = usePortfolioStore((state) => state.closeDesktop);
-  // Focus the close button on entry, cycle Tab within the desktop, and restore
-  // the previously focused control when the room returns.
-  const trapRef = useFocusTrap<HTMLDivElement>(true, true);
-  useInertBackground(true);
+  const diegetic = useDiegeticDetail();
+  // The visible desktop keeps its focus trap + inert shell; the in-world CRT
+  // mirror is non-modal (the room stays live) and DetailMirror owns focus.
+  const trapRef = useFocusTrap<HTMLDivElement>(!diegetic, true);
+  useInertBackground(!diegetic);
   useClearSceneHover(true);
 
   useEffect(() => {
@@ -37,6 +40,21 @@ export function DesktopZoom() {
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
   }, [closeDesktop]);
+
+  // In-world CRT detail: the About content is painted onto the monitor texture
+  // in fine-pointer live 3D (camera already sits at MONITOR_VIEWPOINT); this
+  // hidden mirror keeps the SAME AboutDesktop reachable by keyboard/SR.
+  if (diegetic) {
+    return (
+      <DetailMirror
+        label="About desktop — full screen"
+        surface="monitor"
+        onClose={closeDesktop}
+      >
+        <AboutDesktop />
+      </DetailMirror>
+    );
+  }
 
   return (
     <div

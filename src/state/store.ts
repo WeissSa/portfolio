@@ -145,6 +145,13 @@ export interface PortfolioStore {
   crtCloseUp: boolean;
   setCrtCloseUp: (close: boolean) => void;
 
+  /* polish(c) diegetic detail. The DOM detail mirror is visually hidden in
+   * fine-pointer live 3D; keyboard focus entering it lights the corresponding
+   * in-world object (F1 reveal-on-focus + bidirectional sync). */
+  /** True while focus is inside the a11y-only detail mirror. */
+  detailMirrorFocused: boolean;
+  setDetailMirrorFocused: (focused: boolean) => void;
+
   /* Reduced-motion 3D (commit 4): auto mode stays 2D, but an INFORMED opt-in
    * can force 3D. The session then uses static cuts, a zone-title HUD and a
    * frozen grain clock. */
@@ -203,6 +210,7 @@ const CLEARED_3D_UI = {
   menuHoverRoute: null,
   menuFocusRoute: null,
   crtCloseUp: false,
+  detailMirrorFocused: false,
   sceneReady: false,
 };
 
@@ -365,6 +373,8 @@ export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
   setMenuFocusRoute: (menuFocusRoute) => set({ menuFocusRoute }),
   crtCloseUp: false,
   setCrtCloseUp: (crtCloseUp) => set({ crtCloseUp }),
+  detailMirrorFocused: false,
+  setDetailMirrorFocused: (detailMirrorFocused) => set({ detailMirrorFocused }),
 
   reducedMotionOptIn: readReducedMotionOptIn(),
   setReducedMotionOptIn: (value) => {
