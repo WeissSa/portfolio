@@ -104,6 +104,8 @@ export function mergeStaticParts(
   const positions: number[] = [];
   const normals: number[] = [];
   const uvs: number[] = [];
+  const colors: number[] = [];
+  const hasColor = Boolean(first.geometry.getAttribute('color'));
   const matrix = new THREE.Matrix4();
   const quaternion = new THREE.Quaternion();
   const euler = new THREE.Euler();
@@ -125,10 +127,12 @@ export function mergeStaticParts(
       geometry.dispose();
       throw new Error(`mergeStaticParts: ${item.id} lacks position/normal/uv`);
     }
+    const color = hasColor ? geometry.getAttribute('color') : null;
     for (let i = 0; i < vertices.count; i += 1) {
       positions.push(vertices.getX(i), vertices.getY(i), vertices.getZ(i));
       normals.push(normal.getX(i), normal.getY(i), normal.getZ(i));
       uvs.push(uv.getX(i), uv.getY(i));
+      if (color) colors.push(color.getX(i), color.getY(i), color.getZ(i));
     }
     geometry.dispose();
     item.geometry.dispose(); // the merged part now owns the vertex data
@@ -140,7 +144,49 @@ export function mergeStaticParts(
   );
   merged.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
   merged.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+  if (hasColor) {
+    merged.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+  }
   return { id, geometry: merged, material: first.material };
+}
+
+/**
+ * Group a STATIC family by material and merge same-material siblings into one
+ * draw call (draw-call budget work, perf(ux)). `mergeStaticParts` bakes each
+ * local TRS into the vertex data, so the merged part needs no per-frame matrix
+ * work and keeps the exact authored pose. Parts carrying extra baked
+ * attributes (e.g. the floor's vertex AO `color`) are bucketed separately so
+ * no per-vertex data is silently dropped; a group of one is left untouched.
+ *
+ * Never call this on pickable/animated families (plaque rows, lifted cases,
+ * monitor, books) — those need their own geometry identity for picking.
+ */
+export function mergePartsByMaterial(
+  familyId: string,
+  parts: readonly RoomPart[],
+): RoomPart[] {
+  const groups = new Map<string, RoomPart[]>();
+  const order: string[] = [];
+  for (const item of parts) {
+    // Attribute signature must match or mergeStaticParts would discard data.
+    const signature = Object.keys(item.geometry.attributes).sort().join(',');
+    const key = `${item.material}|${signature}`;
+    if (!groups.has(key)) {
+      groups.set(key, []);
+      order.push(key);
+    }
+    groups.get(key)!.push(item);
+  }
+  const merged: RoomPart[] = [];
+  for (const key of order) {
+    const group = groups.get(key)!;
+    merged.push(
+      group.length === 1
+        ? group[0]!
+        : mergeStaticParts(`${familyId}-${group[0]!.material}`, group),
+    );
+  }
+  return merged;
 }
 
 /* ---------------------------------------------------------------- shell -- */

@@ -37,6 +37,7 @@ import {
   createLightCone,
   createMonitor,
   createNarrativeProps,
+  mergePartsByMaterial,
   createPcTower,
   createProjector,
   createRoomShell,
@@ -55,10 +56,12 @@ import {
   type RoomMaterials,
 } from './materials';
 import {
+  createDeferredTextures,
   createPlanTexture,
   createTexturePlans,
   disposeTextures,
   renderTexturePlans,
+  type ProgressivePaint,
   type TextureFactory,
 } from './textures';
 
@@ -96,6 +99,8 @@ export interface RoomResources {
   furniture: RoomFurniture;
   textures: ReturnType<typeof renderTexturePlans>;
   materials: RoomMaterials;
+  /** Idle painter for the default browser factory; absent for injected stubs. */
+  progressivePaint?: ProgressivePaint;
 }
 
 /**
@@ -153,6 +158,7 @@ export function createRoomResources(
   quality: CacheQuality,
   textureFactory: TextureFactory = createPlanTexture,
   key = '',
+  progressive = false,
 ): RoomResources {
   const shell = createRoomShell();
   const desk = createDesk(seed);
@@ -184,22 +190,57 @@ export function createRoomResources(
   const screenBar = new THREE.BoxGeometry(2.02, 0.05, 0.04);
   const plaque = createWallPlaque(seed);
 
+  // Draw-call discipline (perf(ux)): merge STATIC, non-pickable families by
+  // material. Each factory stays unchanged (its tests pin part ids), but the
+  // rendered room now issues one call per material family instead of one per
+  // primitive. Pickable/animated families are deliberately excluded — monitor,
+  // plaque rows, lifted cases and hero books need their own geometry identity.
+  const mergedShell = mergePartsByMaterial('shell', shell);
+  const mergedDesk = mergePartsByMaterial('desk', desk);
+  const mergedTower = mergePartsByMaterial('tower', tower);
+  const mergedBookshelf = mergePartsByMaterial('bookshelf', bookshelf.parts);
+  const mergedLamp = mergePartsByMaterial('lamp', lamp);
+  const mergedProjector = mergePartsByMaterial('projector', projector);
+  const mergedWindow = mergePartsByMaterial('window', windowParts);
+  // Keep one seeded chair leg unmerged: it is the regression probe for the
+  // frozen-matrix re-bake on a props commit (tests/scene-room.test.tsx).
+  const chairProbe = chair.find((p) => p.id === 'chair-leg-0');
+  const mergedChair = [
+    ...mergePartsByMaterial(
+      'chair',
+      chair.filter((p) => p !== chairProbe),
+    ),
+    ...(chairProbe ? [chairProbe] : []),
+  ];
+  const mergedFrames = frames.map((frame) => ({
+    position: frame.position,
+    parts: mergePartsByMaterial('frame', frame.parts),
+  }));
+  const mergedProps = {
+    ...props,
+    desk: mergePartsByMaterial('props-desk', props.desk),
+    monitor: mergePartsByMaterial('props-monitor', props.monitor),
+    floor: mergePartsByMaterial('props-floor', props.floor),
+    tower: mergePartsByMaterial('props-tower', props.tower),
+    shelf: mergePartsByMaterial('props-shelf', props.shelf),
+  };
+
   const furniture: RoomFurniture = {
-    shell,
-    desk,
+    shell: mergedShell,
+    desk: mergedDesk,
     monitor,
-    tower,
-    bookshelf,
+    tower: mergedTower,
+    bookshelf: { ...bookshelf, parts: mergedBookshelf },
     books,
-    lamp,
-    projector,
+    lamp: mergedLamp,
+    projector: mergedProjector,
     beam,
-    windowParts,
-    chair,
-    props,
+    windowParts: mergedWindow,
+    chair: mergedChair,
+    props: mergedProps,
     clutter,
     clutterGeometries,
-    frames,
+    frames: mergedFrames,
     rugGeometry,
     cases,
     screenCloth,
@@ -213,13 +254,27 @@ export function createRoomResources(
     })),
     cases: PROJECTS.map((project) => project.title),
   });
-  const textures = renderTexturePlans(plans, textureFactory);
+  const deferred =
+    progressive && textureFactory === createPlanTexture
+      ? createDeferredTextures(plans)
+      : null;
+  const textures = deferred
+    ? deferred.textures
+    : renderTexturePlans(plans, textureFactory);
   const materials = createRoomMaterials(textures);
-  return { key, furniture, textures, materials };
+  return {
+    key,
+    furniture,
+    textures,
+    materials,
+    ...(deferred ? { progressivePaint: deferred.paint } : {}),
+  };
 }
 
 /** Full teardown of one resource set (geometry + textures + materials). */
 export function disposeRoomResources(resources: RoomResources): void {
+  // Stop any in-flight idle painting before the canvases/textures are freed.
+  resources.progressivePaint?.cancel();
   const f = resources.furniture;
   disposeParts([
     ...f.shell,
@@ -292,6 +347,7 @@ export function acquireRoomResources(
   quality: CacheQuality,
   textureFactory: TextureFactory = createPlanTexture,
   owner: object = DEFAULT_OWNER,
+  progressive = false,
 ): RoomResources {
   const key = resourceKey(seed, quality, textureFactory);
   const existing = cache.get(key);
@@ -300,7 +356,13 @@ export function acquireRoomResources(
     return existing.resources;
   }
   evictIdleIfFull();
-  const resources = createRoomResources(seed, quality, textureFactory, key);
+  const resources = createRoomResources(
+    seed,
+    quality,
+    textureFactory,
+    key,
+    progressive,
+  );
   const owners = new Set<object>([owner]);
   cache.set(key, { resources, owners, order: ++insertionOrder });
   return resources;

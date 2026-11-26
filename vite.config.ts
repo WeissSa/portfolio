@@ -19,6 +19,24 @@ export default defineConfig({
       '@react-three/fiber': '@react-three/fiber/dist/react-three-fiber.esm.js',
     },
   },
+  // Dev-only: prebundle the heavy WebGL/UI dependency graph at server start
+  // instead of transforming ~6 MB of unbundled ESM on first request. This does
+  // NOT change the production bundle (shell/scene budgets are unchanged); it
+  // only removes the on-demand transform stalls measured during first load on
+  // the dev server (perf(ux) diagnosis).
+  optimizeDeps: {
+    include: [
+      'react',
+      'react-dom',
+      'three',
+      '@react-three/fiber',
+      '@react-three/drei',
+      '@mantine/core',
+      '@mantine/hooks',
+      '@gfazioli/mantine-book',
+      'zustand',
+    ],
+  },
   build: {
     target: 'es2020',
     outDir: 'dist',

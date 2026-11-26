@@ -90,9 +90,10 @@ async function assertReadablePanel(page: Page): Promise<void> {
   }));
   expect(metrics.overflowY).toBe('auto');
   expect(metrics.fontPx, 'AA-size reading text').toBeGreaterThanOrEqual(14);
-  expect(metrics.scrollHeight, 'full content is present').toBeGreaterThan(
-    metrics.clientHeight,
-  );
+  // Full copy is asserted by content in the calling test (headline + the
+  // attribution link), not by a viewport-dependent scrollHeight>clientHeight
+  // comparison: a tall viewport can legitimately fit the whole panel, while
+  // overflowY:auto guarantees scrolling whenever the text does exceed it.
   await expect(panel.getByRole('button', { name: /Close/ })).toBeVisible();
 }
 

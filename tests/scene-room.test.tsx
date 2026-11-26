@@ -420,8 +420,8 @@ describe('RoomScene headless render', () => {
       { frameloop: 'never' },
     );
 
-    // A chair leg carries a seeded rotation wobble, so a new seed lands a new
-    // authored transform on the SAME keyed mesh instance.
+    // One chair leg stays unmerged as the frozen-matrix regression probe:
+    // its seeded splay rotation lands on the SAME keyed mesh across seeds.
     const legNode = () => {
       const chair = renderer.scene.find(
         (n) => n.type === 'Group' && n.props.name === 'chair',

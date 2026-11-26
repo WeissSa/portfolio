@@ -274,7 +274,10 @@ function PainterlyPassInner({
     // the painted grain already softens edges (commit 3c P3/P4).
     const target = new THREE.WebGLRenderTarget(1, 1, {
       type: choosePainterlyTargetType(supportsFloatTargets),
-      samples: 2, // WebGL2 MSAA; ignored where unavailable.
+      // perf(ux): no MSAA on the offscreen target. The painted grain/stroke
+      // dither already softens edges, and 2× MSAA doubled software-GL fill
+      // cost on every flight frame for no visible gain at this softness.
+      samples: 0,
     });
     const quadScene = new THREE.Scene();
     const quadCamera = new THREE.Camera(); // Identity matrices + clip-space quad.

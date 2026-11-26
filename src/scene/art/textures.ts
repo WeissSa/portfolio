@@ -179,7 +179,7 @@ function edgeDarken(strength = 0.45): PaintOp {
   return { kind: 'vignette', strength };
 }
 
-export function planWood(seed: string | number, size = 512): TexturePlan {
+export function planWood(seed: string | number, size = 256): TexturePlan {
   const rng = createRng(typeof seed === 'string' ? `${seed}:wood` : seed + 101);
   const ops: PaintOp[] = [{ kind: 'fill', color: PALETTE.woodMid }];
   const planks = 4;
@@ -281,7 +281,7 @@ export function planWood(seed: string | number, size = 512): TexturePlan {
   return { name: 'wood', width: size, height: size, ops };
 }
 
-export function planPlaster(seed: string | number, size = 512): TexturePlan {
+export function planPlaster(seed: string | number, size = 256): TexturePlan {
   const rng = createRng(
     typeof seed === 'string' ? `${seed}:plaster` : seed + 202,
   );
@@ -439,7 +439,7 @@ export function planPaper(seed: string | number, size = 256): TexturePlan {
   return { name: 'paper', width: size, height: size, ops };
 }
 
-export function planRug(seed: string | number, size = 512): TexturePlan {
+export function planRug(seed: string | number, size = 256): TexturePlan {
   const rng = createRng(typeof seed === 'string' ? `${seed}:rug` : seed + 505);
   const ops: PaintOp[] = [{ kind: 'fill', color: PALETTE.rugIndigo }];
   brushNoise(rng, ops, { width: size, height: size }, 160, PALETTE.rugIndigo, {
@@ -561,7 +561,7 @@ export interface BookEntry {
 export function planBookSpineAtlas(
   seed: string | number,
   books: readonly BookEntry[],
-  size = 512,
+  size = 256,
 ): TexturePlan {
   const rng = createRng(
     typeof seed === 'string' ? `${seed}:atlas` : seed + 606,
@@ -1201,8 +1201,10 @@ export function createTexturePlans(
 /* ------------------------------------------------------------------------ */
 
 function paintOp(ctx: CanvasRenderingContext2D, op: PaintOp): void {
-  ctx.save();
-  if ('alpha' in op && op.alpha !== undefined) ctx.globalAlpha = op.alpha;
+  // perf(ux): thousands of save()/restore() pairs dominated the first-load
+  // paint task. Style state is rewritten by every op, so only the two ops that
+  // mutate the TRANSFORM (angled rect/text) still bracket themselves.
+  ctx.globalAlpha = 'alpha' in op && op.alpha !== undefined ? op.alpha : 1;
   switch (op.kind) {
     case 'fill':
       ctx.fillStyle = op.color;
@@ -1210,10 +1212,12 @@ function paintOp(ctx: CanvasRenderingContext2D, op: PaintOp): void {
       break;
     case 'rect':
       if (op.angle) {
+        ctx.save();
         ctx.translate(op.x + op.w / 2, op.y + op.h / 2);
         ctx.rotate(op.angle);
         ctx.fillStyle = op.color;
         ctx.fillRect(-op.w / 2, -op.h / 2, op.w, op.h);
+        ctx.restore();
       } else {
         ctx.fillStyle = op.color;
         ctx.fillRect(op.x, op.y, op.w, op.h);
@@ -1271,9 +1275,11 @@ function paintOp(ctx: CanvasRenderingContext2D, op: PaintOp): void {
       ctx.textAlign = op.align ?? 'left';
       ctx.textBaseline = 'alphabetic';
       if (op.angle) {
+        ctx.save();
         ctx.translate(op.x, op.y);
         ctx.rotate(op.angle);
         ctx.fillText(op.text, 0, 0);
+        ctx.restore();
       } else {
         ctx.fillText(op.text, op.x, op.y);
       }
@@ -1295,7 +1301,6 @@ function paintOp(ctx: CanvasRenderingContext2D, op: PaintOp): void {
       break;
     }
   }
-  ctx.restore();
 }
 
 /** Execute a plan onto a canvas (browser only — requires a 2D context). */
@@ -1319,15 +1324,20 @@ export function paintPlanToCanvas(
 /** A texture factory turns a plan into something THREE can sample. */
 export type TextureFactory = (plan: TexturePlan) => THREE.Texture;
 
-/** Default browser factory: paint to canvas, wrap as CanvasTexture. */
-export const createPlanTexture: TextureFactory = (plan) => {
-  const texture = new THREE.CanvasTexture(paintPlanToCanvas(plan));
+/** One place for the CanvasTexture settings shared by sync and deferred paint. */
+function configurePlanTexture(
+  texture: THREE.CanvasTexture,
+): THREE.CanvasTexture {
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.wrapS = THREE.RepeatWrapping;
   texture.wrapT = THREE.RepeatWrapping;
   texture.anisotropy = 4;
   return texture;
-};
+}
+
+/** Default browser factory: paint to canvas, wrap as CanvasTexture. */
+export const createPlanTexture: TextureFactory = (plan) =>
+  configurePlanTexture(new THREE.CanvasTexture(paintPlanToCanvas(plan)));
 
 /** Build every room texture from plans (browser default; DI-able for tests). */
 export function renderTexturePlans(
@@ -1346,6 +1356,139 @@ export function renderTexturePlans(
     projector: factory(plans.projector),
     plaque: factory(plans.plaque),
   };
+}
+
+/**
+ * Idle-scheduled texture painter (perf(ux), first-load freeze fix).
+ *
+ * The default browser factory used to paint all 10 plans (~1.8 M px before
+ * the 256px reduction) in ONE synchronous task while React mounted the lazy
+ * room chunk — the measured 922 ms main-thread stall. Deferred painting
+ * creates each CanvasTexture immediately with only its opaque base fill, then
+ * paints the deterministic op list in small idle slices. The SAME ops run in
+ * the SAME order on the SAME canvas, so the final texture is byte-identical to
+ * `renderTexturePlans`: seeded determinism and the texture caps are untouched.
+ *
+ * The scheduler is self-contained and idempotent so a remount (StrictMode or
+ * a 2D↔3D toggle) can call `start()` again without double-scheduling, while a
+ * real disposal calls `cancel()` before the canvas/texture are released.
+ */
+export interface ProgressivePaint {
+  /** Paint up to `ops` ops (round-robin across textures); true if work remains. */
+  step: (ops?: number) => boolean;
+  /** Start the idle loop once; `onProgress` fires after each slice. */
+  start: (onProgress?: () => void) => void;
+  cancel: () => void;
+  readonly done: boolean;
+}
+
+export interface DeferredTextures {
+  textures: Record<TextureKey, THREE.Texture>;
+  paint: ProgressivePaint;
+}
+
+/** Browser-only canvas seam; tests inject a recording 2D context. */
+export type DeferredCanvasFactory = () => HTMLCanvasElement;
+
+export function createDeferredTextures(
+  plans: Record<TextureKey, TexturePlan>,
+  canvasFactory: DeferredCanvasFactory = () => document.createElement('canvas'),
+): DeferredTextures {
+  const keys = Object.keys(plans) as TextureKey[];
+  const cursors = new Map<TextureKey, number>();
+  const contexts = new Map<TextureKey, CanvasRenderingContext2D>();
+  const textures = {} as Record<TextureKey, THREE.Texture>;
+
+  for (const key of keys) {
+    const plan = plans[key]!;
+    const canvas = canvasFactory();
+    canvas.width = plan.width;
+    canvas.height = plan.height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      throw new Error(`createDeferredTextures("${key}"): no 2D context`);
+    }
+    // Base fill only: one cheap op gives the first frame a solid, plausible
+    // surface instead of transparent black while the detail slices run.
+    paintOp(ctx, plan.ops[0]!);
+    contexts.set(key, ctx);
+    cursors.set(key, 1);
+    textures[key] = configurePlanTexture(new THREE.CanvasTexture(canvas));
+  }
+
+  const more = (): boolean =>
+    keys.some((key) => cursors.get(key)! < plans[key]!.ops.length);
+
+  let started = false;
+  let cancelled = false;
+  let idleId: number | null = null;
+  let timerId: ReturnType<typeof setTimeout> | null = null;
+
+  let slices = 0;
+  const step = (ops = 160): boolean => {
+    if (cancelled || !more()) return false;
+    slices += 1;
+    const perTexture = Math.max(1, Math.ceil(ops / keys.length));
+    for (const key of keys) {
+      const plan = plans[key]!;
+      const from = cursors.get(key)!;
+      if (from >= plan.ops.length) continue;
+      const to = Math.min(plan.ops.length, from + perTexture);
+      const ctx = contexts.get(key)!;
+      for (let index = from; index < to; index += 1) {
+        paintOp(ctx, plan.ops[index]!);
+      }
+      cursors.set(key, to);
+      // Only dirty canvases that actually changed — a needless needsUpdate
+      // re-uploads a texture on every render and multiplies software-GL cost.
+      textures[key]!.needsUpdate = true;
+    }
+    return more();
+  };
+
+  const schedule = (run: () => void): void => {
+    // requestIdleCallback keeps paint off the critical path; the timeout
+    // guarantees progress on a busy main thread (and on browsers without it).
+    if (typeof requestIdleCallback === 'function') {
+      idleId = requestIdleCallback(() => run(), { timeout: 80 });
+    } else {
+      timerId = setTimeout(run, 0);
+    }
+  };
+
+  const paint: ProgressivePaint = {
+    step,
+    start(onProgress) {
+      if (started || cancelled || !more()) return;
+      started = true;
+      const run = () => {
+        idleId = null;
+        timerId = null;
+        if (cancelled) return;
+        const pending = step();
+        // Three idle slices of painted detail per drawn frame: under software
+        // WebGL a full scene+shadow+post render is far costlier than the tiny
+        // canvas slices, so drawing after every slice would dominate load.
+        if (!pending || slices % 3 === 0) onProgress?.();
+        if (pending) schedule(run);
+      };
+      schedule(run);
+    },
+    cancel() {
+      cancelled = true;
+      if (idleId !== null && typeof cancelIdleCallback === 'function') {
+        cancelIdleCallback(idleId);
+      }
+      if (timerId !== null) clearTimeout(timerId);
+      idleId = null;
+      timerId = null;
+    },
+    get done() {
+      return !more();
+    },
+  };
+
+  return { textures, paint };
 }
 
 export function disposeTextures(

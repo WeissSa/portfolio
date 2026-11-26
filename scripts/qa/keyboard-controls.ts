@@ -2,10 +2,12 @@ import type { Locator, Page } from '@playwright/test';
 
 /**
  * Activate a real semantic control through its keyboard path (focus + Enter).
- * The DOM nav is now pointer-visible in live 3D, but the perf/capture harnesses
- * still drive nav and mode-toggle links through the keyboard route a screen
- * reader user takes — the element's own handler runs identically, and this
- * keeps those harnesses independent of pointer placement under SwiftShader.
+ * The semantic <nav> stays sr-only in live 3D (the a11y/keyboard path); the
+ * separate PointerMenuStrip is the clickable affordance for mouse users. The
+ * harnesses therefore activate nav and mode-toggle links through the keyboard
+ * route a screen reader user takes — the element's own handler runs
+ * identically, and this keeps them independent of pointer placement under
+ * SwiftShader.
  */
 export async function activateControl(
   page: Page,

@@ -119,11 +119,17 @@ function Parts({
   parts,
   materials,
   shadows = false,
+  castShadow = false,
+  receiveShadow = shadows,
 }: {
   parts: readonly RoomPart[];
   materials: RoomMaterials;
   /** Desktop tier only: meshes cast/receive the one shadow-map key light. */
   shadows?: boolean;
+  /** Shadow casting is reserved for the few large pieces near the key light;
+   *  every other mesh still RECEIVES the shadow but skips the shadow-map draw. */
+  castShadow?: boolean;
+  receiveShadow?: boolean;
 }): JSX.Element {
   return (
     <>
@@ -136,8 +142,8 @@ function Parts({
           position={part.position}
           rotation={part.rotation}
           scale={part.scale}
-          castShadow={shadows}
-          receiveShadow={shadows}
+          castShadow={castShadow}
+          receiveShadow={receiveShadow}
           matrixAutoUpdate={false}
         />
       ))}
@@ -253,14 +259,29 @@ export function RoomScene({
   // keeps the old per-mount ownership + teardown contract.
   const owner = useRef<object>({});
   const usesCache = factoryUsesCache(textureFactory);
+  const invalidate = useThree((state) => state.invalidate);
   const resources = useMemo<RoomResources>(
     () =>
       usesCache
-        ? acquireRoomResources(seed, quality, textureFactory, owner.current)
+        ? acquireRoomResources(
+            seed,
+            quality,
+            textureFactory,
+            owner.current,
+            true, // deferred texture paint — no single first-load stall
+          )
         : createRoomResources(seed, quality, textureFactory),
     [seed, quality, textureFactory, usesCache],
   );
   const { furniture, materials } = resources;
+
+  // Idle painter is idempotent and lives with the cached resources, so a
+  // StrictMode remount / 2D↔3D toggle cannot double-schedule it. Each slice
+  // marks its CanvasTexture dirty; one invalidate() draws the newly painted
+  // detail. The seeded op order is unchanged (see createDeferredTextures).
+  useEffect(() => {
+    resources.progressivePaint?.start(() => invalidate());
+  }, [resources, invalidate]);
 
   // polish(e): the mote cloud lives INSIDE the light cone. Derive its envelope
   // from the beam geometry actually used (production calls
@@ -397,6 +418,7 @@ export function RoomScene({
           parts={furniture.desk}
           materials={materials}
           shadows={keyLight}
+          castShadow={keyLight}
         />
         {/* Narrative props (3a): mug in the lamp pool + the askew keyboard. */}
         <Parts
@@ -456,6 +478,7 @@ export function RoomScene({
           parts={furniture.chair}
           materials={materials}
           shadows={keyLight}
+          castShadow={keyLight}
         />
       </group>
 
@@ -470,6 +493,7 @@ export function RoomScene({
           parts={furniture.tower}
           materials={materials}
           shadows={keyLight}
+          castShadow={keyLight}
         />
         {/* Sticky notes live in tower-local space so they ride the yaw. */}
         <Parts
@@ -518,6 +542,7 @@ export function RoomScene({
           parts={furniture.bookshelf.parts}
           materials={materials}
           shadows={keyLight}
+          castShadow={keyLight}
         />
         {/* Decorative filler volumes behind the 13 pickable post-books. */}
         <Books books={furniture.books} material={materials.book} />
