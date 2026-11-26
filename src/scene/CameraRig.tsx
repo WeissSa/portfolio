@@ -52,7 +52,15 @@ import {
 } from './viewpoints';
 
 const DAMP_LAMBDA = 3.6;
-const MAX_DELTA = 0.1;
+/**
+ * Clamp the damp step so a stalled frame cannot teleport the camera. The old
+ * 0.1 s cap was tuned for 60 fps, but under software rendering a single frame
+ * can take 350–1000 ms: the clamp then stretched one flight into 12+ expensive
+ * frames. 0.25 s keeps the same exact motion at 60 fps (delta ~0.017) while
+ * letting a genuinely slow frame advance far enough to settle in ~5 frames.
+ * No authored pose, envelope or test at 60 fps changes.
+ */
+export const MAX_DELTA = 0.25;
 const SETTLE_EPSILON_SQ = 0.0001; // 0.01 units² on both position + target.
 
 export interface CameraRigProps {

@@ -1,0 +1,61 @@
+{
+  "label": "after",
+  "run": 2,
+  "capturedAt": "2026-11-26T23:13:02.664Z",
+  "logs": [],
+  "idleDrawCalls": {
+    "calls": 96,
+    "programs": 17,
+    "geometries": 79,
+    "textures": 13
+  },
+  "plaquePoint": {
+    "x": 605,
+    "y": 379,
+    "source": "preferred"
+  },
+  "flight": {
+    "hash": "#/projects",
+    "perf": {
+      "n": 18,
+      "p50": 16.7,
+      "p95": 1116.6,
+      "max": 1116.6,
+      "longFrames": 4
+    },
+    "drawCalls": {
+      "calls": 0,
+      "programs": 17,
+      "geometries": 81,
+      "textures": 14
+    },
+    "longTasks": [
+      {
+        "start": 5697,
+        "dur": 76
+      },
+      {
+        "start": 5791,
+        "dur": 169
+      }
+    ]
+  },
+  "bookPoint": {
+    "x": 664,
+    "y": 400,
+    "source": "preferred"
+  },
+  "hoverLatencyMs": 1456,
+  "bookClick": {
+    "samples": [
+      252.2,
+      284.9,
+      203.4,
+      303.4,
+      253.4
+    ],
+    "p50": 253.4,
+    "p95": 303.4,
+    "max": 303.4
+  }
+}

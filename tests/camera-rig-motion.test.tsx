@@ -141,6 +141,21 @@ describe('CameraRig personality wiring', () => {
     await renderer.unmount();
   });
 
+  it('settles in a handful of frames even when frames are severely delayed', async () => {
+    // Software rendering (or a janky device) can spend 350+ ms in one frame.
+    // The damp clamp must not stretch one flight into a dozen more expensive
+    // frames: at dt=0.25 the authored pose is reached in a few frames, while a
+    // 60 fps flight (dt ~0.017) still takes the full authored ~76 frames.
+    const renderer = await mountRig(false, '/projects');
+    const target = ZONE_VIEWPOINTS['/projects'].position;
+    await act(async () => {
+      await renderer.advanceFrames(8, 0.25);
+    });
+    expect(usePortfolioStore.getState().cameraSettled).toBe(true);
+    expect(capturedCamera!.position.toArray()).toEqual([...target]);
+    await renderer.unmount();
+  });
+
   it('requests zero frames once settled (idle = 0 frames)', async () => {
     const renderer = await mountRig(false, '/about');
     const store = capturedStore!;

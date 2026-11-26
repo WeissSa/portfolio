@@ -8,7 +8,7 @@
  * `.scene-layer` wrapper (not a child), so it stays visible at opacity 1 while
  * the chunk downloads instead of being hidden by the wrapper's opacity:0.
  */
-import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
+import { lazy, memo, Suspense, useCallback, useEffect, useState } from 'react';
 import { Paper } from '@mantine/core';
 import { usePortfolioStore } from '../state/store';
 import type { RoomQuality } from '../scene/Room';
@@ -25,7 +25,7 @@ function LoadingCutIn() {
   );
 }
 
-export function SceneLayer({
+function SceneLayerImpl({
   quality,
   active = true,
 }: {
@@ -89,3 +89,15 @@ export function SceneLayer({
     </>
   );
 }
+
+/**
+ * The shell re-renders on camera-settle, hover and dialog state. None of those
+ * change SceneLayer's props (quality/active), and its own store subscriptions
+ * (pointerFine, ready) already re-render it when the scene itself changes.
+ * Without this boundary every App render reconciles the whole lazy Canvas tree
+ * (all zones + R3F elements), which showed up as ~65 ms of React element
+ * creation inside flight long tasks. Memoizing keeps those renders off the
+ * main thread while a camera flight is in progress.
+ */
+export const SceneLayer = memo(SceneLayerImpl);
+SceneLayer.displayName = 'SceneLayer';
