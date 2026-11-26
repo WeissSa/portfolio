@@ -1,9 +1,9 @@
 /**
- * Diegetic-only 3D desktop CSS contract (owner review 2026-11-24). Source-level
- * assertions are the headless equivalent of the Playwright pointer/keyboard
- * checks: the sr-only DOM menu must stay tabbable, but reveal ONLY on genuine
- * keyboard focus, and the diegetic right column must start at 768px so a fine
- * pointer between 768–1023px never sees an empty gutter over the plaque.
+ * Source-level CSS contract for the UX fix pass (2026-11-25). The real-browser
+ * assertions live in scripts/qa/*.spec.ts; these guards keep the two visible
+ * affordances — the always-visible pointer menu strip (alongside the sr-only
+ * semantic nav) and the scrollable detail panel — from silently regressing
+ * back to "no pointer menu" and truncated painted text.
  */
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -14,32 +14,27 @@ const read = (relative: string): string =>
 
 const CSS = read('../src/styles/p5.css').replace(/\/\*[\s\S]*?\*\//g, '');
 
-describe('diegetic DOM menu reveal', () => {
-  it('hides the menu for fine pointers in a live scene', () => {
-    expect(CSS).toContain('.app-scene-live.app-fine-pointer .main-menu');
-    const hidden =
-      /\.app-scene-live\.app-fine-pointer \.main-menu\s*\{([^}]*)\}/.exec(CSS);
-    expect(hidden?.[1]).toMatch(/clip-path:\s*inset\(50%\)/);
-    expect(hidden?.[1]).toMatch(/width:\s*1px/);
-  });
-
-  it('reveals on keyboard focus only — never on :focus-within (mouse clicks)', () => {
+describe('semantic nav + pointer-visible room strip', () => {
+  it('keeps the semantic nav sr-only but tabbable in a live scene', () => {
+    const block =
+      /\.app-scene-live\.app-fine-pointer \.main-menu\s*\{([^}]*)\}/.exec(
+        CSS,
+      )?.[1];
+    expect(block).toMatch(/clip-path:\s*inset\(50%\)/);
+    expect(block).toMatch(/width:\s*1px/);
+    expect(block).not.toMatch(/display:\s*none/);
     expect(CSS).toContain(
       '.app-scene-live.app-fine-pointer .main-menu:has(:focus-visible)',
     );
-    expect(CSS).not.toMatch(
-      /\.main-menu:focus-within\s*\{[^}]*(position:\s*fixed)/,
-    );
-    // The focus chip follows the same keyboard-only selector.
-    expect(CSS).toContain(
-      '.app-scene-live.app-fine-pointer\n  .main-menu:has(:focus-visible)\n  .main-menu__focus-chip',
-    );
-    const revealed =
-      /\.app-scene-live\.app-fine-pointer \.main-menu:has\(:focus-visible\)\s*\{([^}]*)\}/.exec(
-        CSS,
-      );
-    expect(revealed?.[1]).toMatch(/position:\s*fixed/);
-    expect(revealed?.[1]).toMatch(/border:\s*2px solid var\(--state-focus\)/);
+  });
+
+  it('adds an always-visible pointer strip above the detail scrim', () => {
+    const block = /\.pointer-menu-strip\s*\{([^}]*)\}/.exec(CSS)?.[1];
+    expect(block).toMatch(/position:\s*fixed/);
+    expect(block).toMatch(/z-index:\s*12/);
+    expect(block).toMatch(/flex-wrap:\s*wrap/);
+    expect(block).toMatch(/border:\s*2px solid var\(--state-focus\)/);
+    expect(block).not.toMatch(/clip-path:\s*inset\(50%\)/);
   });
 
   it('keeps the diegetic right column from 768px (no 768–1023 gutter)', () => {
@@ -63,32 +58,27 @@ describe('diegetic DOM menu reveal', () => {
   });
 });
 
-describe('diegetic detail a11y mirror reveal (polish(c))', () => {
-  it('sr-hides the mirror for fine pointers in a live scene', () => {
-    const hidden =
-      /\.app-scene-live\.app-fine-pointer \.detail-mirror\s*\{([^}]*)\}/.exec(
-        CSS,
-      )?.[1];
-    expect(hidden).toMatch(/clip-path:\s*inset\(50%\)/);
-    expect(hidden).toMatch(/width:\s*1px/);
-    // sr-only, never display:none: the mirror stays in the a11y tree/tab order.
-    expect(hidden).not.toMatch(/display:\s*none/);
+describe('unified readable detail panel', () => {
+  it('is a fixed, height-capped, pointer-enabled dialog in every mode', () => {
+    const block = /\.detail-mirror\s*\{([^}]*)\}/.exec(CSS)?.[1];
+    expect(block).toMatch(/position:\s*fixed/);
+    expect(block).toMatch(/max-height:/);
+    expect(block).toMatch(/pointer-events:\s*auto/);
+    expect(block).not.toMatch(/clip-path:\s*inset\(50%\)/);
+    expect(block).not.toMatch(/width:\s*1px/);
   });
 
-  it('reveals on keyboard focus only — never :focus-within (mouse clicks)', () => {
-    expect(CSS).toContain(
-      '.app-scene-live.app-fine-pointer .detail-mirror:has(:focus-visible)',
-    );
-    expect(CSS).not.toMatch(/\.detail-mirror:focus-within\s*\{/);
-    const revealed =
-      /\.app-scene-live\.app-fine-pointer \.detail-mirror:has\(:focus-visible\)\s*\{([^}]*)\}/.exec(
-        CSS,
-      )?.[1];
-    expect(revealed).toMatch(/position:\s*fixed/);
-    expect(revealed).toMatch(/border:\s*2px solid var\(--state-focus\)/);
-    expect(revealed).toMatch(/pointer-events:\s*auto/);
-    expect(CSS).toContain(
-      '.app-scene-live.app-fine-pointer\n  .detail-mirror:has(:focus-visible)\n  .detail-mirror__chip',
-    );
+  it('scrolls long content at a readable size', () => {
+    const body = /\.detail-mirror__body\s*\{([^}]*)\}/.exec(CSS)?.[1];
+    expect(body).toMatch(/overflow-y:\s*auto/);
+    expect(body).toMatch(/font-size:\s*15px/);
+    expect(body).toMatch(/overscroll-behavior:\s*contain/);
+  });
+
+  it('has a click-dismissible scrim that is not opaque', () => {
+    const scrim = /\.detail-panel-scrim\s*\{([^}]*)\}/.exec(CSS)?.[1];
+    expect(scrim).toMatch(/position:\s*fixed/);
+    expect(scrim).toMatch(/color-mix/);
+    expect(scrim).not.toMatch(/background:\s*var\(--p5-black\)/);
   });
 });

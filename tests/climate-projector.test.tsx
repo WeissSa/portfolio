@@ -9,7 +9,7 @@
  * injected via the zone's canvasFactory seam.
  */
 import { act, screen, waitFor, within } from '@testing-library/react';
-import { fakeDetail2dContext, renderWithProviders } from './helpers';
+import { renderWithProviders } from './helpers';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as THREE from 'three';
@@ -507,9 +507,7 @@ describe('ClimateProjectorPanel (accessible DOM equivalent)', () => {
     );
     renderWithProviders(<ClimateProjectorPanel />);
     await user.click(
-      document.querySelector(
-        '.climate-projector-overlay .post-detail-backdrop',
-      ) as HTMLElement,
+      document.querySelector('.detail-panel-scrim') as HTMLElement,
     );
     expect(usePortfolioStore.getState().climatePanelOpen).toBe(false);
   });
@@ -580,11 +578,8 @@ describe('keyboard path in 3D + unchanged 2D route', () => {
   });
 });
 
-describe('polish(c) in-world projector appearance gate', () => {
-  it('paints the INFO plane only for fine-pointer live 3D', async () => {
-    const getContext = vi
-      .spyOn(HTMLCanvasElement.prototype, 'getContext')
-      .mockImplementation(() => fakeDetail2dContext());
+describe('UX fix: no painted projector INFO plane', () => {
+  it('never renders the truncated in-world card — reading happens in the DOM panel', async () => {
     const materials = createRoomMaterials({});
     const screenGeometry = new THREE.PlaneGeometry(1.9, 1.07);
     try {
@@ -604,29 +599,15 @@ describe('polish(c) in-world projector appearance gate', () => {
         />,
         { frameloop: 'never' },
       );
-      const planes = () =>
+      const paintedPlanes = () =>
         renderer.scene.findAll(
           (node) => node.props.name === 'projector-info-plane',
         );
-      expect(planes()).toHaveLength(1);
-      act(() => usePortfolioStore.setState({ climatePanelOpen: false }));
-      expect(planes()).toHaveLength(0);
-      act(() =>
-        usePortfolioStore.setState({
-          mode: '3d',
-          sceneReady: true,
-          pointerFine: true,
-          climatePanelOpen: true,
-          activeZone: '/',
-        }),
-      );
-      // activeZone does not gate the plane; a scene that never drew does.
-      expect(planes()).toHaveLength(1);
+      expect(paintedPlanes()).toHaveLength(0);
       act(() => usePortfolioStore.setState({ sceneReady: false }));
-      expect(planes()).toHaveLength(0);
+      expect(paintedPlanes()).toHaveLength(0);
       await renderer.unmount();
     } finally {
-      getContext.mockRestore();
       disposeRoomMaterials(materials);
       screenGeometry.dispose();
     }

@@ -1,65 +1,50 @@
 /**
- * Opened-book detail (owner decision 2026-11-22): the Library/Experience book
- * detail renders its inside as the @gfazioli/mantine-book FLAT variant —
- * pure DOM, lazy-loaded into its own chunk, keyboard-operable, reduced-motion
- * aware — inside the existing dialog focus/inert model.
+ * Book detail content component (@gfazioli/mantine-book FLAT variant).
+ *
+ * The UX fix pass made the READABLE detail panel the shared `PostCard`-backed
+ * `DetailMirror` (full text visible + scrollable immediately). This pure-DOM
+ * turnable book remains an independent content component with its own keyboard
+ * and reduced-motion contract; those behaviours are asserted here directly,
+ * while dialog focus/inert/ARIA is asserted by diegetic-detail + axe tests.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderWithProviders } from './helpers';
-import { PostDetailOverlay } from '../src/ui/PostDetailOverlay';
-import { POSTS, postId } from '../src/content/posts';
-import { usePortfolioStore } from '../src/state/store';
+import PostBook from '../src/ui/PostBook';
+import { POSTS } from '../src/content/posts';
 
 const first = POSTS[0]!;
 
-/** Mount the overlay with a real focus opener, like the 3D pick flow. */
+/** Mount the book content directly; it is dialog-agnostic. */
 async function openBook() {
-  const opener = document.createElement('button');
-  document.body.appendChild(opener);
-  opener.focus();
-  usePortfolioStore.setState({ selectedPostId: postId(first) });
-  renderWithProviders(<PostDetailOverlay />);
-  const dialog = await screen.findByRole('dialog', {
-    name: new RegExp(first.title),
-  });
-  // The lazy book chunk resolves; the Suspense fallback (PostCard) is replaced.
+  renderWithProviders(<PostBook post={first} />);
   const book = await screen.findByTestId('post-book');
-  return { opener, dialog, book };
+  return { book };
 }
 
 function bookRoot(book: HTMLElement): HTMLElement {
   return book.querySelector('[aria-roledescription="book"]') as HTMLElement;
 }
 
-beforeEach(() => {
-  usePortfolioStore.setState({ selectedPostId: null });
-});
-
-describe('opened book — flat variant, lazy chunk', () => {
-  it('lazy-loads a pure-DOM FLAT book inside the dialog (no WebGL variant)', async () => {
-    const { dialog, book } = await openBook();
-    expect(dialog).toHaveAttribute('aria-modal', 'true');
-    expect(within(dialog).getByTestId('post-book')).toBeInTheDocument();
+describe('opened book — flat variant', () => {
+  it('renders a pure-DOM FLAT book (no WebGL variant)', async () => {
+    const { book } = await openBook();
     const root = bookRoot(book);
     expect(root).toBeInTheDocument();
-    // Flat variant contract: the integration marks the book flat AND the
-    // rounded renderer's canvas/WebGL layer is never mounted.
     expect(root).toHaveAttribute('data-flat', 'true');
     expect(book.querySelector('canvas')).toBeNull();
   });
 
   it('pages carry the verbatim post content (description, tags, repo/NDA)', async () => {
-    const { dialog } = await openBook();
-    // The description page keeps the trusted verbatim HTML hook.
+    const { book } = await openBook();
     await waitFor(() =>
-      expect(screen.getByTestId('post-description')).toBeInTheDocument(),
+      expect(within(book).getByTestId('post-description')).toBeInTheDocument(),
     );
-    expect(dialog).toHaveTextContent(
+    expect(book).toHaveTextContent(
       /After graduating I happily took a return offer to Gusto/,
     );
-    expect(dialog).toHaveTextContent(
+    expect(book).toHaveTextContent(
       'Repository is private — details under NDA.',
     );
   });
@@ -78,7 +63,6 @@ describe('opened book — flat variant, lazy chunk', () => {
         ?.textContent ?? '';
     expect(announcement()).toMatch(/^Page 1 of 4$/);
 
-    // The book root is focusable and owns Arrow/Home/End natively.
     bookRoot(book).focus();
     await userEvent.keyboard('{ArrowRight}');
     await waitFor(() => expect(previous).toBeEnabled());
@@ -108,8 +92,6 @@ describe('opened book — flat variant, lazy chunk', () => {
     });
     bookRoot(book).focus();
     await userEvent.keyboard('{End}');
-    // The multi-page riffle animates through intermediate faces (each one
-    // reports onPageChange), so allow the full riffle budget to land.
     await waitFor(() => expect(next).toBeDisabled(), { timeout: 4000 });
     await userEvent.keyboard('{Home}');
     await waitFor(() => expect(previous).toBeDisabled(), { timeout: 4000 });
@@ -141,62 +123,5 @@ describe('opened book — flat variant, lazy chunk', () => {
     } finally {
       spy.mockRestore();
     }
-  });
-});
-
-describe('opened book — dialog a11y model preserved', () => {
-  it('renders one valid h2 from the title prop (no nested headings) and keeps the diegetic class contract', async () => {
-    const { dialog } = await openBook();
-    // Mantine renders the title prop inside its OWN h2; passing an <h2> here
-    // used to nest h2-in-h2 (invalid HTML + React warning).
-    const headings = dialog.querySelectorAll('h2');
-    expect(headings).toHaveLength(1);
-    expect(headings[0]).toHaveTextContent(first.title);
-    // p5-display styling survives via the Styles API `title` className.
-    expect(headings[0]!.className).toContain('p5-display');
-    expect(headings[0]!.className).toContain('text-p5-red');
-    // No heading may nest inside another heading anywhere in the dialog.
-    expect(
-      dialog.querySelector(
-        'h1 h1, h1 h2, h1 h3, h2 h1, h2 h2, h2 h3, h3 h1, h3 h2, h3 h3',
-      ),
-    ).toBeNull();
-    // Diegetic parity: slashed panel card + the shared ink backdrop class
-    // (which also carries the 70% p5-black scrim rule in p5.css).
-    expect(dialog.className).toContain('p5-panel--slashed');
-    expect(dialog.className).toContain('post-detail-card');
-    expect(
-      document.querySelector('.post-detail-overlay .post-detail-backdrop'),
-    ).not.toBeNull();
-  });
-
-  it('keeps ONE focus trap: focus lives in the dialog and returns to the opener on Esc', async () => {
-    const { opener, dialog } = await openBook();
-    await waitFor(() =>
-      expect(dialog).toContainElement(
-        document.activeElement as HTMLElement | null,
-      ),
-    );
-
-    await userEvent.keyboard('{Escape}');
-    expect(usePortfolioStore.getState().selectedPostId).toBeNull();
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-    await waitFor(() => expect(opener).toHaveFocus());
-    opener.remove();
-  });
-
-  it('marks the background shell inert while the book dialog is open', async () => {
-    // The overlay inerts .app-shell; render a stand-in shell to observe it.
-    const shell = document.createElement('div');
-    shell.className = 'app-shell';
-    document.body.appendChild(shell);
-    const { opener } = await openBook();
-    await waitFor(() => expect(shell).toHaveAttribute('inert'));
-    expect(shell).toHaveAttribute('aria-hidden', 'true');
-
-    await userEvent.keyboard('{Escape}');
-    await waitFor(() => expect(shell).not.toHaveAttribute('inert'));
-    opener.remove();
-    shell.remove();
   });
 });

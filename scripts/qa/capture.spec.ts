@@ -11,6 +11,7 @@ import {
   SCENE_FAILURE_STORAGE_KEY,
   SCENE_FAILURE_VALUE,
 } from '../../src/lib/device-tier';
+import { activateControl } from './keyboard-controls';
 
 /**
  * Reproducible capture matrix for draft PR #6 (art-overhaul commit 0).
@@ -18,7 +19,7 @@ import {
  * Run with `npm run capture:qa` (build + preview + this spec). Every 3D page
  * asserts a live WebGL2 context; the room seed is the app's fixed default
  * (`the-room` in src/scene/Room.tsx), DPR and viewports are pinned below, so
- * successive runs produce comparable evidence. The full matrix has 27 shots
+ * successive runs produce comparable evidence. The full matrix has 49 shots
  * and 3 clips; SwiftShader software rendering is slow, so `workers: 1` in the
  * config avoids contention. The fixed-pixel 3D picks (book/case/monitor) are
  * intentional real-pick evidence but a KNOWN FRAGILITY: recalibrate their
@@ -181,22 +182,31 @@ async function pickDetail(
   throw new Error(`${surface}: fixed-pixel pick at (${x},${y}) never landed`);
 }
 
-async function expectHiddenMirror(page: Page, surface: string): Promise<void> {
+async function expectVisiblePanel(page: Page, surface: string): Promise<void> {
   const mirror = page.locator(
     `.detail-mirror[data-detail-surface="${surface}"]`,
   );
   await expect(mirror).toHaveCount(1);
+  await expect(mirror).toBeVisible();
+  await expect(mirror).toHaveAttribute('aria-modal', 'true');
   const box = await mirror.boundingBox();
   expect(
     box?.width ?? 0,
-    `${surface} mirror must be sr-hidden`,
-  ).toBeLessThanOrEqual(2);
+    `${surface} panel must be readable, not sr-hidden`,
+  ).toBeGreaterThan(300);
   expect(
     box?.height ?? 0,
-    `${surface} mirror must be sr-hidden`,
-  ).toBeLessThanOrEqual(2);
-  await expect(page.locator('.post-detail-backdrop')).toHaveCount(0);
-  await expect(page.locator('.desktop-zoom')).toHaveCount(0);
+    `${surface} panel must fit the viewport`,
+  ).toBeLessThanOrEqual(900);
+  const scroll = await mirror
+    .locator('.detail-mirror__body')
+    .evaluate((el) => ({
+      overflow: getComputedStyle(el).overflowY,
+      fontPx: parseFloat(getComputedStyle(el).fontSize),
+    }));
+  expect(scroll.overflow).toBe('auto');
+  expect(scroll.fontPx).toBeGreaterThanOrEqual(14);
+  await expect(page.locator('.detail-panel-scrim')).toHaveCount(1);
   await expect(page.locator('#detail-return')).toHaveCount(1);
 }
 
@@ -254,21 +264,20 @@ test.describe('key capture matrix (desktop / tablet / mobile)', () => {
     await context.close();
   });
 
-  test('desktop 3D in-world details (no visible DOM dialog)', async ({
+  test('desktop 3D details (visible, scrollable DOM panel)', async ({
     browser,
   }) => {
     // Fixed-pixel 3D picks are intentional real-pick evidence, but brittle:
     // recalibrate after geometry/layout changes (REPORT.md defect D4).
-    // polish(c): the detail is now painted on in-world objects. The screenshots
-    // capture the opened book / lifted case / CRT / projected card; DOM dialogs
-    // must NOT be visible to the pointer user (only the sr-only a11y mirror).
+    // UX fix: the pick opens the in-world gesture, but the FULL detail is read
+    // in a visible, scrollable DOM panel — never truncated painted text.
     const context = await newCaptureContext(browser, { viewport: DESKTOP });
     const page = await context.newPage();
 
     await open(page, 'experience');
     await capture(page, 'desktop_3d_experience', true);
     await pickDetail(page, 664, 378, 'book');
-    await expectHiddenMirror(page, 'book');
+    await expectVisiblePanel(page, 'book');
     // Camera flies to BOOK_VIEWPOINT and the cover page turns via damp.
     await page.waitForTimeout(2600);
     await page.screenshot({
@@ -285,7 +294,7 @@ test.describe('key capture matrix (desktop / tablet / mobile)', () => {
     await page.locator('.scene-layer--ready').waitFor({ state: 'attached' });
     await page.waitForTimeout(SWIFT_SETTLE_MS);
     await pickDetail(page, 900, 440, 'case');
-    await expectHiddenMirror(page, 'case');
+    await expectVisiblePanel(page, 'case');
     await page.waitForTimeout(2600);
     await page.screenshot({
       path: resolve(SHOTS, 'desktop_3d_case-detail.png'),
@@ -298,7 +307,7 @@ test.describe('key capture matrix (desktop / tablet / mobile)', () => {
     // Assert the MONITOR mirror specifically (D6: a generic check let a stale
     // pick masquerade as a successful monitor capture).
     await pickDetail(page, 850, 350, 'monitor');
-    await expectHiddenMirror(page, 'monitor');
+    await expectVisiblePanel(page, 'monitor');
     await page.waitForTimeout(2600);
     await page.screenshot({
       path: resolve(SHOTS, 'desktop_3d_monitor-zoom.png'),
@@ -312,7 +321,7 @@ test.describe('key capture matrix (desktop / tablet / mobile)', () => {
     await page
       .getByRole('button', { name: 'Open projector info panel' })
       .click();
-    await expectHiddenMirror(page, 'projector');
+    await expectVisiblePanel(page, 'projector');
     const projectorMirror = page.locator('.detail-mirror');
     // Wait for CONTENT inside the mirror, not just its shell.
     await expect(
@@ -367,6 +376,9 @@ test.describe('key capture matrix (desktop / tablet / mobile)', () => {
     const page = await context.newPage();
     for (const [route, name] of [
       ['', 'tablet_3d_home'],
+      ['about', 'tablet_3d_about'],
+      ['experience', 'tablet_3d_experience'],
+      ['projects', 'tablet_3d_projects'],
       ['climate', 'tablet_3d_climate'],
     ] as Array<[string, string]>) {
       await open(page, route);
@@ -384,7 +396,9 @@ test.describe('key capture matrix (desktop / tablet / mobile)', () => {
     const page = await context.newPage();
     for (const [route, name] of [
       ['', 'mobile_3d_home'],
+      ['about', 'mobile_3d_about'],
       ['experience', 'mobile_3d_experience'],
+      ['projects', 'mobile_3d_projects'],
       ['climate', 'mobile_3d_climate'],
     ] as Array<[string, string]>) {
       await open(page, route);
@@ -401,10 +415,16 @@ test.describe('key capture matrix (desktop / tablet / mobile)', () => {
       mode: '2d',
     });
     const page = await context.newPage();
-    await open(page, '');
-    await capture(page, 'mobile_2d_home', false);
-    await open(page, 'climate');
-    await capture(page, 'mobile_2d_climate', false);
+    for (const [route, name] of [
+      ['', 'mobile_2d_home'],
+      ['about', 'mobile_2d_about'],
+      ['experience', 'mobile_2d_experience'],
+      ['projects', 'mobile_2d_projects'],
+      ['climate', 'mobile_2d_climate'],
+    ] as Array<[string, string]>) {
+      await open(page, route);
+      await capture(page, name, false);
+    }
     await page.locator('figure').first().scrollIntoViewIfNeeded();
     await page.waitForTimeout(300);
     await page.screenshot({
@@ -428,9 +448,10 @@ test.describe('recordings', () => {
     await open(navPage, '');
     await navPage.locator('.scene-layer--ready').waitFor();
     for (const route of ['experience', 'projects', 'climate']) {
-      await navPage
-        .locator(`nav[aria-label="Main menu"] a[href="#/${route}"]`)
-        .click();
+      await activateControl(
+        navPage,
+        navPage.locator(`nav[aria-label="Main menu"] a[href="#/${route}"]`),
+      );
       await navPage.waitForTimeout(1200);
       // Force a frame: the R3F demand loop can idle under software rendering.
       await navPage.screenshot();
@@ -446,10 +467,16 @@ test.describe('recordings', () => {
     const togglePage = await toggleCtx.newPage();
     await open(togglePage, '');
     await togglePage.locator('.scene-layer--ready').waitFor();
-    await togglePage.getByRole('button', { name: '3D room mode' }).click();
+    await activateControl(
+      togglePage,
+      togglePage.getByRole('button', { name: '3D room mode' }),
+    );
     await togglePage.waitForTimeout(1500);
     await togglePage.screenshot();
-    await togglePage.getByRole('button', { name: 'Automatic mode' }).click();
+    await activateControl(
+      togglePage,
+      togglePage.getByRole('button', { name: 'Automatic mode' }),
+    );
     await togglePage.waitForTimeout(1500);
     await togglePage.screenshot();
     const toggleVideo = togglePage.video();

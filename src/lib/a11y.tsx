@@ -90,8 +90,11 @@ export function useFocusTrap<T extends HTMLElement>(
       const focusables = node.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
       (focusables[0] ?? node).focus();
     };
-    // Defer so the node is definitely attached and rendered.
-    const raf = requestAnimationFrame(focusFirst);
+    // Effects run after the commit, so the node (and its focusable children)
+    // is already attached. Focusing synchronously avoids a one-frame race in
+    // which a late rAF steals focus from the trigger a caller just focused
+    // (observed on the heavier climate panel).
+    focusFirst();
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Tab' || event.defaultPrevented) return;
@@ -129,7 +132,6 @@ export function useFocusTrap<T extends HTMLElement>(
     }
 
     return () => {
-      cancelAnimationFrame(raf);
       node.removeEventListener('keydown', onKeyDown);
       // When another dialog stays open the caller moves focus to that dialog
       // instead; restoring here would pull focus back to a desktop icon.

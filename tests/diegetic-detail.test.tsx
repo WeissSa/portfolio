@@ -1,18 +1,18 @@
 /**
- * polish(c) — diegetic in-world detail with an a11y-only DOM mirror.
+ * Unified detail panel contract (UX fix pass 2026-11-25, reverses polish(c)).
  *
- * Critical contract: in fine-pointer LIVE 3D the detail DOM is visually hidden
- * (in the a11y tree + tab order, revealed only by real keyboard focus), while
- * EVERY non-picking mode keeps the ordinary visible DOM detail dialog. These
- * tests assert the shell side of that contract headlessly; pixel-level
- * "no visible dialog" is asserted by the Playwright QA spec.
+ * There is exactly ONE readable DOM panel for every detail surface and every
+ * mode: fine-pointer live 3D, 2D, coarse pointer, reduced motion and a scene
+ * that never drew. It is visible, modal, scrollable and focus-trapped; the
+ * in-world object keeps its open animation but never paints truncated prose.
+ * These tests assert that contract headlessly; real-browser readability,
+ * scrollability and framing are asserted by scripts/qa/detail-mirror.spec.ts.
  */
 import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders } from './helpers';
-import { POSTS, postId } from '../src/content/posts';
-import { PROJECTS } from '../src/content/posts';
+import { POSTS, PROJECTS, postId } from '../src/content/posts';
 import { isDiegeticDetail } from '../src/lib/detail-mode';
 import { usePortfolioStore } from '../src/state/store';
 import { PostDetailOverlay } from '../src/ui/PostDetailOverlay';
@@ -20,7 +20,7 @@ import { ProjectDetailOverlay } from '../src/ui/ProjectDetailOverlay';
 import { DesktopZoom } from '../src/ui/DesktopZoom';
 import { ClimateProjectorPanel } from '../src/ui/ClimateProjectorPanel';
 
-/** Fine-pointer LIVE 3D — the only mode where the DOM becomes a mirror. */
+/** Fine-pointer LIVE 3D — the only mode with a camera detail close-up. */
 function live3d(): void {
   usePortfolioStore.setState({
     mode: '3d',
@@ -29,7 +29,7 @@ function live3d(): void {
   });
 }
 
-/** The F2 focus proxy App renders in diegetic mode. */
+/** The F2 focus proxy App renders while a scene pick is available. */
 function installTrigger(): HTMLButtonElement {
   document.getElementById('detail-return')?.remove();
   const trigger = document.createElement('button');
@@ -55,7 +55,7 @@ beforeEach(() => {
   document.getElementById('detail-return')?.remove();
 });
 
-describe('isDiegeticDetail (pure gate)', () => {
+describe('isDiegeticDetail (camera-closeup gate only)', () => {
   const base = {
     mode: '3d' as const,
     sceneReady: true,
@@ -77,10 +77,10 @@ describe('isDiegeticDetail (pure gate)', () => {
   });
 });
 
-describe('fine-pointer live 3D: a11y-only mirror, never a visible dialog', () => {
-  it('keeps the book content in the a11y tree as a hidden mirror', async () => {
+describe('one visible, readable panel in live 3D', () => {
+  it('shows full book content in a modal dialog with a close control', async () => {
     const post = POSTS[0]!;
-    const trigger = installTrigger();
+    installTrigger();
     live3d();
     usePortfolioStore.setState({ selectedPostId: postId(post) });
     renderWithProviders(<PostDetailOverlay />);
@@ -89,17 +89,21 @@ describe('fine-pointer live 3D: a11y-only mirror, never a visible dialog', () =>
       name: new RegExp(post.title),
     });
     expect(dialog).toHaveClass('detail-mirror');
+    expect(dialog).toHaveAttribute('aria-modal', 'true');
     expect(dialog).toHaveAttribute('data-detail-surface', 'book');
-    // No visible Mantine dialog / backdrop in the diegetic surface.
+    expect(dialog).toHaveTextContent(post.title);
+    expect(dialog.querySelector('.detail-mirror__body')).not.toBeNull();
+    // No separate Mantine modal / dual code path.
     expect(document.querySelector('.post-detail-overlay')).toBeNull();
     expect(document.querySelector('.post-detail-backdrop')).toBeNull();
-    expect(dialog).not.toHaveAttribute('aria-modal');
-    // Full verbatim content survives for screen readers.
-    expect(dialog).toHaveTextContent(post.title);
-    expect(trigger).toHaveFocus(); // opening never auto-focuses the mirror
+    expect(
+      within(dialog).getByRole('button', {
+        name: `Close details for ${post.title}`,
+      }),
+    ).toBeInTheDocument();
   });
 
-  it('F1: keyboard focus in the mirror lights the in-world object; blur clears it', async () => {
+  it('F1: focus in the panel lights the in-world object; blur clears it', async () => {
     const post = POSTS[0]!;
     installTrigger();
     live3d();
@@ -112,7 +116,6 @@ describe('fine-pointer live 3D: a11y-only mirror, never a visible dialog', () =>
     await waitFor(() =>
       expect(usePortfolioStore.getState().detailMirrorFocused).toBe(true),
     );
-    // Moving focus out of the mirror fires React's focusout/blur handler.
     act(() => document.getElementById('detail-return')!.focus());
     await waitFor(() =>
       expect(usePortfolioStore.getState().detailMirrorFocused).toBe(false),
@@ -133,7 +136,7 @@ describe('fine-pointer live 3D: a11y-only mirror, never a visible dialog', () =>
     await waitFor(() => expect(trigger).toHaveFocus());
   });
 
-  it('mirrors the case, CRT and projector surfaces with distinct in-world targets', async () => {
+  it('uses the same panel for case, CRT and projector surfaces', async () => {
     const project = PROJECTS[0]!;
     installTrigger();
     live3d();
@@ -169,7 +172,7 @@ describe('fine-pointer live 3D: a11y-only mirror, never a visible dialog', () =>
   });
 });
 
-describe('every non-picking fallback shows the visible DOM detail', () => {
+describe('the SAME panel in every non-picking fallback', () => {
   const fallbacks: readonly [string, () => void][] = [
     ['2D', () => usePortfolioStore.setState({ mode: '2d' })],
     [
@@ -188,7 +191,7 @@ describe('every non-picking fallback shows the visible DOM detail', () => {
   ];
 
   for (const [label, apply] of fallbacks) {
-    it(`book dialog is visible in ${label}`, async () => {
+    it(`book panel is visible in ${label}`, async () => {
       const post = POSTS[0]!;
       apply();
       usePortfolioStore.setState({ selectedPostId: postId(post) });
@@ -197,14 +200,14 @@ describe('every non-picking fallback shows the visible DOM detail', () => {
       const dialog = await screen.findByRole('dialog', {
         name: new RegExp(post.title),
       });
-      expect(document.querySelector('.post-detail-overlay')).not.toBeNull();
+      expect(dialog).toHaveClass('detail-mirror');
       expect(dialog).toHaveAttribute('aria-modal', 'true');
-      expect(document.querySelector('.post-detail-backdrop')).not.toBeNull();
-      expect(dialog).not.toHaveClass('detail-mirror');
+      expect(document.querySelector('.post-detail-overlay')).toBeNull();
+      expect(document.querySelector('.detail-panel-scrim')).not.toBeNull();
     });
   }
 
-  it('reduced-motion 3D keeps the visible dialog', async () => {
+  it('reduced-motion 3D keeps the same panel', async () => {
     const spy = vi.spyOn(window, 'matchMedia').mockImplementation(((
       query: string,
     ) => ({
@@ -225,15 +228,15 @@ describe('every non-picking fallback shows the visible DOM detail', () => {
       const dialog = await screen.findByRole('dialog', {
         name: new RegExp(post.title),
       });
+      expect(dialog).toHaveClass('detail-mirror');
       expect(dialog).toHaveAttribute('aria-modal', 'true');
-      expect(document.querySelector('.post-detail-overlay')).not.toBeNull();
-      expect(dialog).not.toHaveClass('detail-mirror');
+      expect(document.querySelector('.post-detail-overlay')).toBeNull();
     } finally {
       spy.mockRestore();
     }
   });
 
-  it('case/projector dialogs remain visible when no scene ever drew', async () => {
+  it('case and projector fallbacks share it too', async () => {
     const project = PROJECTS[0]!;
     usePortfolioStore.setState({
       mode: '2d',
@@ -244,7 +247,7 @@ describe('every non-picking fallback shows the visible DOM detail', () => {
       'aria-modal',
       'true',
     );
-    expect(document.querySelector('.project-detail-overlay')).not.toBeNull();
+    expect(document.querySelector('.project-detail-overlay')).toBeNull();
   });
 });
 
@@ -257,37 +260,28 @@ describe('mirror focus state is 3D-only state', () => {
   });
 });
 
-describe('live ↔ pointer/fallback handover while a detail is open', () => {
-  it('swaps mirror/dialog, keeps the content, and restores the F2 trigger', async () => {
+describe('live ↔ fallback handover while a detail is open', () => {
+  it('keeps the identical panel and restores the F2 trigger on close', async () => {
     const trigger = installTrigger();
     const post = POSTS[0]!;
     live3d();
     usePortfolioStore.setState({ selectedPostId: postId(post) });
     const view = renderWithProviders(<PostDetailOverlay />);
 
-    const mirror = await screen.findByRole('dialog', {
+    const panel = await screen.findByRole('dialog', {
       name: new RegExp(post.title),
     });
-    expect(mirror).toHaveClass('detail-mirror');
-    expect(mirror).not.toHaveAttribute('aria-modal');
+    expect(panel).toHaveClass('detail-mirror');
 
-    // Live 3D → fallback while the book is still selected: the modal dialog
-    // takes over (inert/focus-trap restored), the mirror leaves the DOM.
     act(() => usePortfolioStore.setState({ mode: '2d' }));
-    const dialog = await screen.findByRole('dialog', {
+    const samePanel = await screen.findByRole('dialog', {
       name: new RegExp(post.title),
     });
-    expect(dialog).toHaveAttribute('aria-modal', 'true');
-    expect(document.querySelector('.post-detail-overlay')).not.toBeNull();
-    expect(document.querySelector('.detail-mirror')).toBeNull();
-
-    // Back into live fine-pointer 3D: the in-world view owns the detail again.
-    act(() => live3d());
-    const mirrorAgain = await screen.findByRole('dialog', {
-      name: new RegExp(post.title),
-    });
-    expect(mirrorAgain).toHaveClass('detail-mirror');
+    expect(samePanel).toBe(panel); // NO unmount/remount, one code path
     expect(document.querySelector('.post-detail-overlay')).toBeNull();
+
+    act(() => live3d());
+    expect(await screen.findByRole('dialog')).toBe(panel);
 
     await userEvent.keyboard('{Escape}');
     expect(usePortfolioStore.getState().selectedPostId).toBeNull();

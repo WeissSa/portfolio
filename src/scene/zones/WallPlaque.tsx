@@ -13,7 +13,8 @@ import * as THREE from 'three';
 import { useThree, type ThreeEvent } from '@react-three/fiber';
 import { PickableEdges, pickAffordance, useZoneSpotlight } from '../affordance';
 import { useDeferredDispose } from '../../lib/deferred-dispose';
-import { navigate, type Route } from '../../lib/router';
+import { navigateAndCloseDetail } from '../../lib/navigation';
+import type { Route } from '../../lib/router';
 import { DESIGN_TOKENS } from '../../styles/design-tokens';
 import { usePortfolioStore } from '../../state/store';
 import { DIEGETIC_ROWS, PLAQUE } from '../diegetic';
@@ -100,7 +101,7 @@ export function WallPlaque({ parts, materials }: WallPlaqueProps) {
 
   const pick = (route: Route) => (event: ThreeEvent<MouseEvent>) => {
     event.stopPropagation();
-    navigate(route);
+    navigateAndCloseDetail(route);
     setMenuHoverRoute(null);
   };
   const hover = (route: Route) => (event: ThreeEvent<PointerEvent>) => {

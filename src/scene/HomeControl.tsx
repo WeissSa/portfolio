@@ -13,7 +13,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
 import { useDeferredDispose } from '../lib/deferred-dispose';
-import { navigate } from '../lib/router';
+import { navigateAndCloseDetail } from '../lib/navigation';
 import { DESIGN_TOKENS } from '../styles/design-tokens';
 import { usePortfolioStore } from '../state/store';
 import { HOME_FOV_DEGREES, homeControlVisible } from './diegetic';
@@ -59,8 +59,9 @@ export function HomeControl() {
   // toggle) or slides out from under a stationary cursor. Without this cleanup
   // the body cursor stays 'pointer' and the gold hover tint sticks on re-entry.
   // Cleanup also runs whenever `visible` flips to false, so the non-interactive
-  // state can never retain hover. Only clear a cursor WE set, never another
-  // component's pointer state.
+  // state can never retain hover. Cursor handling is best-effort: we only reset
+  // the exact value WE write ('pointer'); any other cursor value is left to its
+  // owner (there is no cross-component cursor registry to claim ownership).
   useEffect(() => {
     const clearHover = () => {
       setHovered(false);
@@ -137,7 +138,7 @@ export function HomeControl() {
   const onClick = (event: ThreeEvent<MouseEvent>) => {
     event.stopPropagation();
     document.body.style.cursor = '';
-    navigate('/');
+    navigateAndCloseDetail('/');
   };
   const onOver = (event: ThreeEvent<PointerEvent>) => {
     event.stopPropagation();

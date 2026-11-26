@@ -450,6 +450,10 @@
   border: 2px solid var(--border-panel);
 }
 
+/* The SEMANTIC nav stays sr-only in fine-pointer live 3D (the diegetic room
+   owns the visuals); Tab still reveals it for keyboard users. Pointer users
+   get the separate, always-visible brass strip below — outside .app-shell, so
+   it stays clickable even while a modal detail panel makes the shell inert. */
 .app-scene-live.app-fine-pointer .main-menu {
   position: absolute;
   width: 1px;
@@ -489,57 +493,133 @@
   font-weight: 700;
 }
 
-/* --------------------------------------------------------------------------
- * polish(c): diegetic detail views. In fine-pointer live 3D the detail is
- * painted on in-world objects; the DOM mirror below stays in the a11y tree and
- * tab order but is visually hidden. ONLY genuine keyboard focus reveals it —
- * `:focus-visible` (not `:focus-within`, which a mouse click also sets) — so a
- * pointer pick never flashes a dialog over the room. Coarse pointers / 2D /
- * failed scene never hide the ordinary Mantine dialog at all (the overlays
- * render that dialog instead of this mirror outside live fine-pointer 3D).
- * ------------------------------------------------------------------------ */
-.detail-mirror__chip {
-  display: none;
+/* Pointer-visible diegetic control strip (UX fix pass, MAJOR 4). Rendered by
+   App OUTSIDE .app-shell so it is never made inert by an open detail dialog,
+   and above the detail scrim so HOME/nav works DURING a detail close-up.
+   aria-hidden: it mirrors the semantic nav for sighted mouse users only;
+   keyboard/SR users keep the single real <nav>. */
+.pointer-menu-strip {
+  position: fixed;
+  left: var(--space-md);
+  top: var(--space-md);
+  z-index: 12;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  max-width: calc(100vw - 2 * var(--space-md));
+  padding: var(--space-sm);
+  border: 2px solid var(--state-focus);
+  background: color-mix(in srgb, var(--p5-black) 88%, transparent);
+  box-shadow: 0 0 0 3px var(--p5-ink);
 }
 
-.app-scene-live.app-fine-pointer .detail-mirror {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  margin: -1px;
+.pointer-menu-strip__label {
+  flex: 1 0 100%;
+  padding: 0 var(--space-xs) var(--space-xs);
+  color: var(--state-focus);
+  font-family: 'Anton', 'Arial Narrow', Haettenschweiler, sans-serif;
+  font-size: var(--type-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.pointer-menu-strip__btn {
+  min-height: 44px;
+  padding: var(--space-xs) var(--space-sm);
+  font-size: var(--type-sm);
+}
+
+/* --------------------------------------------------------------------------
+ * UX fix pass (2026-11-25): the READABLE detail is one visible, scrollable DOM
+ * panel in every mode — the a11y mirror of polish(c) is now the authoritative
+ * readout. In-world objects keep their open animation as the visual gesture,
+ * but no truncated painted sentence is ever the only copy of the content.
+ * The panel is framed like an in-world page/screen (brass bezel + ink mount)
+ * and sits in the clear left band of the 3D desktop layout.
+ * ------------------------------------------------------------------------ */
+.detail-panel-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  background: color-mix(in srgb, var(--p5-black) 55%, transparent);
+  animation: detail-panel-in 160ms ease-out both;
+}
+
+.detail-mirror {
+  position: fixed;
+  left: clamp(var(--space-md), 6vw, 6rem);
+  /* Offset the centre down so the panel header clears the pointer menu strip
+     pinned at top-left; the reduced max-height keeps the bottom in viewport. */
+  top: calc(50% + 3.5rem);
+  z-index: 11;
+  display: flex;
+  flex-direction: column;
+  width: min(94vw, 46rem);
+  max-height: min(80vh, 54rem);
+  margin: 0;
   padding: 0;
   overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-
-.app-scene-live.app-fine-pointer .detail-mirror:has(:focus-visible) {
-  position: fixed;
-  left: 50%;
-  top: 50%;
-  z-index: 12;
-  width: min(92%, 44rem);
-  height: auto;
-  max-height: 86vh;
-  margin: 0;
-  padding: var(--space-lg);
-  overflow: auto;
-  clip-path: none;
-  white-space: normal;
-  transform: translate(-50%, -50%);
+  transform: translateY(-50%);
   background: var(--p5-black);
+  color: var(--p5-white);
   border: 2px solid var(--state-focus);
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--p5-black) 60%, transparent);
+  box-shadow:
+    0 0 0 3px var(--p5-ink),
+    12px 14px 0 0 color-mix(in srgb, var(--p5-red-deep) 65%, transparent);
   pointer-events: auto;
+  /* Fade only: p5-cut-in animates `transform`, which would override the
+     translateY(-50%) centering and push a tall panel off the viewport. */
+  animation: detail-panel-in 180ms ease-out both;
 }
 
-.app-scene-live.app-fine-pointer
-  .detail-mirror:has(:focus-visible)
-  .detail-mirror__chip {
+@keyframes detail-panel-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.detail-mirror__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  flex-shrink: 0;
+  padding: var(--space-sm) var(--space-lg);
+  border-bottom: 2px solid var(--state-focus);
+  background: var(--p5-ink);
+}
+
+.detail-mirror__chip {
   display: block;
-  margin-bottom: var(--space-sm);
   color: var(--state-focus);
   font-weight: 700;
+  font-size: var(--type-sm);
+}
+
+.detail-mirror__close {
+  flex-shrink: 0;
+  min-height: 44px;
+}
+
+/* The ONLY place full detail is read: generous 15px type on ink, AA contrast,
+   and a genuine scroll container for long posts/climate panels. */
+.detail-mirror__body {
+  min-height: 0;
+  padding: var(--space-md) var(--space-lg) var(--space-lg);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--p5-white);
+}
+
+.detail-mirror__body p,
+.detail-mirror__body li {
+  font-size: 15px;
+  line-height: 1.6;
 }
 
 /* Review fix: the diegetic right-column layout now starts at Tailwind's `md`

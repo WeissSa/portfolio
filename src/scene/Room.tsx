@@ -84,11 +84,14 @@ export interface RoomSceneProps {
  * desktop Canvas allocates a shadow map, and only its one warm key spot casts.
  */
 export function roomShadowSettings(quality: RoomQuality): {
-  canvasShadows: boolean;
+  // R3F maps the string 'percentage' to THREE.PCFShadowMap. Passing boolean
+  // `true` makes it choose PCFSoftShadowMap, which three r187 removed (console
+  // warning + silent fallback) — be explicit about the supported map type.
+  canvasShadows: 'percentage' | false;
   keyLight: boolean;
 } {
   const desktop = quality === 'desktop';
-  return { canvasShadows: desktop, keyLight: desktop };
+  return { canvasShadows: desktop ? 'percentage' : false, keyLight: desktop };
 }
 
 /* Placement constants live in ./placement so the camera viewpoints can

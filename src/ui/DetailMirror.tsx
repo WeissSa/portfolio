@@ -1,45 +1,65 @@
 /**
- * A11y-only DOM mirror for diegetic in-world detail (plan polish(c)).
+ * The ONE readable detail panel (owner decision 2026-11-25, UX fix pass).
  *
- * In fine-pointer live 3D the detail content is painted onto 3D objects in the
- * room (book pages / case card / CRT / projected info). This component keeps
- * the SAME verbatim accessible DOM content in the a11y tree and tab order, but
- * visually hidden — pointer users never see a [role=dialog] over the canvas.
- * CSS (`.app-scene-live.app-fine-pointer .detail-mirror`) reveals it ONLY for
- * genuine keyboard focus (`:has(:focus-visible)`, never `:focus-within`, which
- * mouse clicks also trigger), together with a floating focus chip.
+ * Every detail surface — 3D book/case/monitor/projector pick, 2D route, coarse
+ * pointer and reduced-motion fallback — renders this same component. It is a
+ * visible, scrollable DOM panel styled as an in-world page/screen: a brass
+ * bezel frames the real, verbatim DOM content (full prose, tag chips and repo
+ * / demo links) while the 3D room remains visible around it. No truncated
+ * painted text is ever the only copy of a detail.
  *
- * F1: focus entering the mirror writes `detailMirrorFocused` so the scene can
- * light the corresponding in-world object (bidirectional DOM ↔ world sync).
- * F2: on close, focus is restored to the DOM proxy of the 3D trigger
- * (`#detail-return`), after the mirror has left the DOM (queueMicrotask).
+ * Accessibility: role=dialog + aria-modal, a trapped Tab cycle, a visible
+ * close control, Escape to dismiss, a polite live announcement (supplied by
+ * each caller inside `children`) and focus restored to the 3D trigger proxy
+ * (`#detail-return`) or the DOM opener on close. Focus entering the panel also
+ * lights the matching in-world object (`detailMirrorFocused`) so the 3D frame
+ * and the DOM readout stay in sync.
  */
 import { useEffect, type ReactNode } from 'react';
+import { useFocusTrap } from '../lib/a11y';
 import { usePortfolioStore } from '../state/store';
 
 export interface DetailMirrorProps {
   /** Accessible dialog name (the same title the visible dialog would carry). */
   label: string;
-  /** Which in-world object lights up when focus enters the mirror. */
+  /** Visible heading inside the framed panel. */
+  title: string;
+  /** Which in-world object lights up while the panel is open. */
   surface: 'book' | 'case' | 'monitor' | 'projector';
   onClose: () => void;
+  /** Full accessible name of the close control. */
+  closeLabel?: string;
+  /** Visible text of the close control. */
+  closeText?: string;
+  /**
+   * Escape guard for nested UI. The About desktop keeps its own window stack:
+   * the first Escape closes the top window, and only later Escapes close this
+   * panel. Every other surface leaves this unset.
+   */
+  blockEscape?: () => boolean;
   children: ReactNode;
 }
 
 export function DetailMirror({
   label,
+  title,
   surface,
   onClose,
+  closeLabel,
+  closeText = 'Back to the room',
+  blockEscape,
   children,
 }: DetailMirrorProps) {
   const setFocused = usePortfolioStore((state) => state.setDetailMirrorFocused);
-
+  // This effect MUST run before the focus trap below: it has to remember the
+  // opener while focus is still outside the panel. The trap then moves focus
+  // into the dialog synchronously on mount.
   useEffect(() => {
     const saved = document.activeElement as HTMLElement | null;
     return () => {
       setFocused(false);
-      // Un-inert / unmount happens in this commit; restore focus on the next
-      // microtask so the trigger is definitely back in the tab order.
+      // Un-mount happens in this commit; restore focus on the next microtask
+      // so the trigger is definitely back in the tab order.
       queueMicrotask(() => {
         const trigger = document.getElementById('detail-return');
         const target =
@@ -56,41 +76,66 @@ export function DetailMirror({
     };
   }, [setFocused]);
 
+  // Restore is owned by the effect above (it prefers the F2 canvas-trigger
+  // proxy), so the generic trap must not race it with a second restore.
+  const trapRef = useFocusTrap<HTMLElement>(true, false);
+
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Escape' || event.defaultPrevented) return;
+      if (blockEscape?.()) return;
       event.preventDefault();
       onClose();
     };
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
-  }, [onClose]);
+  }, [onClose, blockEscape]);
 
   return (
-    <section
-      className="detail-mirror p5-panel p5-panel--slashed"
-      data-detail-surface={surface}
-      role="dialog"
-      aria-label={label}
-      onFocusCapture={() => setFocused(true)}
-      onBlurCapture={(event) => {
-        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
-          setFocused(false);
-        }
-      }}
-    >
-      <p className="detail-mirror__chip" aria-hidden="true">
-        Keyboard detail view — {label}
-      </p>
-      <button
-        type="button"
+    <>
+      {/* Dim the room just enough to make the page readable; a click outside
+          dismisses exactly like the old Mantine backdrop did. The room stays
+          visible — this is a framed readout, not an opaque full-screen swap. */}
+      <div
+        className="detail-panel-scrim"
+        aria-hidden="true"
         onClick={onClose}
-        aria-label={`Close details for ${label}`}
-        className="p5-btn p5-btn--red detail-mirror__close"
+      />
+      <section
+        ref={trapRef}
+        tabIndex={-1}
+        className="detail-mirror p5-panel p5-panel--slashed post-detail-card"
+        data-detail-surface={surface}
+        role="dialog"
+        aria-modal="true"
+        aria-label={label}
+        onFocusCapture={() => setFocused(true)}
+        onBlurCapture={(event) => {
+          if (
+            !event.currentTarget.contains(event.relatedTarget as Node | null)
+          ) {
+            setFocused(false);
+          }
+        }}
       >
-        Back to the room
-      </button>
-      {children}
-    </section>
+        <div className="detail-mirror__header">
+          <div className="min-w-0">
+            <p className="detail-mirror__chip" aria-hidden="true">
+              In-world readout
+            </p>
+            <h2 className="p5-display text-lg text-p5-red">{title}</h2>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label={closeLabel ?? `Close details for ${label}`}
+            className="p5-btn p5-btn--red detail-mirror__close"
+          >
+            {closeText}
+          </button>
+        </div>
+        <div className="detail-mirror__body">{children}</div>
+      </section>
+    </>
   );
 }

@@ -5,7 +5,7 @@
  * mirror. The old spec used 40 Shift+Tab presses to wrap around from the menu.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from '../src/App';
 import { POSTS, PROJECTS, postId } from '../src/content/posts';
@@ -57,9 +57,13 @@ async function proxyTabReachesMirror(
   proxy.focus();
   expect(proxy).toHaveFocus();
   await user.tab();
-  await waitFor(() =>
-    expect(mirror.contains(document.activeElement)).toBe(true),
-  );
+  // The mirror's close button is its FIRST tabbable child, so the single
+  // forward Tab must land on it specifically — not merely anywhere inside the
+  // mirror (which could mask a changed DOM order or a skipped close control).
+  const close = within(mirror).getByRole('button', {
+    name: /Close (details|desktop|climate)/,
+  });
+  await waitFor(() => expect(close).toHaveFocus());
   expect(mirror).toHaveClass('detail-mirror');
   expect(mirror).toHaveAttribute('data-detail-surface', surface);
 }

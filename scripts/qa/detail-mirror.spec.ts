@@ -9,16 +9,12 @@ import {
 } from '@playwright/test';
 
 /**
- * polish(c) browser contract (no jsdom inert/focus-visible):
- *  - fine-pointer live 3D: the detail DOM survives as an sr-hidden a11y mirror;
- *    keyboard Tab reveals it with a visible focus chip (F1) and Escape restores
- *    focus to the 3D trigger proxy (F2). Pointer users see NO visible dialog.
- *  - every non-picking mode (coarse pointer / reduced-motion opt-in): the same
- *    detail is the ordinary VISIBLE dialog (the in-world surface is suppressed).
- *
- * The projector's "Open projector info panel" DOM button is used as the trigger
- * because it writes `climatePanelOpen` in every mode — unlike the 2D case-card
- * toggle, which only expands an inline card locally.
+ * Real-browser contract for the ONE readable detail panel (UX fix pass).
+ *  - fine-pointer live 3D: opening a detail shows a VISIBLE, scrollable,
+ *    focus-trapped dialog with verbatim content, tag chips and links;
+ *  - the SAME panel is authoritative in coarse-pointer / reduced-motion
+ *    fallbacks — no second dialog implementation;
+ *  - Escape and the close control restore focus to the trigger.
  */
 const SHOTS = resolve(process.cwd(), 'qa-evidence/screenshots');
 const DESKTOP = { width: 1440, height: 900 };
@@ -72,50 +68,62 @@ async function openProjector(page: Page): Promise<void> {
   await page.getByRole('button', { name: 'Open projector info panel' }).click();
 }
 
-test('fine-pointer live 3D: F1 reveal-on-focus + F2 focus restore', async ({
+async function assertReadablePanel(page: Page): Promise<void> {
+  const panel = page.locator('.detail-mirror');
+  await expect(panel).toBeVisible();
+  await expect(panel).toHaveAttribute('role', 'dialog');
+  await expect(panel).toHaveAttribute('aria-modal', 'true');
+  const box = await panel.boundingBox();
+  expect(box?.width ?? 0, 'panel is readable').toBeGreaterThan(300);
+  expect(box?.height ?? 0, 'panel fits the viewport').toBeLessThanOrEqual(900);
+  expect((box?.y ?? -1) >= 0, 'panel is not clipped at the top').toBe(true);
+  expect(
+    (box?.y ?? 0) + (box?.height ?? 0) <= DESKTOP.height,
+    'panel is not clipped at the bottom',
+  ).toBe(true);
+  const body = panel.locator('.detail-mirror__body');
+  const metrics = await body.evaluate((el) => ({
+    overflowY: getComputedStyle(el).overflowY,
+    fontPx: parseFloat(getComputedStyle(el).fontSize),
+    scrollHeight: el.scrollHeight,
+    clientHeight: el.clientHeight,
+  }));
+  expect(metrics.overflowY).toBe('auto');
+  expect(metrics.fontPx, 'AA-size reading text').toBeGreaterThanOrEqual(14);
+  expect(metrics.scrollHeight, 'full content is present').toBeGreaterThan(
+    metrics.clientHeight,
+  );
+  await expect(panel.getByRole('button', { name: /Close/ })).toBeVisible();
+}
+
+test('fine-pointer live 3D: the detail panel is visible and scrollable', async ({
   browser,
 }) => {
   const context = await contextFor(browser, { mode: '3d' });
   const page = await context.newPage();
   await openProjector(page);
-
-  // Pointer opening: the a11y mirror exists but is sr-hidden (≤2px box).
-  const mirror = page.locator('.detail-mirror');
-  await expect(mirror).toHaveAttribute('data-detail-surface', 'projector');
-  const hidden = await mirror.boundingBox();
-  expect(hidden?.width ?? 0).toBeLessThanOrEqual(2);
-  await expect(page.locator('.climate-projector-overlay')).toHaveCount(0);
-  await expect(page.locator('.post-detail-backdrop')).toHaveCount(0);
-
-  // NATURAL FORWARD TAB from the F2 trigger proxy. The proxy precedes the
-  // overlays in App's DOM, so one Tab reaches the mirror (the old 40× Shift+Tab
-  // wrap-around hack is gone). Tab sets :focus-visible on the newly focused
-  // close button, which is what reveals the mirror; a bare focus() would not.
-  await page.locator('#detail-return').focus();
-  await page.keyboard.press('Tab');
-  await expect
-    .poll(() =>
-      page.evaluate(
-        () =>
-          !!document
-            .querySelector('.detail-mirror')
-            ?.contains(document.activeElement),
-      ),
-    )
-    .toBe(true);
-  await expect(mirror).toHaveCSS('position', 'fixed');
-  await expect(mirror.locator('.detail-mirror__chip')).toBeVisible();
-  const revealed = await mirror.boundingBox();
-  expect(revealed?.width ?? 0).toBeGreaterThan(100);
+  const panel = page.locator('.detail-mirror');
+  await expect(panel).toHaveAttribute('data-detail-surface', 'projector');
+  await assertReadablePanel(page);
+  await expect(panel.getByText(/Is Today Weirdly Hot/i)).toBeVisible();
+  await expect(
+    panel.getByRole('link', { name: 'Climate Defense Fund of Ontario' }),
+  ).toBeVisible();
   await page.screenshot({
-    path: resolve(SHOTS, 'desktop_3d_detail-mirror-focus.png'),
+    path: resolve(SHOTS, 'desktop_3d_detail-panel-visible.png'),
   });
 
-  // F2: closing by keyboard returns focus to the in-world trigger proxy.
+  // Scroll to the very bottom: content must remain readable, not truncated.
+  await panel
+    .locator('.detail-mirror__body')
+    .evaluate((el) => el.scrollTo(0, el.scrollHeight));
+  await page.screenshot({
+    path: resolve(SHOTS, 'desktop_3d_detail-panel-scrolled.png'),
+  });
+
+  // Escape closes and restores focus to the opener.
   await page.keyboard.press('Escape');
-  await expect(mirror).toHaveCount(0);
-  // The opener was the DOM trigger button (a canvas pick would focus the
-  // `#detail-return` proxy instead); either way F2 restores to the opener.
+  await expect(panel).toHaveCount(0);
   const restored = await page.evaluate(() => ({
     id: document.activeElement?.id ?? '',
     text: document.activeElement?.textContent?.trim() ?? '',
@@ -128,7 +136,7 @@ test('fine-pointer live 3D: F1 reveal-on-focus + F2 focus restore', async ({
   await context.close();
 });
 
-test('coarse-pointer 3D: the visible DOM detail is authoritative', async ({
+test('coarse-pointer 3D: the same visible panel is authoritative', async ({
   browser,
 }) => {
   const context = await contextFor(browser, {
@@ -138,19 +146,19 @@ test('coarse-pointer 3D: the visible DOM detail is authoritative', async ({
   });
   const page = await context.newPage();
   await openProjector(page);
-
-  await expect(page.locator('.detail-mirror')).toHaveCount(0);
-  const dialog = page.getByRole('dialog');
-  await expect(dialog).toBeVisible();
-  await expect(dialog).toHaveAttribute('aria-modal', 'true');
-  await expect(page.locator('.post-detail-backdrop')).toBeVisible();
+  await expect(page.locator('.detail-mirror')).toBeVisible();
+  await expect(page.locator('.detail-mirror')).toHaveAttribute(
+    'aria-modal',
+    'true',
+  );
+  await expect(page.locator('#detail-return')).toHaveCount(0);
   await page.screenshot({
-    path: resolve(SHOTS, 'mobile_3d_climate-detail-fallback.png'),
+    path: resolve(SHOTS, 'mobile_3d_detail-panel.png'),
   });
   await context.close();
 });
 
-test('reduced-motion 3D: the visible DOM detail is authoritative', async ({
+test('reduced-motion 3D: the same visible panel is authoritative', async ({
   browser,
 }) => {
   const context = await contextFor(browser, {
@@ -161,7 +169,7 @@ test('reduced-motion 3D: the visible DOM detail is authoritative', async ({
   const page = await context.newPage();
   await openProjector(page);
   await expect(page.locator('.app-static-3d')).toBeAttached();
-  await expect(page.locator('.detail-mirror')).toHaveCount(0);
-  await expect(page.getByRole('dialog')).toBeVisible();
+  await expect(page.locator('.detail-mirror')).toBeVisible();
+  await expect(page.locator('#detail-return')).toHaveCount(0);
   await context.close();
 });

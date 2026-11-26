@@ -20,11 +20,9 @@ import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
 import { PROJECTS, postId } from '../../content/posts';
-import { focusDetailTrigger, useDiegeticDetail } from '../../lib/detail-mode';
+import { focusDetailTrigger } from '../../lib/detail-mode';
 import { PickableEdges, pickAffordance, useZoneSpotlight } from '../affordance';
 import { usePortfolioStore } from '../../state/store';
-import { DetailPlane } from '../DetailPlane';
-import { caseDetailSpec } from '../detail-texture';
 import type { RoomPart } from '../art/geometry';
 import type { RoomMaterials } from '../art/materials';
 
@@ -64,8 +62,6 @@ export function ProjectCases({ cases, materials }: ProjectCasesProps) {
     (state) => state.setHoveredProject,
   );
   const invalidate = useThree((state) => state.invalidate);
-  // In-world case content only in fine-pointer live 3D; fallbacks keep the DOM.
-  const diegetic = useDiegeticDetail();
   // Projects-zone spotlight: thin gold edges on every case once the camera
   // settles; the hovered/selected case gets the brighter treatment.
   const spotlight = useZoneSpotlight('/projects');
@@ -150,11 +146,8 @@ export function ProjectCases({ cases, materials }: ProjectCasesProps) {
     invalidate();
   };
 
-  const openProject =
-    diegetic && selectedProjectId
-      ? PROJECTS.find((post) => postId(post) === selectedProjectId)
-      : undefined;
-
+  // A picked case keeps its lid-lift/tilt gesture; the readable card is the
+  // visible DOM panel (painted in-world text was truncated and clipped).
   return (
     <group name="game-cases">
       {pairs.map(({ body, lid }, index) => {
@@ -203,18 +196,6 @@ export function ProjectCases({ cases, materials }: ProjectCasesProps) {
           </group>
         );
       })}
-      {/* The selected case's detail card rises in-world; the lifted lid stays
-          the same diegetic affordance it was before polish(c). */}
-      {openProject && (
-        <DetailPlane
-          spec={caseDetailSpec(openProject)}
-          position={[0, 0.5, 0.3]}
-          width={0.8}
-          height={0.55}
-          active
-          name="case-detail-card"
-        />
-      )}
     </group>
   );
 }

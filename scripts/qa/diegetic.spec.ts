@@ -168,7 +168,7 @@ test.describe('diegetic plaque framing + reveal-on-focus', () => {
     await context.close();
   });
 
-  test('keyboard reveals the diegetic DOM menu; pointer clicks never do', async ({
+  test('pointer users see a clickable strip; keyboard keeps the sr-only nav', async ({
     browser,
   }) => {
     const context = await contextFor(browser, { viewport: DESKTOP });
@@ -176,25 +176,35 @@ test.describe('diegetic plaque framing + reveal-on-focus', () => {
     await page.goto('#/');
     await ready(page);
     const nav = page.locator('nav[aria-label="Main menu"]');
-    const width = () => nav.evaluate((el) => el.getBoundingClientRect().width);
-    expect(await width(), 'menu is sr-only in 3D desktop').toBeLessThanOrEqual(
-      2,
+    const strip = page.locator('.pointer-menu-strip');
+    // MAJOR 4 regression: the old sr-only nav was unreachable by mouse.
+    await expect(strip).toBeVisible();
+    await expect(strip).toHaveAttribute('aria-hidden', 'true');
+    const stripBox = await strip.boundingBox();
+    expect(stripBox?.width ?? 0, 'strip is discoverable').toBeGreaterThan(180);
+    const buttons = strip.locator('button[data-pointer-route]');
+    await expect(buttons).toHaveCount(5);
+    for (const button of await buttons.all()) {
+      const box = await button.boundingBox();
+      expect(box?.height ?? 0, '44px pointer target').toBeGreaterThanOrEqual(
+        44,
+      );
+    }
+    await page.screenshot({
+      path: resolve(SHOTS, 'desktop_3d_menu-pointer-strip.png'),
+    });
+
+    // A REAL mouse click on the strip navigates — no Tab required.
+    await strip.locator('button[data-pointer-route="/projects"]').click();
+    await expect(page).toHaveURL(/#\/projects$/);
+    await page.waitForTimeout(1200);
+
+    // The semantic nav is still sr-only and keyboard-revealed.
+    const navWidth = await nav.evaluate(
+      (el) => el.getBoundingClientRect().width,
     );
-
-    // A mouse click focuses links too — the old :focus-within rule floated the
-    // menu over the room. The keyboard-only :has(:focus-visible) must not.
-    await page.mouse.click(1200, 780);
-    expect(
-      await width(),
-      'pointer click keeps the room clean',
-    ).toBeLessThanOrEqual(2);
-    await expect(nav.locator('.main-menu__focus-chip')).toBeHidden();
-
+    expect(navWidth, 'semantic nav stays sr-only').toBeLessThanOrEqual(2);
     const route = await tabIntoMenu(page);
-    await expect(nav.locator('.main-menu__focus-chip')).toBeVisible();
-    expect(await width(), 'keyboard reveals a visible menu').toBeGreaterThan(
-      100,
-    );
     expect(
       await page.evaluate(
         () => (document.activeElement as HTMLElement)?.dataset.route,
@@ -320,6 +330,32 @@ test.describe('diegetic plaque framing + reveal-on-focus', () => {
     await context.close();
   });
 
+  test('all five routes are reachable at 390px', async ({ browser }) => {
+    const context = await contextFor(browser, {
+      viewport: MOBILE,
+      mobile: true,
+    });
+    const page = await context.newPage();
+    await page.goto('#/');
+    await ready(page);
+    const links = page.locator('nav[aria-label="Main menu"] a[data-route]');
+    await expect(links).toHaveCount(5);
+    for (const link of await links.all()) {
+      const box = await link.boundingBox();
+      expect(
+        (box?.x ?? 0) + (box?.width ?? 0),
+        `${await link.getAttribute('data-route')} stays inside 390px`,
+      ).toBeLessThanOrEqual(MOBILE.width);
+      expect(box?.height ?? 0, '44px target').toBeGreaterThanOrEqual(44);
+    }
+    await links.last().click();
+    await expect(page).toHaveURL(/#\/climate$/);
+    await page.screenshot({
+      path: resolve(SHOTS, 'mobile_3d_all-routes-reachable.png'),
+    });
+    await context.close();
+  });
+
   test('CRT dock mirrors the routes only in the monitor close-up (4b)', async ({
     browser,
   }) => {
@@ -337,7 +373,8 @@ test.describe('diegetic plaque framing + reveal-on-focus', () => {
       page.getByRole('dialog', { name: 'About desktop — full screen' }),
     ).toBeVisible();
     await page.addStyleTag({
-      content: '.desktop-zoom { display: none !important; }',
+      content:
+        '.detail-mirror, .detail-panel-scrim { display: none !important; }',
     });
     await page.waitForTimeout(1800);
     await page.screenshot({ path: resolve(SHOTS, 'desktop_3d_crt-menu.png') });

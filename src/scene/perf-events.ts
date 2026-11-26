@@ -15,6 +15,7 @@ import {
   type CanvasProps,
   type DomEvent,
 } from '@react-three/fiber';
+import { usePortfolioStore } from '../state/store';
 
 type EventsFactory = NonNullable<CanvasProps['events']>;
 
@@ -41,14 +42,41 @@ export const createCoalescedPointerEvents: EventsFactory = (store) => {
       reset: () => void;
     };
   };
-  canvas.__scenePerfInfo = () => ({
-    calls: gl.info.render.calls,
-    programs: gl.info.programs?.length ?? 0,
-    geometries: gl.info.memory.geometries,
-    textures: gl.info.memory.textures,
-    frame: state.invalidate,
-    reset: () => gl.info.reset(),
-  });
+  // QA-only introspection: never expose renderer internals on the production
+  // canvas. The perf harness installs window.__perf before any page script, so
+  // the hook (and the autoReset override above) exist only during QA runs.
+  if (qa) {
+    canvas.__scenePerfInfo = () => ({
+      calls: gl.info.render.calls,
+      programs: gl.info.programs?.length ?? 0,
+      geometries: gl.info.memory.geometries,
+      textures: gl.info.memory.textures,
+      frame: state.invalidate,
+      reset: () => gl.info.reset(),
+    });
+  }
+
+  // MINOR 10: R3F does not fire `onPointerOut` when the pointer leaves the
+  // canvas (or an object unmounts under a stationary cursor), which left
+  // `body.cursor='pointer'` stuck for the rest of the session. Clear our own
+  // pointer state at the DOM boundary; each zone's own handler still owns
+  // in-world highlights while the pointer is inside.
+  const clearCanvasPointer = () => {
+    if (
+      typeof document !== 'undefined' &&
+      document.body.style.cursor === 'pointer'
+    ) {
+      document.body.style.cursor = '';
+    }
+    const state = usePortfolioStore.getState();
+    if (state.hoveredPostId !== null) state.setHoveredPost(null);
+    if (state.hoveredProjectId !== null) state.setHoveredProject(null);
+    if (state.menuHoverRoute !== null) state.setMenuHoverRoute(null);
+  };
+  if (typeof canvas.addEventListener === 'function') {
+    canvas.addEventListener('pointerleave', clearCanvasPointer);
+    canvas.addEventListener('pointercancel', clearCanvasPointer);
+  }
 
   const handlers = manager.handlers;
   if (!handlers || typeof window === 'undefined') return manager;

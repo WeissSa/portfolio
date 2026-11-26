@@ -283,7 +283,7 @@ describe('reduced-motion 3D and shadow gating', () => {
 
   it('allocates shadows only on the desktop Canvas', () => {
     expect(roomShadowSettings('desktop')).toEqual({
-      canvasShadows: true,
+      canvasShadows: 'percentage',
       keyLight: true,
     });
     expect(roomShadowSettings('mobile')).toEqual({

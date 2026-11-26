@@ -1,24 +1,12 @@
 /**
- * Game-case detail dialog (REWORK_PLAN §3.2.3/§3.7, commit 8).
+ * Game-case detail panel (REWORK_PLAN §3.2.3/§3.7, UX fix pass 2026-11-25).
  *
- * Picking a 3D case writes `selectedProjectId`; this renders the SAME PostCard
- * used by the 2D Projects list, forced open, inside a focus-managed Mantine
- * Modal on top of the canvas. Repo / demo links and tags are ordinary
- * accessible DOM (repo uses target=_blank + noopener noreferrer; demo links
- * live verbatim in the description HTML). Esc, the backdrop and the close
- * button all dismiss; focus returns to whatever opened the dialog. The Modal
- * portals OUTSIDE .app-shell, so the A2 pointer-events gating in 3D mode never
- * makes its controls inert.
- *
- * Focus model (single trap): Mantine's Modal owns Tab scoping and initial
- * focus; `useFocusRestore` returns focus to the opener on close (declared
- * AFTER `useInertBackground` so the shell un-inerts BEFORE focus is restored).
+ * Picking a 3D case (or a DOM card) writes `selectedProjectId`; this renders
+ * the SAME PostCard used by the 2D Projects list through the shared, visible,
+ * scrollable `DetailMirror` dialog. Repo / demo links and tag chips remain
+ * ordinary accessible DOM. One code path for every mode and pointer type.
  */
-import { useEffect } from 'react';
-import { Modal } from '@mantine/core';
 import { findPostById } from '../content/posts';
-import { useFocusRestore } from '../lib/a11y';
-import { useDiegeticDetail } from '../lib/detail-mode';
 import { useClearSceneHover, useInertBackground } from '../lib/dialog-effects';
 import { usePortfolioStore } from '../state/store';
 import { DetailMirror } from './DetailMirror';
@@ -31,71 +19,23 @@ export function ProjectDetailOverlay() {
   const selectProject = usePortfolioStore((state) => state.selectProject);
   const project = findPostById(selectedProjectId);
   const open = Boolean(project);
-  const diegetic = useDiegeticDetail();
-  useInertBackground(open && !diegetic);
+  useInertBackground(open);
   useClearSceneHover(open);
-  useFocusRestore(open && !diegetic);
-
-  useEffect(() => {
-    if (!project) return;
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape' || event.defaultPrevented) return;
-      event.preventDefault();
-      selectProject(null);
-    };
-    document.addEventListener('keydown', onKeyDown);
-    return () => document.removeEventListener('keydown', onKeyDown);
-  }, [project, selectProject]);
 
   if (!project) return null;
 
-  // In-world case content is a 3D textured card in fine-pointer live 3D; the
-  // SAME PostCard content survives here as the hidden a11y mirror. Fallbacks
-  // (2D / coarse pointer / reduced motion / no scene) keep the visible dialog.
-  if (diegetic) {
-    return (
-      <DetailMirror
-        label={`Project details for ${project.title}`}
-        surface="case"
-        onClose={() => selectProject(null)}
-      >
-        <PostCard post={project} variant="case" expanded />
-        <p role="status" aria-live="polite" className="sr-only">
-          Project case opened for {project.title}
-        </p>
-      </DetailMirror>
-    );
-  }
-
   return (
-    <Modal
-      opened
-      onClose={() => selectProject(null)}
-      // The document-level handler above owns Escape (defaultPrevented +
-      // sibling-dialog deferral); Mantine must not close on its own.
-      closeOnEscape={false}
-      centered
-      size="min(94%, 44rem)"
-      // Mantine renders the title inside its OWN <h2> (aria-labelledby target);
-      // passing a heading here would nest h2-in-h2 (invalid + React warning).
-      // The p5 display styling rides on the title via the Styles API instead.
+    <DetailMirror
+      label={`Project details for ${project.title}`}
       title={project.title}
-      closeButtonProps={{
-        'aria-label': `Close details for ${project.title}`,
-        className: 'p5-btn p5-btn--red px-3 text-sm',
-      }}
-      classNames={{
-        root: 'project-detail-overlay post-detail-overlay',
-        overlay: 'post-detail-backdrop',
-        content: 'p5-panel p5-panel--slashed post-detail-card',
-        title: 'p5-display text-lg text-p5-red',
-      }}
-      styles={{ content: { maxHeight: '90vh', overflowY: 'auto' } }}
+      surface="case"
+      onClose={() => selectProject(null)}
+      closeLabel={`Close details for ${project.title}`}
     >
       <PostCard post={project} variant="case" expanded />
       <p role="status" aria-live="polite" className="sr-only">
         Project case opened for {project.title}
       </p>
-    </Modal>
+    </DetailMirror>
   );
 }

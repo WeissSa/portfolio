@@ -261,7 +261,7 @@ describe('R3F book zone (headless, structural only)', () => {
   });
 });
 
-describe('polish(c) in-world book appearance gate', () => {
+describe('UX fix: no painted book page in the room', () => {
   const cells = createBookshelf('detail-gate-test').cells;
   let materials: RoomMaterials;
 
@@ -275,22 +275,14 @@ describe('polish(c) in-world book appearance gate', () => {
     });
   });
 
-  it('paints the open book only for fine-pointer live 3D (fallback suppressed)', async () => {
+  it('never paints truncated pages — the pulled-out book is the gesture, the DOM panel is the reading', async () => {
     const renderer = await ReactThreeTestRenderer.create(
       <LibraryZone cells={cells} materials={materials} />,
       { frameloop: 'never' },
     );
-    const planes = () =>
+    const painted = () =>
       renderer.scene.findAll((node) => node.props.name === 'open-book-detail');
-    expect(planes()).toHaveLength(1);
-    act(() => usePortfolioStore.setState({ sceneReady: false }));
-    expect(planes()).toHaveLength(0);
-    act(() =>
-      usePortfolioStore.setState({ sceneReady: true, pointerFine: false }),
-    );
-    expect(planes()).toHaveLength(0);
-    act(() => usePortfolioStore.setState({ pointerFine: true, mode: '2d' }));
-    expect(planes()).toHaveLength(0);
+    expect(painted()).toHaveLength(0);
     await renderer.unmount();
     disposeRoomMaterials(materials);
   });

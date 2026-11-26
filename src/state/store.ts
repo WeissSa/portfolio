@@ -44,6 +44,13 @@ export interface PortfolioStore {
   /** Explicit teardown of 3D-only UI state (also used by setMode). */
   clear3dSelection: () => void;
   /**
+   * Close every detail/modal without disturbing the live scene. Navigation
+   * always wins over a close-up: clicking HOME (or any route) while a book,
+   * case, monitor or projector panel is open must return the camera to the
+   * destination zone instead of leaving `detail` overriding `activeZone`.
+   */
+  closeAllDetails: () => void;
+  /**
    * Capability-derived automatic mode (no manual override). The toggle's
    * "Auto" option restores this after clearing a stuck override; safe default
    * is 2D until App runs detection.
@@ -228,6 +235,10 @@ export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
     get().clearSceneHover();
     set(CLEARED_3D_UI);
   },
+  closeAllDetails: () => {
+    get().clearSceneHover();
+    set({ ...CLOSED_MODALS, detailMirrorFocused: false });
+  },
   autoMode: '2d',
   setAutoMode: (autoMode) => set({ autoMode }),
 
@@ -236,8 +247,15 @@ export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
   setActiveZone: (activeZone) => {
     if (get().activeZone !== activeZone) {
       // A real zone change: mark that we've navigated so the `app-initial`
-      // class drops and subsequent views play the cut-in animation.
-      set({ activeZone, hasNavigated: true });
+      // class drops and subsequent views play the cut-in animation. In live
+      // 3D the DOM must wait for the camera to settle before swapping zone
+      // content (otherwise the room and the column desync mid-flight).
+      const live3d = get().mode === '3d' && get().sceneReady;
+      set({
+        activeZone,
+        hasNavigated: true,
+        ...(live3d ? { cameraSettled: false } : {}),
+      });
     }
   },
   // The landing-route sync must not flip `hasNavigated`: arriving at a deep

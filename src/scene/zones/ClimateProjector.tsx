@@ -38,13 +38,11 @@ import {
   heatmapSize,
   type HeatmapPalette,
 } from '../../lib/climate-draw';
-import { navigate } from '../../lib/router';
+import { navigateAndCloseDetail } from '../../lib/navigation';
 import { PALETTE } from '../art/palette';
 import { useDeferredDispose } from '../../lib/deferred-dispose';
-import { focusDetailTrigger, useDiegeticDetail } from '../../lib/detail-mode';
+import { focusDetailTrigger } from '../../lib/detail-mode';
 import { PickableEdges, pickAffordance, useZoneSpotlight } from '../affordance';
-import { DetailPlane } from '../DetailPlane';
-import { climateDetailSpec } from '../detail-texture';
 import { PROJECTED_PANEL, projectedStripBounds } from '../diegetic';
 import { DESIGN_TOKENS } from '../../styles/design-tokens';
 import { usePortfolioStore } from '../../state/store';
@@ -230,8 +228,6 @@ export function ClimateProjector({
     (state) => state.setSelectedClimateYear,
   );
   const openClimatePanel = usePortfolioStore((state) => state.openClimatePanel);
-  const climatePanelOpen = usePortfolioStore((state) => state.climatePanelOpen);
-  const diegetic = useDiegeticDetail();
   const invalidate = useThree((state) => state.invalidate);
   // Climate-zone spotlight: the year dial + back/info strip gain gold edges
   // after the camera settles, matching the plaque/CRT/book/case affordances.
@@ -430,7 +426,7 @@ export function ClimateProjector({
     (item: 'back' | 'info') => (event: ThreeEvent<MouseEvent>) => {
       event.stopPropagation();
       setLocalItem(null);
-      if (item === 'back') navigate('/');
+      if (item === 'back') navigateAndCloseDetail('/');
       else {
         focusDetailTrigger();
         openClimatePanel();
@@ -551,17 +547,6 @@ export function ClimateProjector({
           </group>
         ))}
       </group>
-      {/* Left of the screen so the INFO card lands in the clean LEFT band. */}
-      {diegetic && climatePanelOpen && (
-        <DetailPlane
-          spec={climateDetailSpec(todayLabel)}
-          position={[-1.25, 0, 0.04]}
-          width={0.85}
-          height={0.6}
-          active
-          name="projector-info-plane"
-        />
-      )}
     </group>
   );
 }

@@ -1,8 +1,15 @@
 import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import App from '../src/App';
+import { POSTS, postId } from '../src/content/posts';
 import { usePortfolioStore } from '../src/state/store';
+
+// jsdom cannot create WebGL; stub the lazy scene so forcing live-3D state in
+// the pointer-strip test is deterministic.
+vi.mock('../src/ui/SceneLayer', () => ({
+  SceneLayer: () => <div data-testid="scene-layer-stub" aria-hidden="true" />,
+}));
 
 describe('P5 main menu', () => {
   it('lists all zones plus GitHub/LinkedIn contact links', () => {
@@ -88,6 +95,46 @@ describe('P5 main menu', () => {
     expect(about).toHaveClass('p5-btn--diegetic-highlight');
     act(() => usePortfolioStore.getState().setMenuHoverRoute(null));
     expect(about).not.toHaveClass('p5-btn--diegetic-highlight');
+  });
+
+  it('gives pointer users a visible strip that closes detail when HOME is clicked', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    act(() =>
+      usePortfolioStore.setState({
+        mode: '3d',
+        sceneReady: true,
+        pointerFine: true,
+        selectedPostId: postId(POSTS[0]!),
+      }),
+    );
+    const strip = document.querySelector('.pointer-menu-strip') as HTMLElement;
+    expect(strip).toBeTruthy();
+    expect(strip).toHaveAttribute('aria-hidden', 'true');
+    for (const route of [
+      '/',
+      '/about',
+      '/experience',
+      '/projects',
+      '/climate',
+    ]) {
+      expect(
+        strip.querySelector(`[data-pointer-route="${route}"]`),
+      ).toBeTruthy();
+    }
+    await user.click(
+      strip.querySelector('[data-pointer-route="/"]') as HTMLElement,
+    );
+    expect(usePortfolioStore.getState().selectedPostId).toBeNull();
+    expect(window.location.hash).toBe('#/');
+    // Do not leak live-3D state into the following menu tests.
+    act(() =>
+      usePortfolioStore.setState({
+        mode: '2d',
+        sceneReady: false,
+        pointerFine: false,
+      }),
+    );
   });
 
   it('activates a zone with Enter and deep-links the hash route', async () => {

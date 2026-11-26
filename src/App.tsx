@@ -15,6 +15,7 @@ import { useDiegeticDetail } from './lib/detail-mode';
 import { useRoute, type Route } from './lib/router';
 import { usePortfolioStore } from './state/store';
 import { MainMenu } from './ui/MainMenu';
+import { PointerMenuStrip } from './ui/PointerMenuStrip';
 import { SceneLayer } from './ui/SceneLayer';
 import { SceneErrorBoundary } from './ui/SceneErrorBoundary';
 import { HomeSplash } from './ui/HomeSplash';
@@ -76,6 +77,8 @@ export default function App() {
   const setPointerFine = usePortfolioStore((s) => s.setPointerFine);
   const pointerFine = usePortfolioStore((s) => s.pointerFine);
   const sceneReady = usePortfolioStore((s) => s.sceneReady);
+  const cameraSettled = usePortfolioStore((s) => s.cameraSettled);
+  const closeAllDetails = usePortfolioStore((s) => s.closeAllDetails);
   /** True only when WebGL actually drew a frame — never a bare mode flag. */
   const sceneLive = mode === '3d' && sceneReady;
   // Monitor desktop zoom (commit 7): 3D-only. 2D #/about keeps rendering
@@ -95,6 +98,9 @@ export default function App() {
   /** Fine-pointer live 3D only: detail lives in-world, DOM is an a11y mirror. */
   const diegeticDetail = useDiegeticDetail();
   const initialRouteSynced = useRef(false);
+  // MAJOR 8: DOM content follows the camera, not the hash. In live 3D the
+  // column only swaps once the flight settles; in 2D/fallback it swaps at once.
+  const [displayRoute, setDisplayRoute] = useState<Route>(route);
   const [tier, setTier] = useState<DeviceTier>('desktop');
   // 3c P10 warm start: after the first 3D visit, DESKTOP keeps the Canvas
   // mounted (frameloop='never' + hidden) so a 2D↔3D toggle costs no WebGL
@@ -145,8 +151,24 @@ export default function App() {
       syncInitialRoute(route);
       return;
     }
+    // Navigation always wins over a detail close-up: clear the open panel
+    // BEFORE the camera recomputes its viewpoint, otherwise `detail` keeps
+    // overriding the destination zone (HOME could change the hash but never
+    // fly home). This also covers browser Back/Forward and deep links.
+    closeAllDetails();
     setActiveZone(route);
-  }, [route, setActiveZone, syncInitialRoute]);
+  }, [route, setActiveZone, syncInitialRoute, closeAllDetails]);
+
+  useEffect(() => {
+    // Read the live settle flag from the store: the route effect above has
+    // already flipped it to false in the same commit, so a closure value would
+    // be stale and swap the column one frame early (the old desync bug).
+    const state = usePortfolioStore.getState();
+    const live = state.mode === '3d' && state.sceneReady;
+    if (!live || state.cameraSettled) setDisplayRoute(route);
+    // cameraSettled/sceneLive are deliberately dependencies so the settled
+    // flight commits the pending zone; the read above stays authoritative.
+  }, [route, cameraSettled, sceneLive]);
 
   // Device-tier gate runs AFTER the 2D shell has painted (§4.5): the store
   // starts in 2D, capable devices opt into 3D, conservative devices stay 2D.
@@ -227,6 +249,11 @@ export default function App() {
           </SceneErrorBoundary>
         )}
 
+        {/* Discoverable pointer menu for the in-world room. Outside .app-shell
+            so it survives the inert shell of an open detail dialog, and above
+            the detail scrim so HOME works during a close-up. */}
+        {diegeticDetail && <PointerMenuStrip />}
+
         {/* polish(c) F2: in-world detail is picked on an aria-hidden canvas, so
             every 3D pick focuses this sr-only DOM proxy of the trigger; closing
             a detail mirror restores focus here. Absent in fallback modes.
@@ -269,7 +296,7 @@ export default function App() {
           <main id="main" className="min-w-0 flex-1">
             {/* Keyboard/SR equivalent of picking the 3D projector screen (§3.3).
               Only rendered in 3D; the 2D #/climate route is untouched. */}
-            {mode === '3d' && route === '/climate' && (
+            {mode === '3d' && displayRoute === '/climate' && (
               <Button
                 type="button"
                 onClick={openClimatePanel}
@@ -280,7 +307,7 @@ export default function App() {
               </Button>
             )}
             <ZoneContent
-              route={route}
+              route={displayRoute}
               suppressAbout={mode === '3d' && desktopOpen}
             />
           </main>

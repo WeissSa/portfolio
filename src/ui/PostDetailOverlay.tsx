@@ -1,109 +1,42 @@
 /**
- * Detail panel for a picked 3D book (REWORK_PLAN §3.2.1/§3.7, commit 6).
+ * Book detail panel (REWORK_PLAN §3.2.1/§3.7, UX fix pass 2026-11-25).
  *
- * Selecting a book writes `selectedPostId` into the store; this component
- * renders the opened book's detail as a focus-managed Mantine Modal on top of
- * the canvas. Nothing about the detail lives in WebGL: screen readers and
- * keyboard users reach it through ordinary DOM, Esc closes, and focus returns
- * to whatever opened it. The inside is the lazy `PostBook` — a pure-DOM flat
- * @gfazioli/mantine-book whose pages carry the SAME verbatim post content
- * (cover / tags / description / repo link). Until that chunk arrives, the
- * Suspense fallback shows the classic PostCard detail, so the dialog is
- * complete and accessible from the first frame.
- *
- * Focus model (single trap): Mantine's Modal owns Tab scoping and initial
- * focus; `useFocusRestore` returns focus to the opener on close (declared
- * AFTER `useInertBackground` so the shell un-inerts BEFORE focus is restored).
+ * Selecting a book (3D pick or DOM card) writes `selectedPostId`; this renders
+ * the opened book's FULL verbatim detail through the shared `DetailMirror`
+ * panel — a visible, scrollable, focus-trapped dialog framed by the room. The
+ * body is the SAME `PostCard` used by the 2D list, forced open, so the complete
+ * description, tag chips and repo link are readable immediately and scroll
+ * when long. One code path in every mode: fine-pointer 3D, coarse pointer,
+ * reduced motion and the 2D route all show the same readable panel.
  */
-import { Suspense, lazy, useEffect } from 'react';
-import { Modal } from '@mantine/core';
 import { findPostById } from '../content/posts';
-import { useFocusRestore } from '../lib/a11y';
-import { useDiegeticDetail } from '../lib/detail-mode';
 import { useClearSceneHover, useInertBackground } from '../lib/dialog-effects';
 import { usePortfolioStore } from '../state/store';
 import { DetailMirror } from './DetailMirror';
 import { PostCard } from './PostCard';
-
-const PostBook = lazy(() => import('./PostBook'));
 
 export function PostDetailOverlay() {
   const selectedPostId = usePortfolioStore((state) => state.selectedPostId);
   const selectPost = usePortfolioStore((state) => state.selectPost);
   const post = findPostById(selectedPostId);
   const open = Boolean(post);
-  const diegetic = useDiegeticDetail();
-  // The mirror is non-modal and never makes the shell inert (the room stays
-  // live behind it); the ordinary dialog keeps its original focus/stack model.
-  useInertBackground(open && !diegetic);
+  useInertBackground(open);
   useClearSceneHover(open);
-  useFocusRestore(open && !diegetic);
-
-  useEffect(() => {
-    if (!post) return;
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape' || event.defaultPrevented) return;
-      event.preventDefault();
-      selectPost(null);
-    };
-    document.addEventListener('keydown', onKeyDown);
-    return () => document.removeEventListener('keydown', onKeyDown);
-  }, [post, selectPost]);
 
   if (!post) return null;
 
-  // Fine-pointer live 3D: the book opens as textured pages IN-WORLD; this is
-  // the a11y-only DOM mirror (visually hidden until keyboard focus reveals it).
-  // Every other mode keeps the visible Mantine dialog below — content is never
-  // 3D-only.
-  if (diegetic) {
-    return (
-      <DetailMirror
-        label={`Details for ${post.title}`}
-        surface="book"
-        onClose={() => selectPost(null)}
-      >
-        <Suspense fallback={<PostCard post={post} expanded />}>
-          <PostBook post={post} />
-        </Suspense>
-        <p role="status" aria-live="polite" className="sr-only">
-          Details opened for {post.title}
-        </p>
-      </DetailMirror>
-    );
-  }
-
   return (
-    <Modal
-      opened
-      onClose={() => selectPost(null)}
-      // The document-level handler above owns Escape (defaultPrevented +
-      // sibling-dialog deferral); Mantine must not close on its own.
-      closeOnEscape={false}
-      centered
-      size="min(94%, 44rem)"
-      // Mantine renders the title inside its OWN <h2> (aria-labelledby target);
-      // passing a heading here would nest h2-in-h2 (invalid + React warning).
-      // The p5 display styling rides on the title via the Styles API instead.
+    <DetailMirror
+      label={`Details for ${post.title}`}
       title={post.title}
-      closeButtonProps={{
-        'aria-label': `Close details for ${post.title}`,
-        className: 'p5-btn p5-btn--red px-3 text-sm',
-      }}
-      classNames={{
-        root: 'post-detail-overlay',
-        overlay: 'post-detail-backdrop',
-        content: 'p5-panel p5-panel--slashed post-detail-card',
-        title: 'p5-display text-lg text-p5-red',
-      }}
-      styles={{ content: { maxHeight: '90vh', overflowY: 'auto' } }}
+      surface="book"
+      onClose={() => selectPost(null)}
+      closeLabel={`Close details for ${post.title}`}
     >
-      <Suspense fallback={<PostCard post={post} expanded />}>
-        <PostBook post={post} />
-      </Suspense>
+      <PostCard post={post} expanded />
       <p role="status" aria-live="polite" className="sr-only">
         Details opened for {post.title}
       </p>
-    </Modal>
+    </DetailMirror>
   );
 }

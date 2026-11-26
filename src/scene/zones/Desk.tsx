@@ -18,16 +18,14 @@ import { useEffect, useMemo, useState } from 'react';
 import * as THREE from 'three';
 import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
 import { PickableEdges, pickAffordance, useZoneSpotlight } from '../affordance';
-import { navigate } from '../../lib/router';
+import { navigateAndCloseDetail } from '../../lib/navigation';
 import { useDeferredDispose } from '../../lib/deferred-dispose';
-import { focusDetailTrigger, useDiegeticDetail } from '../../lib/detail-mode';
+import { focusDetailTrigger } from '../../lib/detail-mode';
 import { DESIGN_TOKENS } from '../../styles/design-tokens';
 import { usePortfolioStore } from '../../state/store';
 import { CRT_DOCK, DIEGETIC_ROWS } from '../diegetic';
 import { MONITOR_VIEWPOINT } from '../viewpoints';
-import { DetailPlane } from '../DetailPlane';
-import { monitorDetailSpec } from '../detail-texture';
-import { MONITOR_SCREEN_LOCAL_Y, type RoomPart } from '../art/geometry';
+import type { RoomPart } from '../art/geometry';
 import type { RoomMaterials } from '../art/materials';
 
 export interface DeskZoneProps {
@@ -43,8 +41,6 @@ export function crtDockX(textureX: number): number {
 
 export function DeskZone({ monitor, materials }: DeskZoneProps) {
   const openDesktop = usePortfolioStore((state) => state.openDesktop);
-  const desktopOpen = usePortfolioStore((state) => state.desktopOpen);
-  const diegetic = useDiegeticDetail();
   const pointerFine = usePortfolioStore((state) => state.pointerFine);
   const menuHoverRoute = usePortfolioStore((state) => state.menuHoverRoute);
   const menuFocusRoute = usePortfolioStore((state) => state.menuFocusRoute);
@@ -140,7 +136,7 @@ export function DeskZone({ monitor, materials }: DeskZoneProps) {
   };
   const dockPick = (route: string) => (event: ThreeEvent<MouseEvent>) => {
     event.stopPropagation();
-    navigate(route as (typeof DIEGETIC_ROWS)[number]['route']);
+    navigateAndCloseDetail(route as (typeof DIEGETIC_ROWS)[number]['route']);
     setMenuHoverRoute(null);
   };
   const dockHover =
@@ -234,18 +230,6 @@ export function DeskZone({ monitor, materials }: DeskZoneProps) {
             </group>
           );
         })}
-      {/* polish(c): the monitor's own screen carries the About detail texture
-          instead of a visible DOM desktop; camera already sits at the close-up. */}
-      {diegetic && desktopOpen && (
-        <DetailPlane
-          spec={monitorDetailSpec()}
-          position={[0, MONITOR_SCREEN_LOCAL_Y, 0.034]}
-          width={0.88}
-          height={0.5}
-          active
-          name="crt-detail-screen"
-        />
-      )}
     </group>
   );
 }

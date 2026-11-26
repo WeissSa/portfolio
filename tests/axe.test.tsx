@@ -134,16 +134,19 @@ describe('axe-core accessibility scans (forced 3D over canvas)', () => {
     ['about', '#/about'],
     ['experience', '#/experience'],
     ['projects', '#/projects'],
-  ])('keeps the sr-only DOM menu accessible in 3D: %s', async (_name, hash) => {
-    const { container } = renderForced3d(hash);
-    const menu = screen.getByRole('navigation', { name: 'Main menu' });
-    expect(within(menu).getAllByRole('link')).toHaveLength(7);
-    expect(await runAxe(container)).toEqual([]);
-  });
+  ])(
+    'keeps the pointer-visible DOM menu accessible in 3D: %s',
+    async (_name, hash) => {
+      const { container } = renderForced3d(hash);
+      const menu = screen.getByRole('navigation', { name: 'Main menu' });
+      expect(within(menu).getAllByRole('link')).toHaveLength(7);
+      expect(await runAxe(container)).toEqual([]);
+    },
+  );
 
-  // All four diegetic surfaces: the live-3D detail is a visually-hidden DOM
-  // MIRROR (non-modal — no aria-modal/inert/focus trap). These scans used to
-  // hit the fallback dialogs because renderForced3d omitted sceneReady.
+  // All four diegetic surfaces now share ONE visible, modal DOM panel. These
+  // scans used to hit the fallback dialogs because renderForced3d omitted
+  // sceneReady; the unified panel must be axe-clean over the live canvas.
   const mirrorCases: readonly [
     string,
     string,
@@ -176,7 +179,7 @@ describe('axe-core accessibility scans (forced 3D over canvas)', () => {
   ];
 
   it.each(mirrorCases)(
-    'scans the %s a11y mirror over the canvas',
+    'scans the %s detail panel over the canvas',
     async (_name, hash, dialogState, namePattern, surface) => {
       const { container } = renderForced3d(hash, dialogState);
       const mirror = await screen.findByRole('dialog', {
@@ -184,7 +187,7 @@ describe('axe-core accessibility scans (forced 3D over canvas)', () => {
       });
       expect(mirror).toHaveClass('detail-mirror');
       expect(mirror).toHaveAttribute('data-detail-surface', surface);
-      expect(mirror).not.toHaveAttribute('aria-modal'); // non-modal by design
+      expect(mirror).toHaveAttribute('aria-modal', 'true');
       expect(await runAxe(container)).toEqual([]);
     },
   );

@@ -85,7 +85,10 @@ export function MainMenu() {
         </p>
         <p className="text-xs font-bold text-p5-black">{HEADLINE}</p>
       </div>
-      <ul className="flex flex-row gap-2 overflow-x-auto md:flex-col md:overflow-visible">
+      {/* Mobile used to be a single non-wrapping row: at 390px only three
+          routes were reachable and there was no scroll affordance. Wrap all
+          five 44px targets onto two rows instead. */}
+      <ul className="flex flex-wrap gap-2 md:flex-col">
         {ROUTES.map((r, index) => (
           <li key={r} className="shrink-0 md:shrink">
             <Button
@@ -94,6 +97,9 @@ export function MainMenu() {
               data-index={index}
               data-route={r}
               href={`#${r}`}
+              // Same hash (e.g. HOME while already on '#/' with a detail
+              // open) fires no hashchange, so clear the detail here too.
+              onClick={() => usePortfolioStore.getState().closeAllDetails()}
               onKeyDown={onKeyDown}
               onFocus={() => setMenuFocusRoute(r)}
               onBlur={() => setMenuFocusRoute(null)}

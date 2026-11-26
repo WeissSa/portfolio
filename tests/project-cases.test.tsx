@@ -10,7 +10,6 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as THREE from 'three';
 import ReactThreeTestRenderer from '@react-three/test-renderer';
-import { fakeDetail2dContext } from './helpers';
 import App from '../src/App';
 import { PROJECTS, displayTags, postId } from '../src/content/posts';
 import { createGameCases } from '../src/scene/art/geometry';
@@ -264,7 +263,7 @@ describe('shared project detail dialog', () => {
     // Reopen via the store, then dismiss through the backdrop.
     act(() => usePortfolioStore.getState().selectProject(firstId));
     const backdrop = document.querySelector(
-      '.project-detail-overlay .post-detail-backdrop',
+      '.detail-panel-scrim',
     ) as HTMLElement;
     await user.click(backdrop);
     expect(usePortfolioStore.getState().selectedProjectId).toBeNull();
@@ -343,7 +342,7 @@ describe('keyboard-operable DOM equivalent (unchanged)', () => {
   });
 });
 
-describe('polish(c) in-world case appearance gate', () => {
+describe('UX fix: no painted case card in the room', () => {
   let materials: RoomMaterials;
 
   beforeEach(() => {
@@ -356,30 +355,15 @@ describe('polish(c) in-world case appearance gate', () => {
     });
   });
 
-  it('paints the lifted case card only for fine-pointer live 3D', async () => {
-    const getContext = vi
-      .spyOn(HTMLCanvasElement.prototype, 'getContext')
-      .mockImplementation(() => fakeDetail2dContext());
-    try {
-      const renderer = await ReactThreeTestRenderer.create(
-        <ProjectCases cases={cases} materials={materials} />,
-        { frameloop: 'never' },
-      );
-      const planes = () =>
-        renderer.scene.findAll(
-          (node) => node.props.name === 'case-detail-card',
-        );
-      expect(planes()).toHaveLength(1);
-      act(() => usePortfolioStore.setState({ sceneReady: false }));
-      expect(planes()).toHaveLength(0);
-      act(() =>
-        usePortfolioStore.setState({ sceneReady: true, pointerFine: false }),
-      );
-      expect(planes()).toHaveLength(0);
-      await renderer.unmount();
-    } finally {
-      getContext.mockRestore();
-      disposeRoomMaterials(materials);
-    }
+  it('keeps the lid-lift gesture but never paints a truncated detail card', async () => {
+    const renderer = await ReactThreeTestRenderer.create(
+      <ProjectCases cases={cases} materials={materials} />,
+      { frameloop: 'never' },
+    );
+    const painted = () =>
+      renderer.scene.findAll((node) => node.props.name === 'case-detail-card');
+    expect(painted()).toHaveLength(0);
+    await renderer.unmount();
+    disposeRoomMaterials(materials);
   });
 });

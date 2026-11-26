@@ -10,7 +10,6 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as THREE from 'three';
 import ReactThreeTestRenderer from '@react-three/test-renderer';
-import { fakeDetail2dContext } from './helpers';
 import App from '../src/App';
 import { createMonitor } from '../src/scene/art/geometry';
 import {
@@ -47,7 +46,7 @@ function openZoom() {
       openWindows: [],
     });
   });
-  return document.querySelector('.desktop-zoom') as HTMLElement;
+  return document.querySelector('.detail-mirror') as HTMLElement;
 }
 
 describe('desk monitor picking (headless, structural)', () => {
@@ -117,7 +116,7 @@ describe('desktop zoom DOM (3D)', () => {
 
     await user.keyboard('{Escape}');
     expect(usePortfolioStore.getState().desktopOpen).toBe(false);
-    expect(document.querySelector('.desktop-zoom')).not.toBeInTheDocument();
+    expect(document.querySelector('.detail-mirror')).not.toBeInTheDocument();
   });
 
   it('the close button returns to the room', async () => {
@@ -129,7 +128,7 @@ describe('desktop zoom DOM (3D)', () => {
       }),
     );
     expect(usePortfolioStore.getState().desktopOpen).toBe(false);
-    expect(document.querySelector('.desktop-zoom')).not.toBeInTheDocument();
+    expect(document.querySelector('.detail-mirror')).not.toBeInTheDocument();
   });
 
   it('traps focus on entry and restores it on exit', async () => {
@@ -161,7 +160,7 @@ describe('2D About stays authoritative', () => {
     });
 
     // The zoom is 3D-only; a stale flag cannot double-render the About zone.
-    expect(document.querySelector('.desktop-zoom')).not.toBeInTheDocument();
+    expect(document.querySelector('.detail-mirror')).not.toBeInTheDocument();
     const bio = screen.getByRole('button', { name: /Bio/ });
     bio.focus();
     await user.keyboard('{Enter}');
@@ -171,11 +170,8 @@ describe('2D About stays authoritative', () => {
   });
 });
 
-describe('polish(c) in-world CRT appearance gate', () => {
-  it('paints the CRT detail only for fine-pointer live 3D', async () => {
-    const getContext = vi
-      .spyOn(HTMLCanvasElement.prototype, 'getContext')
-      .mockImplementation(() => fakeDetail2dContext());
+describe('UX fix: no clipped painted CRT plane', () => {
+  it('keeps the readable About content in the DOM panel, never a clipped 3D card', async () => {
     const materials = createRoomMaterials({ monitor: new THREE.Texture() });
     const monitor = createMonitor('crt-detail-gate');
     try {
@@ -191,18 +187,13 @@ describe('polish(c) in-world CRT appearance gate', () => {
         <DeskZone monitor={monitor} materials={materials} />,
         { frameloop: 'never' },
       );
-      const planes = () =>
+      const painted = () =>
         renderer.scene.findAll(
           (node) => node.props.name === 'crt-detail-screen',
         );
-      expect(planes()).toHaveLength(1);
-      act(() => usePortfolioStore.setState({ mode: '2d' }));
-      expect(planes()).toHaveLength(0);
-      act(() => usePortfolioStore.setState({ mode: '3d', pointerFine: false }));
-      expect(planes()).toHaveLength(0);
+      expect(painted()).toHaveLength(0);
       await renderer.unmount();
     } finally {
-      getContext.mockRestore();
       disposeRoomMaterials(materials);
     }
   });
