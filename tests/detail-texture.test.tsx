@@ -235,7 +235,7 @@ describe('DetailPlane animation + focus highlight', () => {
     await renderer.unmount();
   });
 
-  it('swallows pointer hits so clicks never reach picks behind the plane', async () => {
+  it('swallows pointer hits so clicks and hovers never reach picks behind the plane', async () => {
     const { factory } = recordingCanvas();
     const renderer = await ReactThreeTestRenderer.create(
       <DetailPlane
@@ -251,12 +251,20 @@ describe('DetailPlane animation + focus highlight', () => {
       .findAll((node) => node.type === 'Mesh')
       .find((node) => node.props.name !== 'case-detail-card-focus')!;
     expect(typeof plane.props.onPointerDown).toBe('function');
+    expect(typeof plane.props.onPointerOver).toBe('function');
+    expect(typeof plane.props.onPointerOut).toBe('function');
     expect(typeof plane.props.onClick).toBe('function');
     const stopDown = vi.fn();
+    const stopOver = vi.fn();
+    const stopOut = vi.fn();
     const stopClick = vi.fn();
     plane.props.onPointerDown({ stopPropagation: stopDown });
+    plane.props.onPointerOver({ stopPropagation: stopOver });
+    plane.props.onPointerOut({ stopPropagation: stopOut });
     plane.props.onClick({ stopPropagation: stopClick });
     expect(stopDown).toHaveBeenCalledTimes(1);
+    expect(stopOver).toHaveBeenCalledTimes(1);
+    expect(stopOut).toHaveBeenCalledTimes(1);
     expect(stopClick).toHaveBeenCalledTimes(1);
     await renderer.unmount();
   });

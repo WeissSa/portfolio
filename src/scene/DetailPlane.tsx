@@ -99,8 +99,10 @@ export function DetailPlane({
   useEffect(() => invalidate(), [active, focused, invalidate]);
 
   // A detail plane is readout, not a pick target: swallow pointer hits so a
-  // click on the open book/case/CRT/projector card never falls through to the
-  // pickable geometry behind it (all four surfaces share this component).
+  // click OR a hover on the open book/case/CRT/projector card never falls
+  // through to the pickable geometry behind it (all four surfaces share this
+  // component). Hover/out matter too: without them the underlying pick's gold
+  // affordance lights up while the reader is over the detail card.
   const swallowPointer = (event: ThreeEvent<PointerEvent>) => {
     event.stopPropagation();
   };
@@ -142,6 +144,8 @@ export function DetailPlane({
           material={material}
           position={motion === 'turn' ? [width / 2, 0, 0] : [0, 0, 0]}
           onPointerDown={swallowPointer}
+          onPointerOver={swallowPointer}
+          onPointerOut={swallowPointer}
           onClick={swallowClick}
         />
       </group>
@@ -153,6 +157,8 @@ export function DetailPlane({
           scale={[1.06, 1.06, 1]}
           position={[motion === 'turn' ? width / 2 : 0, 0, -0.004]}
           onPointerDown={swallowPointer}
+          onPointerOver={swallowPointer}
+          onPointerOut={swallowPointer}
           onClick={swallowClick}
         />
       )}

@@ -21,7 +21,9 @@ export default defineConfig({
   fullyParallel: false,
   workers: 1,
   retries: 0,
-  timeout: 180_000,
+  // SwiftShader screenshots can take tens of seconds each under load; the
+  // multi-zone capture tests need headroom without weakening any assertion.
+  timeout: 300_000,
   expect: { timeout: 20_000 },
   reporter: [['list']],
   use: {
