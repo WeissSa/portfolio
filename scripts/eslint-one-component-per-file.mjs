@@ -4,13 +4,20 @@
  * function/constant whose name starts with an uppercase letter AND renders JSX
  * is a component and must live in its own file.
  *
+ * Detected component shapes: named function declarations, function/arrow
+ * initializers, `memo(...)` / `forwardRef(...)` wrappers, conditional-expression
+ * initializers, classes whose `render()` returns JSX, anonymous default-export
+ * functions/arrows and class expressions.
+ *
  * Tests/specs are fixtures, not product components, and are exempt.
  *
  * Pre-existing multi-component modules that are NOT part of this UX fix are
  * grandfathered BY NAME (not by whole file): adding a new component to one of
- * them is still an error. They will be split in a dedicated cleanup task.
+ * them is still an error. The lists below are stable exceptions; do not grow
+ * them when adding a component to a file.
  */
 const COMPONENT_NAME = /^[A-Z]/;
+const COMPONENT_WRAPPERS = new Set(['memo', 'forwardRef']);
 
 const GRANDFATHERED = {
   // Legacy art/scene modules untouched by the round-5 UX fix.
@@ -44,6 +51,72 @@ function rendersJsx(node) {
   return false;
 }
 
+/** `memo`, `React.memo`, `forwardRef`, `React.forwardRef`, … */
+function calleeName(node) {
+  if (!node) return null;
+  if (node.type === 'Identifier') return node.name;
+  if (
+    node.type === 'MemberExpression' &&
+    !node.computed &&
+    node.property?.type === 'Identifier'
+  ) {
+    return node.property.name;
+  }
+  return null;
+}
+
+/** True for a class with a `render()` method whose body returns JSX. */
+function classRendersJsx(node) {
+  const members = node.body?.body ?? [];
+  return members.some((member) => {
+    if (member.type !== 'MethodDefinition' && member.type !== 'Property') {
+      return false;
+    }
+    if (member.computed) return false;
+    const key = member.key?.name ?? member.key?.value;
+    if (key !== 'render') return false;
+    return rendersJsx(member.value ?? member);
+  });
+}
+
+/**
+ * Inspect an initializer for component shapes.
+ *
+ * Returns `nodes` (function-like nodes whose bodies must be checked for JSX)
+ * and `definite` (true when the initializer is a component by construction:
+ * a memo/forwardRef wrapper or a class with a JSX `render()`).
+ */
+function analyzeInit(init) {
+  if (!init) return { nodes: [], definite: false };
+  if (init.type === 'CallExpression') {
+    const name = calleeName(init.callee);
+    if (name && COMPONENT_WRAPPERS.has(name)) {
+      // `memo(Impl)` is a component even when `Impl` is imported from elsewhere.
+      const inner = analyzeInit(init.arguments?.[0]);
+      return { nodes: inner.nodes, definite: true };
+    }
+    return { nodes: [], definite: false };
+  }
+  if (init.type === 'ConditionalExpression') {
+    const consequent = analyzeInit(init.consequent);
+    const alternate = analyzeInit(init.alternate);
+    return {
+      nodes: [...consequent.nodes, ...alternate.nodes],
+      definite: consequent.definite || alternate.definite,
+    };
+  }
+  if (
+    init.type === 'ArrowFunctionExpression' ||
+    init.type === 'FunctionExpression'
+  ) {
+    return { nodes: [init], definite: false };
+  }
+  if (init.type === 'ClassExpression' && classRendersJsx(init)) {
+    return { nodes: [], definite: true };
+  }
+  return { nodes: [], definite: false };
+}
+
 export const oneComponentPerFile = {
   meta: {
     type: 'problem',
@@ -64,9 +137,9 @@ export const oneComponentPerFile = {
 
     const components = [];
 
-    function record(name, node) {
+    function record(name, node, force = false) {
       if (typeof name !== 'string' || !COMPONENT_NAME.test(name)) return;
-      if (!rendersJsx(node)) return; // uppercase constant/data, not a component
+      if (!force && !rendersJsx(node)) return;
       components.push({ name, node });
     }
 
@@ -76,13 +149,35 @@ export const oneComponentPerFile = {
       },
       VariableDeclarator(node) {
         if (node.id?.type !== 'Identifier') return;
-        const init = node.init;
-        if (
-          init?.type === 'ArrowFunctionExpression' ||
-          init?.type === 'FunctionExpression'
-        ) {
-          record(node.id.name, init);
+        const { nodes, definite } = analyzeInit(node.init);
+        if (!definite && !nodes.some(rendersJsx)) return;
+        record(node.id.name, node.init ?? node, true);
+      },
+      ExportDefaultDeclaration(node) {
+        const declaration = node.declaration;
+        if (!declaration) return;
+        if (declaration.type === 'FunctionDeclaration') {
+          // Named default functions are already visited by FunctionDeclaration.
+          if (declaration.id?.name) return;
+          record('Default', declaration, rendersJsx(declaration));
+          return;
         }
+        if (
+          declaration.type === 'ArrowFunctionExpression' ||
+          declaration.type === 'FunctionExpression'
+        ) {
+          record('Default', declaration, rendersJsx(declaration));
+          return;
+        }
+        if (declaration.type === 'CallExpression') {
+          const { nodes, definite } = analyzeInit(declaration);
+          if (definite || nodes.some(rendersJsx)) {
+            record('Default', declaration, true);
+          }
+        }
+      },
+      ClassDeclaration(node) {
+        record(node.id?.name, node, classRendersJsx(node));
       },
       'Program:exit'() {
         const path = filename.replace(/^.*\/src\//, 'src/');

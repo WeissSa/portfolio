@@ -7,24 +7,17 @@
  *
  * Tests/specs are fixtures and are exempt.
  */
-const UNSAFE_TYPES = new Set(['unknown', 'any', 'never']);
-
 function unsafeType(typeNode) {
   if (!typeNode) return false;
-  if (
+  // `as unknown as T` / `as any as T` is reported by the inner TSAsExpression
+  // node on its own keyword type annotation. Type annotations are type nodes
+  // (keywords or references), never TSAsExpression nodes, so only the three
+  // keyword escape hatches can reach here.
+  return (
     typeNode.type === 'TSUnknownKeyword' ||
     typeNode.type === 'TSAnyKeyword' ||
     typeNode.type === 'TSNeverKeyword'
-  ) {
-    return true;
-  }
-  if (typeNode.type === 'TSTypeReference') {
-    return UNSAFE_TYPES.has(typeNode.typeName?.name);
-  }
-  // `as unknown as T` / `as any as T`: report the inner assertion once.
-  if (typeNode.type === 'TSAsExpression')
-    return unsafeType(typeNode.typeAnnotation);
-  return false;
+  );
 }
 
 export const noUnsafeCast = {
