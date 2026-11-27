@@ -1,0 +1,114 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Typecheck / Lint / Test / Build / Size
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Guard against "~" artifact resurrection
+        run: |
+          test -z "$(git ls-files -- '~')"
+          git check-ignore -q '~'
+
+      - name: Asset provenance (ASSETS.md schema + every public/ file)
+        run: node scripts/check-assets-provenance.mjs
+
+      - name: Trademark guard (SEO/marketing copy only)
+        run: node scripts/check-trademarks.mjs
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Third-party license audit (informational)
+        # Notices are curated in LICENSES.md; a new transitive license is
+        # reported here for review but never blocks the build.
+        continue-on-error: true
+        run: npx --yes license-checker@25.0.1 --summary --production
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Format check
+        run: npm run format:check
+
+      - name: Unit & component tests
+        run: npm run test
+
+      # The climate snapshot is refreshed exactly once by `prebuild`, which
+      # `npm run build` triggers below. No separate climate:snapshot step:
+      # the script keeps the last-good committed snapshot on transient
+      # Open-Meteo failures and never fails the build on weather.
+      - name: Build
+        run: npm run build
+
+      - name: Built-HTML critical-CSS dedupe guard
+        # dist/index.html must carry exactly one inline <style> (the full
+        # built CSS bundle) and none of the dev-only static critical block;
+        # a regression here would re-introduce duplicate mirror rules.
+        run: |
+          test -f dist/index.html
+          ! grep -q 'data-critical-mirror' dist/index.html
+          test "$(grep -o '<style' dist/index.html | wc -l)" -eq 1
+
+      - name: Font license companion check
+        run: node scripts/check-dist-licenses.mjs
+
+      - name: Size budget
+        run: npm run size
+
+  perf-gate:
+    name: Frame-time gate (relative regression; SwiftShader informational)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install chromium
+
+      # Headless SwiftShader is software WebGL: it cannot validate the absolute
+      # 60/45fps targets, so those are informational here. The gate is the
+      # RELATIVE median p95 per workload (≤10% + 2× the recorded jitter band)
+      # against the committed qa-evidence/perf-baseline.json; the spec only
+      # asserts absolute thresholds when env != 'swiftshader' (real hardware).
+      # A dedicated job/command keeps GPU-heavy visual captures from inflating
+      # SwiftShader frame times and tripping a false regression.
+      - name: Perf spec (relative p95 regression vs baseline)
+        run: npm run perf:qa
+
+      - name: Upload frame-time artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: perf-evidence
+          path: qa-evidence/perf

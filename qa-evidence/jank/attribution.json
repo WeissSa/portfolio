@@ -1,0 +1,552 @@
+{
+  "capturedAt": "2026-11-26T23:04:30.817Z",
+  "url": "http://127.0.0.1:5173/portfolio/#/",
+  "phases": {
+    "flight": {
+      "windowMs": 3589,
+      "hash": "#/projects",
+      "probe": {
+        "raf": {
+          "n": 11,
+          "p50": 33.3,
+          "p95": 1133.3,
+          "max": 1133.3
+        },
+        "main": {
+          "n": 11,
+          "p50": 8,
+          "p95": 1110.3,
+          "max": 1110.3
+        },
+        "longFrames": 5,
+        "longMain": 4
+      },
+      "profile": {
+        "functions": [
+          {
+            "name": "(idle) @ (native):0",
+            "ms": 895.8,
+            "hits": 4479
+          },
+          {
+            "name": "exports.jsxDEV @ react_jsx-dev-runtime.js?v=191d0957:241",
+            "ms": 39.8,
+            "hits": 199
+          },
+          {
+            "name": "(program) @ (native):0",
+            "ms": 21.6,
+            "hits": 108
+          },
+          {
+            "name": "exports.jsx @ chunk-TC52S7IS.js?v=191d0957:241",
+            "ms": 12.2,
+            "hits": 61
+          },
+          {
+            "name": "exports.jsxs @ chunk-TC52S7IS.js?v=191d0957:258",
+            "ms": 9.6,
+            "hits": 48
+          },
+          {
+            "name": "ReactElement @ react_jsx-dev-runtime.js?v=191d0957:129",
+            "ms": 2.8,
+            "hits": 14
+          },
+          {
+            "name": "setProgram @ chunk-KXRUJEWZ.js?v=191d0957:43415",
+            "ms": 2.6,
+            "hits": 13
+          },
+          {
+            "name": "ReactElement @ chunk-TC52S7IS.js?v=191d0957:129",
+            "ms": 2.4,
+            "hits": 12
+          },
+          {
+            "name": "getProgramInfoLog @ (native):0",
+            "ms": 2.4,
+            "hits": 12
+          },
+          {
+            "name": "getParameters @ chunk-KXRUJEWZ.js?v=191d0957:37033",
+            "ms": 2.2,
+            "hits": 11
+          },
+          {
+            "name": "run @ (native):0",
+            "ms": 2,
+            "hits": 10
+          },
+          {
+            "name": "_Box @ chunk-ZFJB5OF4.js?v=191d0957:3113",
+            "ms": 1.6,
+            "hits": 8
+          },
+          {
+            "name": "createTask @ (native):0",
+            "ms": 1.6,
+            "hits": 8
+          },
+          {
+            "name": "exports.createElement @ chunk-ADHR3G76.js?v=191d0957:802",
+            "ms": 1.6,
+            "hits": 8
+          },
+          {
+            "name": "copyArray @ chunk-KXRUJEWZ.js?v=191d0957:35750",
+            "ms": 1.4,
+            "hits": 7
+          },
+          {
+            "name": "extractStyleProps @ chunk-ZFJB5OF4.js?v=191d0957:2526",
+            "ms": 1.2,
+            "hits": 6
+          },
+          {
+            "name": "(anonymous) @ chunk-ZFJB5OF4.js?v=191d0957:1737",
+            "ms": 1.2,
+            "hits": 6
+          },
+          {
+            "name": "getCSSColorVariables @ chunk-ZFJB5OF4.js?v=191d0957:1578",
+            "ms": 1,
+            "hits": 5
+          },
+          {
+            "name": "now @ (native):0",
+            "ms": 1,
+            "hits": 5
+          },
+          {
+            "name": "WebGLRenderer.renderBufferDirect @ chunk-KXRUJEWZ.js?v=191d0957:42822",
+            "ms": 1,
+            "hits": 5
+          },
+          {
+            "name": "getProgram @ chunk-KXRUJEWZ.js?v=191d0957:43304",
+            "ms": 1,
+            "hits": 5
+          },
+          {
+            "name": "(anonymous) @ chunk-ZFJB5OF4.js?v=191d0957:8643",
+            "ms": 0.8,
+            "hits": 4
+          },
+          {
+            "name": "useStyles @ chunk-ZFJB5OF4.js?v=191d0957:2356",
+            "ms": 0.8,
+            "hits": 4
+          },
+          {
+            "name": "removeDefaultVariables @ chunk-ZFJB5OF4.js?v=191d0957:1969",
+            "ms": 0.8,
+            "hits": 4
+          },
+          {
+            "name": "diffProps @ chunk-COHX5JCY.js?v=191d0957:751",
+            "ms": 0.8,
+            "hits": 4
+          }
+        ],
+        "urls": [
+          {
+            "name": "(native)",
+            "ms": 933.2,
+            "hits": 4666
+          },
+          {
+            "name": "react_jsx-dev-runtime.js?v=191d0957",
+            "ms": 44.2,
+            "hits": 221
+          },
+          {
+            "name": "chunk-TC52S7IS.js?v=191d0957",
+            "ms": 25.4,
+            "hits": 127
+          },
+          {
+            "name": "chunk-KXRUJEWZ.js?v=191d0957",
+            "ms": 21.6,
+            "hits": 108
+          },
+          {
+            "name": "chunk-ZFJB5OF4.js?v=191d0957",
+            "ms": 16.4,
+            "hits": 82
+          },
+          {
+            "name": "chunk-KWVIDCNJ.js?v=191d0957",
+            "ms": 12.8,
+            "hits": 64
+          },
+          {
+            "name": "chunk-COHX5JCY.js?v=191d0957",
+            "ms": 8.4,
+            "hits": 42
+          },
+          {
+            "name": "chunk-ADHR3G76.js?v=191d0957",
+            "ms": 1.8,
+            "hits": 9
+          },
+          {
+            "name": "router.ts",
+            "ms": 1.2,
+            "hits": 6
+          },
+          {
+            "name": "Room.tsx",
+            "ms": 0.6,
+            "hits": 3
+          },
+          {
+            "name": "WallPlaque.tsx",
+            "ms": 0.4,
+            "hits": 2
+          },
+          {
+            "name": "chunk-HTPD32MN.js?v=191d0957",
+            "ms": 0.4,
+            "hits": 2
+          },
+          {
+            "name": "navigation.ts",
+            "ms": 0.2,
+            "hits": 1
+          },
+          {
+            "name": "chunk-W7D4KCIQ.js?v=191d0957",
+            "ms": 0.2,
+            "hits": 1
+          },
+          {
+            "name": "affordance.tsx",
+            "ms": 0.2,
+            "hits": 1
+          },
+          {
+            "name": "ClimateProjector.tsx",
+            "ms": 0.2,
+            "hits": 1
+          },
+          {
+            "name": "HomeControl.tsx",
+            "ms": 0.2,
+            "hits": 1
+          },
+          {
+            "name": "CameraRig.tsx",
+            "ms": 0.2,
+            "hits": 1
+          },
+          {
+            "name": "PainterlyPass.tsx",
+            "ms": 0.2,
+            "hits": 1
+          }
+        ],
+        "totalSamples": 5388
+      },
+      "longTasks": [
+        {
+          "start": 24342,
+          "dur": 87
+        },
+        {
+          "start": 24430,
+          "dur": 180
+        },
+        {
+          "start": 24610,
+          "dur": 66
+        }
+      ]
+    },
+    "click": {
+      "windowMs": 2352,
+      "probe": {
+        "raf": {
+          "n": 1,
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "main": {
+          "n": 1,
+          "p50": 642.9,
+          "p95": 642.9,
+          "max": 642.9
+        },
+        "longFrames": 0,
+        "longMain": 1
+      },
+      "panel": true,
+      "profile": {
+        "functions": [
+          {
+            "name": "getShaderInfoLog @ (native):0",
+            "ms": 342.8,
+            "hits": 1714
+          },
+          {
+            "name": "(idle) @ (native):0",
+            "ms": 192,
+            "hits": 960
+          },
+          {
+            "name": "getProgramInfoLog @ (native):0",
+            "ms": 186,
+            "hits": 930
+          },
+          {
+            "name": "exports.jsxDEV @ react_jsx-dev-runtime.js?v=191d0957:241",
+            "ms": 57,
+            "hits": 285
+          },
+          {
+            "name": "focus @ (native):0",
+            "ms": 24.2,
+            "hits": 121
+          },
+          {
+            "name": "(program) @ (native):0",
+            "ms": 22.2,
+            "hits": 111
+          },
+          {
+            "name": "exports.jsx @ chunk-TC52S7IS.js?v=191d0957:241",
+            "ms": 19.4,
+            "hits": 97
+          },
+          {
+            "name": "exports.jsxs @ chunk-TC52S7IS.js?v=191d0957:258",
+            "ms": 15.8,
+            "hits": 79
+          },
+          {
+            "name": "handleIntersects @ chunk-COHX5JCY.js?v=191d0957:1009",
+            "ms": 8.6,
+            "hits": 43
+          },
+          {
+            "name": "run @ (native):0",
+            "ms": 6,
+            "hits": 30
+          },
+          {
+            "name": "ReactElement @ react_jsx-dev-runtime.js?v=191d0957:129",
+            "ms": 4.4,
+            "hits": 22
+          },
+          {
+            "name": "(garbage collector) @ (native):0",
+            "ms": 4.2,
+            "hits": 21
+          },
+          {
+            "name": "_Box @ chunk-ZFJB5OF4.js?v=191d0957:3113",
+            "ms": 3.2,
+            "hits": 16
+          },
+          {
+            "name": "createTask @ (native):0",
+            "ms": 2,
+            "hits": 10
+          },
+          {
+            "name": "ReactElement @ chunk-TC52S7IS.js?v=191d0957:129",
+            "ms": 2,
+            "hits": 10
+          },
+          {
+            "name": "now @ (native):0",
+            "ms": 1.6,
+            "hits": 8
+          },
+          {
+            "name": "jsxDEVImpl @ react_jsx-dev-runtime.js?v=191d0957:170",
+            "ms": 1.4,
+            "hits": 7
+          },
+          {
+            "name": "beginWork @ chunk-KWVIDCNJ.js?v=191d0957:8458",
+            "ms": 1.4,
+            "hits": 7
+          },
+          {
+            "name": "jsxDEVImpl @ chunk-TC52S7IS.js?v=191d0957:170",
+            "ms": 1.4,
+            "hits": 7
+          },
+          {
+            "name": "(anonymous) @ chunk-ZFJB5OF4.js?v=191d0957:135",
+            "ms": 1.4,
+            "hits": 7
+          },
+          {
+            "name": "logComponentRender @ chunk-KWVIDCNJ.js?v=191d0957:3132",
+            "ms": 1.4,
+            "hits": 7
+          },
+          {
+            "name": "intersect @ chunk-COHX5JCY.js?v=191d0957:955",
+            "ms": 1.2,
+            "hits": 6
+          },
+          {
+            "name": "defineKeyPropWarningGetter @ react_jsx-dev-runtime.js?v=191d0957:108",
+            "ms": 1.2,
+            "hits": 6
+          },
+          {
+            "name": "commitUpdate @ chunk-COHX5JCY.js?v=191d0957:10363",
+            "ms": 1.2,
+            "hits": 6
+          },
+          {
+            "name": "extractStyleProps @ chunk-ZFJB5OF4.js?v=191d0957:2526",
+            "ms": 1.2,
+            "hits": 6
+          }
+        ],
+        "urls": [
+          {
+            "name": "(native)",
+            "ms": 786.4,
+            "hits": 3932
+          },
+          {
+            "name": "react_jsx-dev-runtime.js?v=191d0957",
+            "ms": 64.2,
+            "hits": 321
+          },
+          {
+            "name": "chunk-TC52S7IS.js?v=191d0957",
+            "ms": 38.8,
+            "hits": 194
+          },
+          {
+            "name": "chunk-COHX5JCY.js?v=191d0957",
+            "ms": 24.6,
+            "hits": 123
+          },
+          {
+            "name": "chunk-KWVIDCNJ.js?v=191d0957",
+            "ms": 19.8,
+            "hits": 99
+          },
+          {
+            "name": "chunk-ZFJB5OF4.js?v=191d0957",
+            "ms": 17.8,
+            "hits": 89
+          },
+          {
+            "name": "chunk-KXRUJEWZ.js?v=191d0957",
+            "ms": 5.8,
+            "hits": 29
+          },
+          {
+            "name": "chunk-ADHR3G76.js?v=191d0957",
+            "ms": 1.2,
+            "hits": 6
+          },
+          {
+            "name": "Room.tsx",
+            "ms": 1.2,
+            "hits": 6
+          },
+          {
+            "name": "ProjectCases.tsx",
+            "ms": 0.8,
+            "hits": 4
+          },
+          {
+            "name": "Desk.tsx",
+            "ms": 0.8,
+            "hits": 4
+          },
+          {
+            "name": "chunk-G23G4A5X.js?v=191d0957",
+            "ms": 0.8,
+            "hits": 4
+          },
+          {
+            "name": "posts.ts",
+            "ms": 0.8,
+            "hits": 4
+          },
+          {
+            "name": "chunk-DC5AMYBS.js?v=191d0957",
+            "ms": 0.8,
+            "hits": 4
+          },
+          {
+            "name": "router.ts",
+            "ms": 0.4,
+            "hits": 2
+          },
+          {
+            "name": "DetailMirror.tsx",
+            "ms": 0.4,
+            "hits": 2
+          },
+          {
+            "name": "store.ts",
+            "ms": 0.2,
+            "hits": 1
+          },
+          {
+            "name": "Library.tsx",
+            "ms": 0.2,
+            "hits": 1
+          },
+          {
+            "name": "WallPlaque.tsx",
+            "ms": 0.2,
+            "hits": 1
+          },
+          {
+            "name": "CameraRig.tsx",
+            "ms": 0.2,
+            "hits": 1
+          },
+          {
+            "name": "primitives.tsx",
+            "ms": 0.2,
+            "hits": 1
+          },
+          {
+            "name": "dialog-effects.ts",
+            "ms": 0.2,
+            "hits": 1
+          },
+          {
+            "name": "a11y.tsx",
+            "ms": 0.2,
+            "hits": 1
+          }
+        ],
+        "totalSamples": 4910
+      },
+      "longTasks": [
+        {
+          "start": 290804,
+          "dur": 283
+        },
+        {
+          "start": 291444,
+          "dur": 1352
+        }
+      ]
+    }
+  },
+  "pointerHits": {
+    "plaque": 196,
+    "sample": {
+      "x": 540,
+      "y": 355
+    },
+    "book": 551
+  }
+}

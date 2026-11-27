@@ -1,13 +1,21 @@
 .DS_Store
 node_modules
 /dist
+coverage
+
+# stray literal "~" artifact (formerly tracked; purged from history and now
+# untracked; root-anchored so it matches a file or a directory at the root)
+/~
 
 
 # local env files
 .env.local
 .env.*.local
 
-# Log files
+# Playwright capture scratch artifacts (screenshots/recordings under qa-evidence/ are tracked)
+qa-evidence/.artifacts/
+
+# Logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

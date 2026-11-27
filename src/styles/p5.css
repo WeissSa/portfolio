@@ -1,0 +1,747 @@
+/*
+ * P5 design system (REWORK_PLAN §3.5): red/black/white, jagged slashed
+ * panels, bold skewed display type, star/halftone accents. Kinetic but
+ * reduced-motion-safe: every animation is a single ≤300ms cut-in — never
+ * a repeating flash (photosensitivity: <3 flashes/sec guaranteed).
+ */
+
+:root {
+  --p5-black: #10191a;
+  --p5-ink: #1c2626;
+  --p5-red: #b08d4f;
+  --p5-red-deep: #e0703a;
+  --p5-white: #e8e0cf;
+  --p5-yellow: #d4b06a;
+  --p5-link: #b39ddb;
+  --p5-link-visited: #c4b5fd;
+  --p5-cut: 10px;
+
+  /*
+   * Semantic groups exported from design-tokens.ts. Color aliases reference the
+   * canonical --p5-* declarations above (never a raw hex), so the hex guard and
+   * the :root parity tests keep their exact 8-color contract. Non-color scales
+   * mirror design-tokens.json verbatim.
+   */
+  --state-active-fg: var(--p5-black);
+  --state-active-bg: var(--p5-yellow);
+  --state-focus: var(--p5-yellow);
+  --state-visited: var(--p5-link-visited);
+  --border-panel: var(--p5-red);
+  --border-min-width: 1px;
+  --border-max-width: 2px;
+  --type-xs: 0.75rem;
+  --type-sm: 0.875rem;
+  --type-base: 1rem;
+  --type-lg: 1.15rem;
+  --type-xl: 1.5rem;
+  --type-2xl: 2.25rem;
+  --type-3xl: 3.5rem;
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  /* P5 panel clip-path cut, tokenized into the spacing scale (a11y/lint
+     follow-up): the canonical value stays on --p5-cut, this mirrors it. */
+  --space-cut: var(--p5-cut);
+}
+
+/* Visible P5-styled focus ring everywhere (state.focus = gold). */
+:focus-visible {
+  outline: 3px solid var(--state-focus);
+  outline-offset: 2px;
+}
+
+.p5-display {
+  font-family: 'Anton', 'Arial Narrow', 'Haettenschweiler', sans-serif;
+  text-transform: uppercase;
+  transform: skewX(-6deg);
+  letter-spacing: 0.02em;
+  line-height: 1.05;
+}
+
+/* Jagged slashed panel via clip-path. */
+.p5-panel {
+  position: relative;
+  background: var(--p5-ink);
+  color: var(--p5-white);
+  /* Mandatory ungraded brass border, within border.minWidth/maxWidth (1–2px). */
+  border: var(--border-min-width) solid var(--border-panel);
+  clip-path: polygon(
+    0 var(--p5-cut),
+    var(--p5-cut) 0,
+    calc(100% - 2 * var(--p5-cut)) 0,
+    100% calc(2 * var(--p5-cut)),
+    100% calc(100% - var(--p5-cut)),
+    calc(100% - var(--p5-cut)) 100%,
+    calc(2 * var(--p5-cut)) 100%,
+    0 calc(100% - 2 * var(--p5-cut))
+  );
+  padding: 1.25rem var(--space-lg);
+}
+
+.p5-panel--red {
+  background: var(--p5-red);
+  color: var(--p5-black);
+}
+
+.p5-panel--white {
+  background: var(--p5-white);
+  color: var(--p5-black);
+}
+
+/* Red slash accent strip along the top of panels. */
+.p5-panel--slashed::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: 100%;
+  height: 6px;
+  background: var(--p5-red);
+  transform: skewX(-30deg);
+}
+
+/* Halftone dot accent. */
+.p5-halftone {
+  background-image: radial-gradient(currentColor 1px, transparent 1.4px);
+  background-size: 7px 7px;
+  opacity: 0.25;
+}
+
+.p5-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  min-height: 44px;
+  min-width: 44px;
+  padding: var(--space-sm) 1.25rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  transform: skewX(-6deg);
+  background: var(--p5-white);
+  color: var(--p5-black);
+  border: 2px solid var(--p5-black);
+  cursor: pointer;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease;
+}
+
+.p5-btn > * {
+  transform: skewX(6deg);
+}
+
+.p5-btn:hover {
+  background: var(--p5-red);
+  color: var(--p5-black);
+}
+
+.p5-btn--red {
+  background: var(--p5-red);
+  color: var(--p5-black);
+  border-color: var(--p5-black);
+}
+
+.p5-btn--red:hover {
+  background: var(--p5-black);
+  color: var(--p5-white);
+}
+
+/* Ink-on-gold chip (state.activeBg/activeFg); gold-on-brass is forbidden. */
+.p5-btn[aria-current='page'],
+.p5-btn--active {
+  background: var(--state-active-bg);
+  color: var(--state-active-fg);
+}
+
+/* Mode state must be visible (review 2026-11-24): the 3D and Static-3D toggle
+   buttons have a constant label, so sighted users read the active mode from
+   this ink-on-gold chip (same token pair as the active nav item). */
+.p5-btn[aria-pressed='true'] {
+  background: var(--state-active-bg);
+  color: var(--state-active-fg);
+  border-color: var(--state-active-bg);
+}
+
+.p5-tag {
+  display: inline-block;
+  padding: 0.15rem 0.6rem;
+  font-size: var(--type-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  background: var(--p5-white);
+  color: var(--p5-black);
+  clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%);
+}
+
+.p5-star {
+  color: var(--p5-red);
+  font-size: 1.1em;
+}
+
+/* Links inside verbatim ported post descriptions (AA contrast on ink). */
+.p5-prose a {
+  color: var(--p5-link);
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.p5-prose a:visited {
+  color: var(--state-visited);
+}
+
+/*
+ * Light-face prose (a11y fix, owner review 2026-11-23): the PostBook faces are
+ * parchment (--p5-white) with ink text. On parchment, the default purple link
+ * computes to ~1.83:1 and the brass accent to ~2.36:1 — both far under AA —
+ * so links inside a light face use dark-on-light tokens: ink (13.6:1) for
+ * default/hover and panel ink (11.8:1) for visited. Declared AFTER the
+ * .p5-prose rules above so equal specificity resolves here.
+ */
+.p5-prose--light a {
+  color: var(--p5-black);
+}
+
+.p5-prose--light a:visited {
+  color: var(--p5-ink);
+}
+
+/* Single cut-in transition, softened and reduced-motion-safe. */
+.p5-cut-in {
+  animation: p5-cut-in 260ms ease-out both;
+}
+
+@keyframes p5-cut-in {
+  from {
+    opacity: 0;
+    transform: translateX(-24px) skewX(-4deg);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) skewX(0);
+  }
+}
+
+/*
+ * Initial mount: suppress the cut-in so the first React paint is fully
+ * visible and hands off seamlessly from the styled static mirror (which the
+ * createRoot render replaces instantly). Playing the animation at frame 0
+ * would show opacity:0 + translateX(-24px) right after the mirror vanished —
+ * a visible jump. The `app-initial` class drops after the first real zone
+ * change (store.hasNavigated), so later views animate normally.
+ */
+.app-initial .p5-cut-in {
+  animation: none;
+}
+
+/*
+ * 3D layer (commit 5): the lazy Canvas sits behind the authoritative 2D DOM.
+ * pointer-events:none keeps every interaction in real DOM until the pickable
+ * zones land in commits 6–9, and the Canvas is aria-hidden (no focus trap).
+ */
+.scene-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 520ms ease-out;
+}
+
+.app-scene-live .scene-layer--ready {
+  opacity: 1;
+}
+
+/*
+ * 3c warm start: after a first 3D visit the desktop Canvas stays mounted but
+ * invisible and non-interactive while 2D is showing (Room gets
+ * frameloop='never'), so toggling back costs no WebGL context rebuild.
+ */
+.scene-layer--inactive,
+.scene-layer--inactive .scene-canvas {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.scene-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/*
+ * Mobile grade parity (art-overhaul commit 3b): the WebGL painterly pass
+ * (grain/vignette/grade) is desktop-only, so mobile/low tiers used to render
+ * RAW ungraded primitives. This zero-GPU CSS overlay approximates the desktop
+ * grade mood on the canvas layer: a warm hue wash from above, a purple-tinted
+ * corner vignette (owner palette), matching the GLSL shadow/highlight tints.
+ * It is pointer-transparent, aria-hidden, sits above the canvas (later in DOM
+ * at equal z-index) and below the DOM shell (.app-scene-live .app-shell z-index:1),
+ * and fades in together with the scene layer.
+ */
+.scene-grade-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 520ms ease-out;
+  background:
+    radial-gradient(
+      120% 100% at 50% 42%,
+      transparent 52%,
+      color-mix(in srgb, var(--p5-link) 9%, transparent) 88%,
+      color-mix(in srgb, var(--p5-black) 38%, transparent) 100%
+    ),
+    linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--p5-yellow) 6%, transparent),
+      transparent 46%
+    );
+}
+
+.app-scene-live .scene-grade-overlay--ready {
+  opacity: 1;
+}
+
+/*
+ * Commit 6: only a fine pointer in 3D mode can pick books. The layer stays
+ * aria-hidden and the canvas has no tabindex, so enabling pointer events never
+ * makes the scene a keyboard/screen-reader requirement.
+ */
+.scene-layer--interactive,
+.scene-layer--interactive .scene-canvas {
+  pointer-events: auto;
+}
+
+/*
+ * Review fix A2: in 3D the DOM shell sits ABOVE the canvas (z-index 1). With
+ * pointer-events:auto it swallowed every click, so R3F only raycast books in
+ * the outer margins. Make the shell transparent to the pointer, then opt its
+ * interactive descendants back in — the DOM UI stays fully usable while clicks
+ * on empty / canvas areas reach the scene. 2D mode is untouched: every rule is
+ * scoped under `.app-scene-live`, which App only adds once the Canvas has drawn a frame.
+ */
+.app-scene-live .app-shell {
+  position: relative;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.app-scene-live .app-shell a,
+.app-scene-live .app-shell button,
+.app-scene-live .app-shell input,
+.app-scene-live .app-shell select,
+.app-scene-live .app-shell textarea,
+.app-scene-live .app-shell label,
+.app-scene-live .app-shell summary,
+.app-scene-live .app-shell [contenteditable],
+.app-scene-live .app-shell [role='button'],
+.app-scene-live .app-shell [role='dialog'],
+.app-scene-live .app-shell [role='group'],
+.app-scene-live .app-shell [role='link'],
+.app-scene-live .app-shell [role='checkbox'],
+.app-scene-live .app-shell [role='switch'],
+.app-scene-live .app-shell [role='tab'],
+.app-scene-live .app-shell [tabindex]:not([tabindex='-1']) {
+  pointer-events: auto;
+}
+
+/* A hovered/selected 3D book highlights its accessible DOM twin. */
+.p5-panel.p5-card--highlight {
+  outline: 3px solid var(--state-focus);
+  outline-offset: 2px;
+}
+
+/* Shared diegetic detail panel (DetailMirror): tokenized rust shadow. */
+.post-detail-card {
+  /* Tokenized rust (p5.redDeep) at the old 65% alpha — no raw color literal. */
+  box-shadow:
+    0 0 0 3px var(--p5-ink),
+    8px 10px 0 0 color-mix(in srgb, var(--p5-red-deep) 65%, transparent);
+}
+
+/*
+ * Loading cut-in (crash-on-load fix): rendered as the Suspense fallback OUTSIDE
+ * .scene-layer, which is opacity:0 until the Canvas is ready. Its own fixed,
+ * above-the-shell wrapper keeps "Loading the room…" visible during the lazy
+ * download without ever inheriting the faded layer's opacity.
+ */
+.scene-loading-portal {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.scene-loading {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  min-width: 12rem;
+  text-align: center;
+  transform: translate(-50%, -50%) skewX(-6deg);
+}
+
+/* --------------------------------------------------------------------------
+ * Commit 4 / diegetic-only review: clean framing band + keyboard-only DOM twin.
+ * In live 3D desktop the flat menu is sr-only (never painted over the plaque),
+ * but it stays in the tab order and the a11y tree. ONLY genuine keyboard focus
+ * (`:has(:focus-visible)`) un-hides the floating menu at bottom-left; a mouse
+ * click focuses links too, so `:focus-within` would distract pointer users.
+ * Coarse pointers keep the full opaque DOM menu (and 44px targets).
+ * ------------------------------------------------------------------------ */
+.main-menu__focus-chip {
+  display: none;
+}
+
+.p5-btn--diegetic-highlight {
+  outline: 3px solid var(--state-focus);
+  outline-offset: 2px;
+}
+
+.app-3d:not(.app-fine-pointer) .main-menu {
+  background: var(--p5-black);
+  border: 2px solid var(--border-panel);
+}
+
+/* The SEMANTIC nav stays sr-only in fine-pointer live 3D (the diegetic room
+   owns the visuals); Tab still reveals it for keyboard users. Pointer users
+   get the separate, always-visible brass strip below — outside .app-shell, so
+   it stays clickable even while a modal detail panel makes the shell inert. */
+.app-scene-live.app-fine-pointer .main-menu {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.app-scene-live.app-fine-pointer .main-menu:has(:focus-visible) {
+  position: fixed;
+  left: 1.5rem;
+  bottom: 1.5rem;
+  z-index: 12;
+  width: auto;
+  max-width: 20rem;
+  height: auto;
+  margin: 0;
+  padding: 1rem;
+  overflow: visible;
+  clip-path: none;
+  white-space: normal;
+  background: var(--p5-black);
+  border: 2px solid var(--state-focus);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--p5-black) 60%, transparent);
+  pointer-events: auto;
+}
+
+.app-scene-live.app-fine-pointer
+  .main-menu:has(:focus-visible)
+  .main-menu__focus-chip {
+  display: block;
+  margin-bottom: var(--space-sm);
+  color: var(--state-focus);
+  font-weight: 700;
+}
+
+/* Pointer-visible diegetic control strip (UX fix pass, MAJOR 4). Rendered by
+   App OUTSIDE .app-shell so it is never made inert by an open detail dialog,
+   and above the detail scrim so HOME/nav works DURING a detail close-up.
+   aria-hidden: it mirrors the semantic nav for sighted mouse users only;
+   keyboard/SR users keep the single real <nav>. */
+.pointer-menu-strip {
+  position: fixed;
+  left: var(--space-md);
+  top: var(--space-md);
+  z-index: 12;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  max-width: calc(100vw - 2 * var(--space-md));
+  padding: var(--space-sm);
+  border: 2px solid var(--state-focus);
+  background: color-mix(in srgb, var(--p5-black) 88%, transparent);
+  box-shadow: 0 0 0 3px var(--p5-ink);
+}
+
+.pointer-menu-strip__label {
+  flex: 1 0 100%;
+  padding: 0 var(--space-xs) var(--space-xs);
+  color: var(--state-focus);
+  font-family: 'Anton', 'Arial Narrow', Haettenschweiler, sans-serif;
+  font-size: var(--type-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.pointer-menu-strip__btn {
+  min-height: 44px;
+  padding: var(--space-xs) var(--space-sm);
+  font-size: var(--type-sm);
+}
+
+/* While a detail is open the menu becomes a slim top bar, so its buttons sit
+   above the centred panel instead of overlapping it. HOME stays reachable. */
+.app-detail-open .pointer-menu-strip {
+  top: 0;
+  left: 0;
+  right: 0;
+  max-width: none;
+  justify-content: center;
+  padding: var(--space-xs) var(--space-md);
+  border-width: 0 0 2px;
+}
+.app-detail-open .pointer-menu-strip__label {
+  display: none;
+}
+
+/* --------------------------------------------------------------------------
+ * UX fix pass (2026-11-25): the READABLE detail is one visible, scrollable DOM
+ * panel in every mode — the a11y mirror of polish(c) is now the authoritative
+ * readout. In-world objects keep their open animation as the visual gesture,
+ * but no truncated painted sentence is ever the only copy of the content.
+ * The panel is framed like an in-world page/screen (brass bezel + ink mount)
+ * and sits in the clear left band of the 3D desktop layout.
+ * ------------------------------------------------------------------------ */
+.detail-panel-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  background: color-mix(in srgb, var(--p5-black) 55%, transparent);
+  animation: detail-panel-in 160ms ease-out both;
+}
+
+.detail-mirror {
+  position: fixed;
+  /* Centred, single surface: never clipped off-screen, never parked under the
+     pointer menu. The slightly lower centre leaves room for the menu strip. */
+  left: 50%;
+  top: calc(50% + 1.25rem);
+  z-index: 11;
+  display: flex;
+  flex-direction: column;
+  width: min(94vw, 46rem);
+  max-width: calc(100vw - 2 * var(--space-md));
+  max-height: min(84vh, 54rem);
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  transform: translate(-50%, -50%);
+  background: var(--p5-black);
+  color: var(--p5-white);
+  border: 2px solid var(--state-focus);
+  box-shadow:
+    0 0 0 3px var(--p5-ink),
+    12px 14px 0 0 color-mix(in srgb, var(--p5-red-deep) 65%, transparent);
+  pointer-events: auto;
+  /* Fade only: p5-cut-in animates `transform`, which would override the
+     translateY(-50%) centering and push a tall panel off the viewport. */
+  animation: detail-panel-in 180ms ease-out both;
+}
+
+@keyframes detail-panel-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.detail-mirror__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  flex-shrink: 0;
+  padding: var(--space-sm) var(--space-lg);
+  border-bottom: 2px solid var(--state-focus);
+  background: var(--p5-ink);
+}
+
+.detail-mirror__chip {
+  display: block;
+  color: var(--state-focus);
+  font-weight: 700;
+  font-size: var(--type-sm);
+}
+
+.detail-mirror__close {
+  flex-shrink: 0;
+  min-height: 44px;
+}
+
+/* The ONLY place full detail is read: generous 15px type on ink, AA contrast,
+   and the SOLE scroll container. `flex: 1` + `min-height: 0` is what actually
+   makes overflow-y:auto scroll inside a fixed-height flex column; focusing it
+   on open makes wheel/keyboard scrolling work before any Tab. */
+.detail-mirror__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: var(--space-md) var(--space-lg) var(--space-lg);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  overflow-wrap: anywhere;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--p5-white);
+}
+.detail-mirror__body:focus-visible {
+  outline: 3px solid var(--state-focus);
+  outline-offset: -3px;
+}
+.detail-mirror__body .p5-tag {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.detail-mirror__body p,
+.detail-mirror__body li {
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+/* --------------------------------------------------------------------------
+ * Projects case shelf (owner fix 2026-11-26): ONE diegetic page with a single
+ * scroll region. We deliberately set NO `overflow`/`max-height` here — the
+ * enclosing column (live 3D) or the document (2D/fallback) is the only
+ * scroller, so an expanded case can never create a competing nested region.
+ * ------------------------------------------------------------------------ */
+.projects-shelf {
+  position: relative;
+  padding: var(--space-md);
+  border: 2px solid var(--border-panel);
+  background: color-mix(in srgb, var(--p5-ink) 92%, transparent);
+  box-shadow: 6px 8px 0 0
+    color-mix(in srgb, var(--p5-red-deep) 45%, transparent);
+}
+
+.projects-shelf__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding-bottom: var(--space-sm);
+  border-bottom: 2px solid var(--state-focus);
+}
+
+.projects-shelf__count {
+  flex-shrink: 0;
+  color: var(--state-focus);
+  font-weight: 700;
+  font-size: var(--type-sm);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.projects-shelf__list {
+  list-style: none;
+  margin: 0;
+  padding: var(--space-md) 0 0;
+  /* ONE column: in live 3D the column is only ~50% of the viewport, so a
+     two-column grid squeezed titles to one letter per line. A single case
+     file per row always has room for the title + controls. */
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-md);
+}
+
+.projects-shelf__item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+.projects-shelf__index {
+  flex: none;
+  min-width: 2rem;
+  color: var(--state-focus);
+  font-family: 'Anton', 'Arial Narrow', Haettenschweiler, sans-serif;
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.projects-shelf__item > .p5-panel {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Review fix: the diegetic right-column layout now starts at Tailwind's `md`
+   breakpoint (768px). Below 1024px the old rule left the sr-only menu hidden
+   AND no right column, so the plaque was covered by an empty gutter. */
+@media (min-width: 768px) {
+  /* Left ~50% stays clear for the room + wall plaque; zone content is pushed
+     into the right column. The QA harness measures real DOM opacity overlap. */
+  .app-scene-live.app-fine-pointer .app-shell {
+    max-width: none;
+    padding: 0;
+  }
+  .app-scene-live.app-fine-pointer .app-shell > div:first-of-type {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+  }
+  .app-scene-live.app-fine-pointer main {
+    /* flex-basis must be set too: Tailwind's flex-1 uses basis 0%. */
+    flex: 0 0 50%;
+    width: 50%;
+    max-height: 100vh;
+    margin-left: auto;
+    overflow-y: auto;
+    padding: var(--space-lg) var(--space-xl) var(--space-lg) var(--space-lg);
+  }
+}
+
+/* Intentional fallback notice — never an empty purple field. */
+.scene-unavailable-notice {
+  position: relative;
+  z-index: 2;
+  margin: var(--space-sm) var(--space-md) 0;
+  padding: var(--space-xs) var(--space-sm);
+  width: fit-content;
+  color: var(--p5-black);
+  background: var(--p5-yellow);
+  border: 1px solid var(--border-panel);
+  font-size: var(--type-sm);
+  font-weight: 700;
+}
+
+/* Reduced-motion 3D opt-in: static cuts need a visible navigation cue. */
+.zone-title-hud {
+  position: fixed;
+  top: var(--space-md);
+  left: 50%;
+  z-index: 6;
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  color: var(--p5-white);
+  background: var(--p5-black);
+  border: 2px solid var(--state-focus);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.zone-title-hud__note {
+  color: var(--p5-link);
+  font-size: var(--type-xs);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

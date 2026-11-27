@@ -1,0 +1,116 @@
+{
+  "p5": {
+    "black": "#10191a",
+    "ink": "#1c2626",
+    "red": "#b08d4f",
+    "redDeep": "#e0703a",
+    "white": "#e8e0cf",
+    "yellow": "#d4b06a",
+    "link": "#b39ddb",
+    "linkVisited": "#c4b5fd"
+  },
+  "scene": {
+    "woodDark": "#2b1e14",
+    "woodMid": "#4a3323",
+    "woodWarm": "#6b4a2e",
+    "woodGrain": "#3a281a",
+    "plasterTeal": "#5f9c95",
+    "plasterSepia": "#6d5b45",
+    "plasterDark": "#2c3a3a",
+    "brass": "#b08d4f",
+    "brassLight": "#d4b06a",
+    "brassDark": "#7c6234",
+    "rugIndigo": "#2c3350",
+    "rugRust": "#7a3b2e",
+    "rugCream": "#c9b98f",
+    "paper": "#e8e0cf",
+    "paperDark": "#b7a98c",
+    "ink": "#1c2626",
+    "metalDark": "#23262b",
+    "p5Red": "#b08d4f",
+    "p5Yellow": "#d4b06a",
+    "p5White": "#e8e0cf",
+    "lampWarm": "#ffb45e",
+    "nightBlue": "#1b2a4a",
+    "nightGlow": "#2e4a7d",
+    "screenCloth": "#e8dfc8",
+    "bookCloth": "#5a3a2a"
+  },
+  "bookSpines": [
+    "#4a3323",
+    "#2f4a45",
+    "#5a3a2a",
+    "#3c4a63",
+    "#6d5b45",
+    "#41324a",
+    "#2c3350",
+    "#59483a",
+    "#37514a"
+  ],
+  "material": {
+    "textureNeutral": "#e8e0cf",
+    "woodTint": "#9c8a76",
+    "monitorBack": "#141a20",
+    "monitorEmissive": "#8fb7d9",
+    "lampShade": "#c98f4a",
+    "led": "#39d2c0",
+    "beam": "#ffd9a0",
+    "silhouette": "#20242c",
+    "bookHeroEmissive": "#6b3f16"
+  },
+  "texture": {
+    "paperLight": "#e8e0cf",
+    "monitorFill": "#10191a",
+    "monitorWash": "#16222a",
+    "monitorText": "#9aa3ad",
+    "projectorCaption": "#4a4f57"
+  },
+  "climate": {
+    "projectorCloth": "#e8e0cf",
+    "projectorInk": "#10191a",
+    "projectorRed": "#e0703a",
+    "projectorPlaqueText": "#f0e8d6",
+    "heatmapLabelText": "#e8e0cf"
+  },
+  "room": {
+    "ambient": "#93a7bd",
+    "moonlight": "#7d99c9",
+    "lamp": "#ffb45e",
+    "deskLamp": "#ffc978",
+    "monitorSpill": "#9fd8ff",
+    "background": "#10191a"
+  },
+  "library": {
+    "bookHighlight": "#d4b06a"
+  },
+  "state": {
+    "activeFg": "#10191a",
+    "activeBg": "#d4b06a",
+    "focus": "#d4b06a",
+    "visited": "#c4b5fd"
+  },
+  "border": {
+    "panel": "#b08d4f",
+    "minWidth": "1px",
+    "maxWidth": "2px"
+  },
+  "type": {
+    "display": "Anton, 'Arial Narrow', Haettenschweiler, sans-serif",
+    "body": "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+    "xs": "0.75rem",
+    "sm": "0.875rem",
+    "base": "1rem",
+    "lg": "1.15rem",
+    "xl": "1.5rem",
+    "2xl": "2.25rem",
+    "3xl": "3.5rem"
+  },
+  "spacing": {
+    "xs": "0.25rem",
+    "sm": "0.5rem",
+    "md": "1rem",
+    "lg": "1.5rem",
+    "xl": "2rem",
+    "cut": "10px"
+  }
+}

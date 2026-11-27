@@ -1,0 +1,380 @@
+{
+  "cursor": "",
+  "t": 5573,
+  "panel": false,
+  "load": [
+    {
+      "at": 1252,
+      "method": "compileShader",
+      "ms": 0,
+      "stack": "    at WebGLShader (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36360:6) |     at new WebGLProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36846:26) |     at Object.acquireProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:37466:17) |     at getProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43336:32) |     at setProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43502:120)"
+    },
+    {
+      "at": 1254,
+      "method": "compileShader",
+      "ms": 0,
+      "stack": "    at WebGLShader (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36360:6) |     at new WebGLProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36847:28) |     at Object.acquireProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:37466:17) |     at getProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43336:32) |     at setProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43502:120)"
+    },
+    {
+      "at": 1254,
+      "method": "linkProgram",
+      "ms": 0,
+      "stack": "    at new WebGLProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36855:6) |     at Object.acquireProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:37466:17) |     at getProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43336:32) |     at setProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43502:120) |     at WebGLRenderer.renderBufferDirect (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:42825:23)"
+    },
+    {
+      "at": 1263,
+      "method": "compileShader",
+      "ms": 0,
+      "stack": "    at WebGLShader (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36360:6) |     at new WebGLProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36846:26) |     at Object.acquireProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:37466:17) |     at getProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43336:32) |     at setProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43502:120)"
+    },
+    {
+      "at": 1263,
+      "method": "compileShader",
+      "ms": 0,
+      "stack": "    at WebGLShader (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36360:6) |     at new WebGLProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36847:28) |     at Object.acquireProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:37466:17) |     at getProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43336:32) |     at setProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43502:120)"
+    },
+    {
+      "at": 1263,
+      "method": "linkProgram",
+      "ms": 0,
+      "stack": "    at new WebGLProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36855:6) |     at Object.acquireProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:37466:17) |     at getProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43336:32) |     at setProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43502:120) |     at WebGLRenderer.renderBufferDirect (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:42825:23)"
+    },
+    {
+      "at": 1263,
+      "method": "getProgramInfoLog",
+      "ms": 13.8,
+      "stack": "    at onFirstUse (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36858:33) |     at WebGLProgram.getUniforms (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36905:7) |     at setProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43510:34) |     at WebGLRenderer.renderBufferDirect (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:42825:23) |     at renderObject (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:38480:20)"
+    },
+    {
+      "at": 1284,
+      "method": "compileShader",
+      "ms": 0,
+      "stack": "    at WebGLShader (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36360:6) |     at new WebGLProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36846:26) |     at Object.acquireProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:37466:17) |     at getProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43336:32) |     at setProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43502:120)"
+    },
+    {
+      "at": 1285,
+      "method": "compileShader",
+      "ms": 0,
+      "stack": "    at WebGLShader (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36360:6) |     at new WebGLProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36847:28) |     at Object.acquireProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:37466:17) |     at getProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43336:32) |     at setProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43502:120)"
+    },
+    {
+      "at": 1285,
+      "method": "linkProgram",
+      "ms": 0,
+      "stack": "    at new WebGLProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36855:6) |     at Object.acquireProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:37466:17) |     at getProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43336:32) |     at setProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43502:120) |     at WebGLRenderer.renderBufferDirect (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:42825:23)"
+    },
+    {
+      "at": 1285,
+      "method": "getProgramInfoLog",
+      "ms": 14.1,
+      "stack": "    at onFirstUse (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36858:33) |     at WebGLProgram.getUniforms (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36905:7) |     at setProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43510:34) |     at WebGLRenderer.renderBufferDirect (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:42825:23) |     at renderObject (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43295:15)"
+    },
+    {
+      "at": 1305,
+      "method": "compileShader",
+      "ms": 0,
+      "stack": "    at WebGLShader (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36360:6) |     at new WebGLProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36846:26) |     at Object.acquireProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:37466:17) |     at getProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43336:32) |     at setProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43502:120)"
+    },
+    {
+      "at": 1306,
+      "method": "compileShader",
+      "ms": 0,
+      "stack": "    at WebGLShader (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36360:6) |     at new WebGLProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36847:28) |     at Object.acquireProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:37466:17) |     at getProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43336:32) |     at setProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43502:120)"
+    },
+    {
+      "at": 1306,
+      "method": "linkProgram",
+      "ms": 0,
+      "stack": "    at new WebGLProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36855:6) |     at Object.acquireProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:37466:17) |     at getProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43336:32) |     at setProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43502:120) |     at WebGLRenderer.renderBufferDirect (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:42825:23)"
+    },
+    {
+      "at": 1306,
+      "method": "getProgramInfoLog",
+      "ms": 57.8,
+      "stack": "    at onFirstUse (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36858:33) |     at WebGLProgram.getUniforms (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36905:7) |     at setProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43510:34) |     at WebGLRenderer.renderBufferDirect (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:42825:23) |     at renderObject (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43295:15)"
+    },
+    {
+      "at": 1369,
+      "method": "compileShader",
+      "ms": 0,
+      "stack": "    at WebGLShader (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36360:6) |     at new WebGLProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36846:26) |     at Object.acquireProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:37466:17) |     at getProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43336:32) |     at setProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43502:120)"
+    },
+    {
+      "at": 1371,
+      "method": "compileShader",
+      "ms": 0,
+      "stack": "    at WebGLShader (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36360:6) |     at new WebGLProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36847:28) |     at Object.acquireProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:37466:17) |     at getProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43336:32) |     at setProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43502:120)"
+    },
+    {
+      "at": 1371,
+      "method": "linkProgram",
+      "ms": 0,
+      "stack": "    at new WebGLProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36855:6) |     at Object.acquireProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:37466:17) |     at getProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43336:32) |     at setProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43502:120) |     at WebGLRenderer.renderBufferDirect (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:42825:23)"
+    },
+    {
+      "at": 1371,
+      "method": "getProgramInfoLog",
+      "ms": 62.8,
+      "stack": "    at onFirstUse (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36858:33) |     at WebGLProgram.getUniforms (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36905:7) |     at setProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43510:34) |     at WebGLRenderer.renderBufferDirect (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:42825:23) |     at renderObject (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43295:15)"
+    },
+    {
+      "at": 1438,
+      "method": "compileShader",
+      "ms": 0,
+      "stack": "    at WebGLShader (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36360:6) |     at new WebGLProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36846:26) |     at Object.acquireProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:37466:17) |     at getProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43336:32) |     at setProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43502:120)"
+    },
+    {
+      "at": 1440,
+      "method": "compileShader",
+      "ms": 0,
+      "stack": "    at WebGLShader (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36360:6) |     at new WebGLProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36847:28) |     at Object.acquireProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:37466:17) |     at getProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43336:32) |     at setProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43502:120)"
+    },
+    {
+      "at": 1440,
+      "method": "linkProgram",
+      "ms": 0,
+      "stack": "    at new WebGLProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36855:6) |     at Object.acquireProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:37466:17) |     at getProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43336:32) |     at setProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43502:120) |     at WebGLRenderer.renderBufferDirect (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:42825:23)"
+    },
+    {
+      "at": 1440,
+      "method": "getProgramInfoLog",
+      "ms": 53.3,
+      "stack": "    at onFirstUse (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36858:33) |     at WebGLProgram.getUniforms (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36905:7) |     at setProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43510:34) |     at WebGLRenderer.renderBufferDirect (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:42825:23) |     at renderObject (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43295:15)"
+    },
+    {
+      "at": 1496,
+      "method": "compileShader",
+      "ms": 0,
+      "stack": "    at WebGLShader (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36360:6) |     at new WebGLProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36846:26) |     at Object.acquireProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:37466:17) |     at getProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43336:32) |     at setProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43502:120)"
+    },
+    {
+      "at": 1497,
+      "method": "compileShader",
+      "ms": 0,
+      "stack": "    at WebGLShader (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36360:6) |     at new WebGLProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36847:28) |     at Object.acquireProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:37466:17) |     at getProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43336:32) |     at setProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43502:120)"
+    },
+    {
+      "at": 1497,
+      "method": "linkProgram",
+      "ms": 0,
+      "stack": "    at new WebGLProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36855:6) |     at Object.acquireProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:37466:17) |     at getProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43336:32) |     at setProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43502:120) |     at WebGLRenderer.renderBufferDirect (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:42825:23)"
+    },
+    {
+      "at": 1497,
+      "method": "getProgramInfoLog",
+      "ms": 47.8,
+      "stack": "    at onFirstUse (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36858:33) |     at WebGLProgram.getUniforms (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36905:7) |     at setProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43510:34) |     at WebGLRenderer.renderBufferDirect (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:42825:23) |     at renderObject (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43295:15)"
+    },
+    {
+      "at": 1546,
+      "method": "compileShader",
+      "ms": 0,
+      "stack": "    at WebGLShader (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36360:6) |     at new WebGLProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36846:26) |     at Object.acquireProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:37466:17) |     at getProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43336:32) |     at setProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43502:120)"
+    },
+    {
+      "at": 1547,
+      "method": "compileShader",
+      "ms": 0,
+      "stack": "    at WebGLShader (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36360:6) |     at new WebGLProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36847:28) |     at Object.acquireProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:37466:17) |     at getProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43336:32) |     at setProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43502:120)"
+    },
+    {
+      "at": 1547,
+      "method": "linkProgram",
+      "ms": 0,
+      "stack": "    at new WebGLProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36855:6) |     at Object.acquireProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:37466:17) |     at getProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43336:32) |     at setProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43502:120) |     at WebGLRenderer.renderBufferDirect (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:42825:23)"
+    },
+    {
+      "at": 1547,
+      "method": "getProgramInfoLog",
+      "ms": 40.6,
+      "stack": "    at onFirstUse (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36858:33) |     at WebGLProgram.getUniforms (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36905:7) |     at setProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43510:34) |     at WebGLRenderer.renderBufferDirect (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:42825:23) |     at renderObject (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43295:15)"
+    },
+    {
+      "at": 1591,
+      "method": "compileShader",
+      "ms": 0,
+      "stack": "    at WebGLShader (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36360:6) |     at new WebGLProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36846:26) |     at Object.acquireProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:37466:17) |     at getProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43336:32) |     at setProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43502:120)"
+    },
+    {
+      "at": 1592,
+      "method": "compileShader",
+      "ms": 0,
+      "stack": "    at WebGLShader (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36360:6) |     at new WebGLProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36847:28) |     at Object.acquireProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:37466:17) |     at getProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43336:32) |     at setProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43502:120)"
+    },
+    {
+      "at": 1592,
+      "method": "linkProgram",
+      "ms": 0,
+      "stack": "    at new WebGLProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36855:6) |     at Object.acquireProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:37466:17) |     at getProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43336:32) |     at setProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43502:120) |     at WebGLRenderer.renderBufferDirect (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:42825:23)"
+    },
+    {
+      "at": 1592,
+      "method": "getProgramInfoLog",
+      "ms": 12.3,
+      "stack": "    at onFirstUse (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36858:33) |     at WebGLProgram.getUniforms (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36905:7) |     at setProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43510:34) |     at WebGLRenderer.renderBufferDirect (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:42825:23) |     at renderObject (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43295:15)"
+    },
+    {
+      "at": 1607,
+      "method": "compileShader",
+      "ms": 0,
+      "stack": "    at WebGLShader (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36360:6) |     at new WebGLProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36846:26) |     at Object.acquireProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:37466:17) |     at getProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43336:32) |     at setProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43502:120)"
+    },
+    {
+      "at": 1607,
+      "method": "compileShader",
+      "ms": 0,
+      "stack": "    at WebGLShader (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36360:6) |     at new WebGLProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36847:28) |     at Object.acquireProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:37466:17) |     at getProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43336:32) |     at setProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43502:120)"
+    },
+    {
+      "at": 1607,
+      "method": "linkProgram",
+      "ms": 0,
+      "stack": "    at new WebGLProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36855:6) |     at Object.acquireProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:37466:17) |     at getProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43336:32) |     at setProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43502:120) |     at WebGLRenderer.renderBufferDirect (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:42825:23)"
+    },
+    {
+      "at": 1607,
+      "method": "getProgramInfoLog",
+      "ms": 42.5,
+      "stack": "    at onFirstUse (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36858:33) |     at WebGLProgram.getUniforms (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36905:7) |     at setProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43510:34) |     at WebGLRenderer.renderBufferDirect (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:42825:23) |     at renderObject (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43295:15)"
+    },
+    {
+      "at": 1651,
+      "method": "compileShader",
+      "ms": 0.1,
+      "stack": "    at WebGLShader (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36360:6) |     at new WebGLProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36846:26) |     at Object.acquireProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:37466:17) |     at getProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43336:32) |     at setProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43502:120)"
+    },
+    {
+      "at": 1652,
+      "method": "compileShader",
+      "ms": 0,
+      "stack": "    at WebGLShader (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36360:6) |     at new WebGLProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36847:28) |     at Object.acquireProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:37466:17) |     at getProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43336:32) |     at setProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43502:120)"
+    },
+    {
+      "at": 1652,
+      "method": "linkProgram",
+      "ms": 0,
+      "stack": "    at new WebGLProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36855:6) |     at Object.acquireProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:37466:17) |     at getProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43336:32) |     at setProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43502:120) |     at WebGLRenderer.renderBufferDirect (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:42825:23)"
+    },
+    {
+      "at": 1659,
+      "method": "compileShader",
+      "ms": 0,
+      "stack": "    at WebGLShader (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36360:6) |     at new WebGLProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36846:26) |     at Object.acquireProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:37466:17) |     at getProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43336:32) |     at setProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43502:120)"
+    },
+    {
+      "at": 1659,
+      "method": "compileShader",
+      "ms": 0,
+      "stack": "    at WebGLShader (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36360:6) |     at new WebGLProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36847:28) |     at Object.acquireProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:37466:17) |     at getProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43336:32) |     at setProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43502:120)"
+    },
+    {
+      "at": 1659,
+      "method": "linkProgram",
+      "ms": 0,
+      "stack": "    at new WebGLProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36855:6) |     at Object.acquireProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:37466:17) |     at getProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43336:32) |     at setProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43502:120) |     at WebGLRenderer.renderBufferDirect (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:42825:23)"
+    },
+    {
+      "at": 1665,
+      "method": "compileShader",
+      "ms": 0,
+      "stack": "    at WebGLShader (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36360:6) |     at new WebGLProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36846:26) |     at Object.acquireProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:37466:17) |     at getProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43336:32) |     at setProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43502:120)"
+    },
+    {
+      "at": 1665,
+      "method": "compileShader",
+      "ms": 0,
+      "stack": "    at WebGLShader (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36360:6) |     at new WebGLProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36847:28) |     at Object.acquireProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:37466:17) |     at getProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43336:32) |     at setProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43502:120)"
+    },
+    {
+      "at": 1665,
+      "method": "linkProgram",
+      "ms": 0.1,
+      "stack": "    at new WebGLProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36855:6) |     at Object.acquireProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:37466:17) |     at getProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43336:32) |     at setProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43502:120) |     at WebGLRenderer.renderBufferDirect (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:42825:23)"
+    },
+    {
+      "at": 1670,
+      "method": "compileShader",
+      "ms": 0,
+      "stack": "    at WebGLShader (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36360:6) |     at new WebGLProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36846:26) |     at Object.acquireProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:37466:17) |     at getProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43336:32) |     at setProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43502:120)"
+    },
+    {
+      "at": 1671,
+      "method": "compileShader",
+      "ms": 0,
+      "stack": "    at WebGLShader (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36360:6) |     at new WebGLProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36847:28) |     at Object.acquireProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:37466:17) |     at getProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43336:32) |     at setProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43502:120)"
+    },
+    {
+      "at": 1671,
+      "method": "linkProgram",
+      "ms": 0,
+      "stack": "    at new WebGLProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36855:6) |     at Object.acquireProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:37466:17) |     at getProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43336:32) |     at setProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43502:120) |     at WebGLRenderer.renderBufferDirect (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:42825:23)"
+    },
+    {
+      "at": 2763,
+      "method": "compileShader",
+      "ms": 0,
+      "stack": "    at WebGLShader (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36360:6) |     at new WebGLProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36846:26) |     at Object.acquireProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:37466:17) |     at getProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43336:32) |     at setProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43502:120)"
+    },
+    {
+      "at": 2763,
+      "method": "compileShader",
+      "ms": 0,
+      "stack": "    at WebGLShader (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36360:6) |     at new WebGLProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36847:28) |     at Object.acquireProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:37466:17) |     at getProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43336:32) |     at setProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43502:120)"
+    },
+    {
+      "at": 2763,
+      "method": "linkProgram",
+      "ms": 0,
+      "stack": "    at new WebGLProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36855:6) |     at Object.acquireProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:37466:17) |     at getProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43336:32) |     at setProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43502:120) |     at WebGLRenderer.renderBufferDirect (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:42825:23)"
+    },
+    {
+      "at": 2765,
+      "method": "compileShader",
+      "ms": 0,
+      "stack": "    at WebGLShader (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36360:6) |     at new WebGLProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36846:26) |     at Object.acquireProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:37466:17) |     at getProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43336:32) |     at setProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43502:120)"
+    },
+    {
+      "at": 2765,
+      "method": "compileShader",
+      "ms": 0,
+      "stack": "    at WebGLShader (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36360:6) |     at new WebGLProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36847:28) |     at Object.acquireProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:37466:17) |     at getProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43336:32) |     at setProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43502:120)"
+    },
+    {
+      "at": 2765,
+      "method": "linkProgram",
+      "ms": 0.1,
+      "stack": "    at new WebGLProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36855:6) |     at Object.acquireProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:37466:17) |     at getProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43336:32) |     at setProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43502:120) |     at WebGLRenderer.renderBufferDirect (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:42825:23)"
+    },
+    {
+      "at": 2766,
+      "method": "getProgramInfoLog",
+      "ms": 6.4,
+      "stack": "    at onFirstUse (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36858:33) |     at WebGLProgram.getUniforms (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36905:7) |     at setProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43510:34) |     at WebGLRenderer.renderBufferDirect (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:42825:23) |     at renderObject (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:38480:20)"
+    },
+    {
+      "at": 2775,
+      "method": "compileShader",
+      "ms": 0,
+      "stack": "    at WebGLShader (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36360:6) |     at new WebGLProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36846:26) |     at Object.acquireProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:37466:17) |     at getProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43336:32) |     at setProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43502:120)"
+    },
+    {
+      "at": 2775,
+      "method": "compileShader",
+      "ms": 0,
+      "stack": "    at WebGLShader (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36360:6) |     at new WebGLProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36847:28) |     at Object.acquireProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:37466:17) |     at getProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43336:32) |     at setProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43502:120)"
+    },
+    {
+      "at": 2775,
+      "method": "linkProgram",
+      "ms": 0,
+      "stack": "    at new WebGLProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36855:6) |     at Object.acquireProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:37466:17) |     at getProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43336:32) |     at setProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43502:120) |     at WebGLRenderer.renderBufferDirect (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:42825:23)"
+    },
+    {
+      "at": 2775,
+      "method": "getProgramInfoLog",
+      "ms": 8.4,
+      "stack": "    at onFirstUse (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36858:33) |     at WebGLProgram.getUniforms (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:36905:7) |     at setProgram (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43510:34) |     at WebGLRenderer.renderBufferDirect (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:42825:23) |     at renderObject (http://127.0.0.1:5173/portfolio/node_modules/.vite/deps/chunk-KXRUJEWZ.js?v=191d0957:43295:15)"
+    }
+  ],
+  "click": []
+}

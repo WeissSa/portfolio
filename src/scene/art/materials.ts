@@ -1,0 +1,273 @@
+/**
+ * Shared room materials (REWORK_PLAN §3.5/§4.3): MeshStandardMaterial with the
+ * canvas-generated painterly maps, muted steampunk palette. Emissive/keyed
+ * materials (bulb, LED, monitor, night glass, projector beam) are basic or
+ * emissive so they read as light sources without extra shadow cost.
+ *
+ * Factories take the texture map produced by renderTexturePlans(); callers own
+ * disposal (disposeRoomMaterials).
+ */
+import * as THREE from 'three';
+import { DESIGN_TOKENS } from '../../styles/design-tokens';
+import { PALETTE } from './palette';
+import type { TextureKey } from './textures';
+
+export type MaterialKey =
+  | 'wood'
+  | 'woodDark'
+  | 'floor'
+  | 'plaster'
+  | 'brass'
+  | 'paper'
+  | 'rug'
+  | 'metalDark'
+  | 'monitorScreen'
+  | 'nightGlass'
+  | 'lampShade'
+  | 'bulb'
+  | 'led'
+  | 'beam'
+  | 'screenFabric'
+  | 'silhouette'
+  | 'book'
+  | 'bookHero'
+  | 'bookAtlas'
+  | 'caseLabel'
+  | 'plaqueFace'
+  | 'plaqueAccent';
+
+/**
+ * Non-enumerable `textureClones` keeps the material map indexable by
+ * MaterialKey (and keeps Object.values() clean) while still owning the two
+ * cloned textures created by withRepeat(). They must be disposed alongside the
+ * materials: Room.tsx creates/disposes this object on every mode toggle, and
+ * a clone holds its own GPU texture (commit 5 review fix).
+ */
+export type RoomMaterials = Record<MaterialKey, THREE.Material> & {
+  readonly textureClones?: readonly THREE.Texture[];
+};
+
+function withRepeat(
+  texture: THREE.Texture | undefined,
+  repeat: [number, number],
+  clones: THREE.Texture[],
+): THREE.Texture | undefined {
+  if (!texture) return undefined;
+  const clone = texture.clone();
+  clone.repeat.set(repeat[0], repeat[1]);
+  clone.needsUpdate = true;
+  clones.push(clone);
+  return clone;
+}
+
+function defined<T extends object>(params: T): Partial<T> {
+  const out: Partial<T> = {};
+  for (const key of Object.keys(params) as (keyof T)[]) {
+    if (params[key] !== undefined) out[key] = params[key];
+  }
+  return out;
+}
+
+function standard(
+  params: THREE.MeshStandardMaterialParameters,
+): THREE.MeshStandardMaterial {
+  // Drop undefined keys (e.g. an absent texture map) so three does not warn
+  // "parameter 'map' has value of undefined" when the room renders headless
+  // without its canvas-generated textures.
+  return new THREE.MeshStandardMaterial(defined(params));
+}
+
+/**
+ * Create one material per MaterialKey. Missing textures degrade gracefully to
+ * untextured materials (used by headless tests).
+ */
+export function createRoomMaterials(
+  textures: Partial<Record<TextureKey, THREE.Texture>> = {},
+): RoomMaterials {
+  const clones: THREE.Texture[] = [];
+  const materials: RoomMaterials = {
+    wood: standard({
+      map: textures.wood,
+      color: textures.wood
+        ? DESIGN_TOKENS.material.textureNeutral
+        : PALETTE.woodMid,
+      roughness: 0.82,
+      metalness: 0.04,
+    }),
+    woodDark: standard({
+      map: withRepeat(textures.wood, [2, 2], clones),
+      color: textures.wood ? DESIGN_TOKENS.material.woodTint : PALETTE.woodDark,
+      roughness: 0.85,
+      metalness: 0.04,
+    }),
+    // The room floor shares the wood map but adds baked vertex-color edge AO
+    // (commit 3b) so the plane grounds against the walls/skirting.
+    floor: standard({
+      map: textures.wood,
+      color: textures.wood
+        ? DESIGN_TOKENS.material.textureNeutral
+        : PALETTE.woodMid,
+      roughness: 0.85,
+      metalness: 0.04,
+      vertexColors: true,
+    }),
+    plaster: standard({
+      map: withRepeat(textures.plaster, [2.5, 1.5], clones),
+      color: textures.plaster
+        ? DESIGN_TOKENS.material.textureNeutral
+        : PALETTE.plasterTeal,
+      roughness: 0.95,
+      metalness: 0,
+    }),
+    brass: standard({
+      map: textures.brass,
+      color: textures.brass
+        ? DESIGN_TOKENS.material.textureNeutral
+        : PALETTE.brass,
+      roughness: 0.38,
+      metalness: 0.65,
+    }),
+    paper: standard({
+      map: textures.paper,
+      color: textures.paper
+        ? DESIGN_TOKENS.material.textureNeutral
+        : PALETTE.paper,
+      roughness: 0.92,
+      metalness: 0,
+    }),
+    rug: standard({
+      map: textures.rug,
+      color: textures.rug
+        ? DESIGN_TOKENS.material.textureNeutral
+        : PALETTE.rugIndigo,
+      roughness: 1,
+      metalness: 0,
+    }),
+    metalDark: standard({
+      color: PALETTE.metalDark,
+      roughness: 0.5,
+      metalness: 0.6,
+    }),
+    // Self-lit surfaces: modest emissive so they glow without light probes.
+    monitorScreen: standard({
+      map: textures.monitor,
+      color: textures.monitor
+        ? DESIGN_TOKENS.material.textureNeutral
+        : DESIGN_TOKENS.material.monitorBack,
+      emissive: new THREE.Color(DESIGN_TOKENS.material.monitorEmissive),
+      emissiveMap: textures.monitor,
+      emissiveIntensity: 0.5,
+      roughness: 0.35,
+      metalness: 0.1,
+    }),
+    nightGlass: standard({
+      color: PALETTE.nightBlue,
+      emissive: new THREE.Color(PALETTE.nightGlow),
+      emissiveIntensity: 0.85,
+      roughness: 0.25,
+      metalness: 0.1,
+    }),
+    lampShade: standard({
+      color: DESIGN_TOKENS.material.lampShade,
+      emissive: new THREE.Color(PALETTE.lampWarm),
+      emissiveIntensity: 0.35,
+      roughness: 0.9,
+      metalness: 0,
+      side: THREE.DoubleSide,
+    }),
+    bulb: new THREE.MeshBasicMaterial({ color: PALETTE.lampWarm }),
+    led: new THREE.MeshBasicMaterial({ color: DESIGN_TOKENS.material.led }),
+    // Projector light cone: additive, unlit, no depth writes (§3.5 light cone).
+    beam: new THREE.MeshBasicMaterial({
+      color: DESIGN_TOKENS.material.beam,
+      transparent: true,
+      opacity: 0.07,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+    }),
+    screenFabric: standard({
+      map: textures.projector,
+      color: textures.projector
+        ? DESIGN_TOKENS.material.textureNeutral
+        : PALETTE.screenCloth,
+      emissive: new THREE.Color(DESIGN_TOKENS.material.textureNeutral),
+      emissiveMap: textures.projector,
+      emissiveIntensity: 0.18,
+      roughness: 0.9,
+      metalness: 0,
+    }),
+    silhouette: standard({
+      color: DESIGN_TOKENS.material.silhouette,
+      roughness: 1,
+      metalness: 0,
+    }),
+    book: standard({
+      color: DESIGN_TOKENS.material.textureNeutral,
+      roughness: 0.85,
+      metalness: 0.02,
+    }),
+    // The 13 pickable post-bodies: per-INSTANCE color (setColorAt) tints the
+    // diffuse; a faint uniform emissive gives every volume a warm library glow
+    // (featured ones also read larger + brass/red via their instance color).
+    bookHero: standard({
+      color: DESIGN_TOKENS.material.textureNeutral,
+      emissive: new THREE.Color(DESIGN_TOKENS.material.bookHeroEmissive),
+      emissiveIntensity: 0.32,
+      roughness: 0.78,
+      metalness: 0.04,
+    }),
+    // Shared spine atlas: commit 6 remaps each label quad into its own cell.
+    bookAtlas: standard({
+      map: textures.bookAtlas,
+      color: textures.bookAtlas
+        ? DESIGN_TOKENS.material.textureNeutral
+        : PALETTE.bookCloth,
+      roughness: 0.85,
+      metalness: 0.02,
+    }),
+    caseLabel: standard({
+      map: textures.caseLabels,
+      color: textures.caseLabels
+        ? DESIGN_TOKENS.material.textureNeutral
+        : PALETTE.p5White,
+      roughness: 0.7,
+      metalness: 0.05,
+    }),
+    // Commit 4: gilt lettering on the DARK inlay (never on brass). A faint
+    // emissiveMap keeps the lettering legible in the establishing shot.
+    plaqueFace: standard({
+      map: textures.plaque,
+      color: textures.plaque
+        ? DESIGN_TOKENS.material.textureNeutral
+        : DESIGN_TOKENS.climate.projectorInk,
+      emissive: new THREE.Color(DESIGN_TOKENS.climate.projectorPlaqueText),
+      emissiveMap: textures.plaque,
+      emissiveIntensity: 0.35,
+      roughness: 0.82,
+      metalness: 0.08,
+    }),
+    // Thin purple inlay accent — decoration only, never carries text.
+    plaqueAccent: new THREE.MeshBasicMaterial({
+      color: DESIGN_TOKENS.p5.link,
+    }),
+  };
+  // Non-enumerable: consumers indexing by MaterialKey and Object.values()
+  // loops stay exactly as before, but teardown can reach the clones.
+  Object.defineProperty(materials, 'textureClones', {
+    value: clones,
+    enumerable: false,
+  });
+  return materials;
+}
+
+export function disposeRoomMaterials(materials: RoomMaterials): void {
+  // textureClones is non-enumerable, so the runtime values are all materials;
+  // the cast only narrows the optional field away for TypeScript.
+  for (const material of Object.values(materials) as THREE.Material[]) {
+    material.dispose();
+  }
+  // withRepeat() clones share the source image but own a separate GPU texture;
+  // dispose them explicitly so repeated 2D↔3D toggles cannot leak them.
+  for (const clone of materials.textureClones ?? []) clone.dispose();
+}

@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sam Weiss's Software Engineering Portfolio</title>
+    <meta
+      name="description"
+      content="Sam Weiss is a software engineer. Explore Sam's portfolio, featuring projects and insights on climate change, weather patterns, and environmental data visualization."
+    />
+    <meta
+      name="keywords"
+      content="Sam Weiss, Samuel Weiss, Sam Weiss Software, Sam Weiss Portfolio, Sam Weiss Projects, Sam Weiss Blog, Sam Weiss Developer, Sam Weiss Engineer, software engineer, portfolio, climate change, weather, data visualization, environmental, Toronto, historical weather"
+    />
+    <meta name="author" content="Sam Weiss" />
+    <meta
+      property="og:title"
+      content="Sam Weiss's Software Engineering Portfolio"
+    />
+    <meta
+      property="og:description"
+      content="Sam Weiss is a software engineer. Explore Sam's portfolio, featuring projects and insights on climate change, weather patterns, and environmental data visualization."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://weisssa.github.io/portfolio/" />
+    <meta
+      property="og:image"
+      content="https://weisssa.github.io/portfolio/banner.jpg"
+    />
+    <link rel="icon" href="/portfolio/favicon.ico" />
+    <!--
+      Hand-authored critical CSS for the first paint. Vite's dev server injects
+      app CSS from JS (main.tsx), so the static mirror injected into #root
+      would otherwise flash as raw HTML. This block ships in dev HTML; in the
+      build it is replaced by the full inlined bundle CSS (see
+      injectCriticalCss in scripts/static-mirror.ts).
+    -->
+    <style data-critical-mirror>
+      :root {
+        --p5-black: #10191a;
+        --p5-ink: #1c2626;
+        --p5-red: #b08d4f;
+        --p5-white: #e8e0cf;
+        --p5-yellow: #d4b06a;
+        --p5-link: #b39ddb;
+        --p5-link-visited: #c4b5fd;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: var(--p5-black);
+        color: var(--p5-white);
+      }
+      .static-mirror {
+        max-width: 72rem;
+        margin: 0 auto;
+        padding: 1rem 1.25rem 3rem;
+        color: var(--p5-white);
+        font-family:
+          system-ui,
+          -apple-system,
+          'Segoe UI',
+          Roboto,
+          sans-serif;
+        line-height: 1.55;
+      }
+      .static-mirror h1,
+      .static-mirror h2,
+      .static-mirror h3 {
+        font-family: 'Anton', 'Arial Narrow', Haettenschweiler, sans-serif;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+        line-height: 1.05;
+        color: var(--p5-white);
+      }
+      .static-mirror h1 {
+        margin: 0.25rem 0 0.5rem;
+        font-size: clamp(2rem, 7vw, 3.5rem);
+        color: var(--p5-red);
+        transform: skewX(-6deg);
+      }
+      .static-mirror h2 {
+        margin: 2rem 0 0.75rem;
+        padding-left: 0.6rem;
+        font-size: clamp(1.5rem, 4vw, 2.25rem);
+        border-left: 6px solid var(--p5-red);
+      }
+      .static-mirror h3 {
+        margin: 1.25rem 0 0.4rem;
+        font-size: 1.15rem;
+        color: var(--p5-yellow);
+      }
+      .static-mirror p,
+      .static-mirror ul {
+        margin: 0.4rem 0 0.8rem;
+      }
+      .static-mirror ul {
+        padding-left: 1.25rem;
+      }
+      .static-mirror li {
+        margin: 0.15rem 0;
+      }
+      .static-mirror a {
+        color: var(--p5-link);
+        font-weight: 700;
+        text-decoration: underline;
+      }
+      .static-mirror a:visited {
+        color: var(--p5-link-visited);
+      }
+      .static-mirror header {
+        padding-bottom: 0.5rem;
+        border-bottom: 4px solid var(--p5-red);
+      }
+      .static-mirror nav ul {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem 1rem;
+        margin: 0.75rem 0 1rem;
+        padding: 0;
+        list-style: none;
+      }
+      .static-mirror article {
+        margin: 1rem 0;
+        padding: 0.35rem 0.9rem;
+        background: var(--p5-ink);
+        border-top: 3px solid var(--p5-red);
+      }
+      .static-mirror footer {
+        margin-top: 2rem;
+        padding-top: 0.5rem;
+        border-top: 4px solid var(--p5-red);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
