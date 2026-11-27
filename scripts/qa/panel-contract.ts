@@ -52,6 +52,20 @@ export async function assertPanelContract(
     'panel is not clipped at the bottom',
   ).toBeLessThanOrEqual(viewport.height + 1);
 
+  // The pointer menu stays reachable during a detail, but must not cover it.
+  const strip = page.locator('.pointer-menu-strip');
+  if (await strip.isVisible()) {
+    const menu = await strip.boundingBox();
+    if (menu) {
+      const overlaps =
+        rect.x < menu.x + menu.width &&
+        menu.x < rect.x + rect.width &&
+        rect.y < menu.y + menu.height &&
+        menu.y < rect.y + rect.height;
+      expect(overlaps, 'panel does not overlap the pointer menu').toBe(false);
+    }
+  }
+
   const body = panel.locator('.detail-mirror__body');
   const metrics = await body.evaluate((el) => ({
     overflowY: getComputedStyle(el).overflowY,
