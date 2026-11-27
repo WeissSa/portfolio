@@ -120,10 +120,24 @@ describe('in-world HOME control', () => {
     );
     expect([y, z]).toEqual([-0.36, -1.1]);
 
+    // HOME must win even while an in-world detail owns the camera: opening a
+    // detail closes the others by design, so set the live one and pick HOME.
+    act(() => {
+      usePortfolioStore.getState().selectPost('detail-post');
+      window.location.hash = '#/experience';
+    });
+    expect(usePortfolioStore.getState().selectedPostId).toBe('detail-post');
+    expect(window.location.hash).toBe('#/experience');
+
     const stopPropagation = vi.fn();
     act(() => controls()[0]!.props.onClick({ stopPropagation }));
     expect(stopPropagation).toHaveBeenCalledTimes(1);
     expect(window.location.hash).toBe('#/');
+    const afterHome = usePortfolioStore.getState();
+    expect(afterHome.selectedPostId).toBeNull();
+    expect(afterHome.selectedProjectId).toBeNull();
+    expect(afterHome.climatePanelOpen).toBe(false);
+    expect(afterHome.desktopOpen).toBe(false);
 
     act(() => usePortfolioStore.setState({ activeZone: '/' }));
     expect(controls()).toHaveLength(0);
@@ -175,16 +189,25 @@ describe('in-world HOME control', () => {
     expect(position[0]).toBeLessThan(0); // left-of-centre = visible band
     await renderer.unmount();
 
-    // Pure helper across the QA aspect range and the wide desktop case.
-    for (const aspect of [0.75, 0.9, 1.125, 1.6]) {
+    // Practical QA aspects + wide desktop. 0.75 sits on the clamp boundary
+    // (~0.74), where the ideal NDC -0.5 centre becomes assertion-brittle; the
+    // extreme narrow case is checked explicitly below instead.
+    for (const aspect of [0.8, 0.9, 1.125, 1.6]) {
       const placement = homeControlPlacement(aspect);
       const halfWidth =
         1.1 * Math.tan((HOME_FOV_DEGREES * Math.PI) / 360) * aspect;
       expect(badgeWithinFrustum(placement, aspect)).toBe(true);
-      // NDC -0.5 ⇒ the centre of the reserved left half at every aspect.
+      // NDC -0.5 ⇒ the centre of the reserved left half at these aspects.
       expect(placement[0]).toBeCloseTo(-0.5 * halfWidth, 6);
       expect(placement[1]).toBe(-0.36);
     }
+    // Below the clamp threshold the guard pulls the plate inward, still fully
+    // on screen — it must not be asserted against the unclamped NDC centre.
+    const narrow = homeControlPlacement(0.5);
+    const narrowHalfWidth =
+      1.1 * Math.tan((HOME_FOV_DEGREES * Math.PI) / 360) * 0.5;
+    expect(badgeWithinFrustum(narrow, 0.5)).toBe(true);
+    expect(narrow[0]).toBeGreaterThan(-0.5 * narrowHalfWidth);
   });
 
   it('disposes only the material on hover; geometry/texture on true unmount', async () => {

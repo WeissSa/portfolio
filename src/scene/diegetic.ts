@@ -2,8 +2,8 @@
  * Diegetic menu geometry + framing constants (art-overhaul commit 4/4b).
  *
  * The WALL PLAQUE is the one canonical global navigation surface. The CRT dock
- * mirrors it only in the monitor close-up; the projector strip is a
- * climate-zone-LOCAL menu (year / back / info), never a second global nav.
+ * mirrors it only in the monitor close-up; the projector strip is ambient
+ * climate décor (title / year / heatmap / "OPEN DETAILS"), never a second nav.
  * Pure data + a perspective-projector helper, so the Playwright frustum /
  * occlusion harness and the unit tests measure the SAME numbers the room uses.
  */
@@ -120,8 +120,9 @@ export const CRT_DOCK = {
 } as const;
 
 /**
- * Projected panel: a CLIMATE-LOCAL strip painted into the bottom of the live
- * heatmap texture (year dial + back + info). Not a global nav duplicate.
+ * Projected panel: an ambient CLIMATE strip painted into the bottom of the live
+ * heatmap texture (year dial + "OPEN DETAILS" trigger). The readable detail
+ * copy lives only in the single DOM panel, never painted on this wall too.
  */
 export const PROJECTED_PANEL = {
   /** Screen centre in world space (SCREEN_POSITION from placement.ts). */

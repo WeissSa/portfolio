@@ -62,16 +62,6 @@ export function motionWindow(remaining: number): number {
   return Math.sin((Math.PI * remaining) / DRIFT_FADE_DISTANCE);
 }
 
-/**
- * Monotone 0→1 envelope used by framing tests. Zero at settle guarantees an
- * exact authored viewpoint at rest. (The render loop gates drift with the
- * smoother `motionWindow`; this helper documents the monotone bound.)
- */
-export function driftEnvelope(remaining: number): number {
-  if (remaining <= 0) return 0;
-  return Math.min(1, remaining / DRIFT_FADE_DISTANCE);
-}
-
 /** Drift is disabled for reduced-motion cuts and while paused/hidden. */
 export function motionAllowed(instant: boolean, paused: boolean): boolean {
   return !instant && !paused;

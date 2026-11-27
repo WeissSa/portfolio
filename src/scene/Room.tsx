@@ -623,9 +623,10 @@ export function RoomScene({
         onUpdate={bakeStaticMatrix}
         matrixAutoUpdate={false}
       >
-        {/* Commit 9: the static cloth is replaced by the live climate
-            CanvasTexture (heatmap + today widget + attribution) with a year
-            dial; the room-owned projector body + light cone above stay put. */}
+        {/* The static cloth is replaced by the live climate CanvasTexture
+            (title + year + heatmap + "OPEN DETAILS"); verdict, statement and
+            attributions stay only in the readable DOM panel. The room-owned
+            projector body + light cone above stay put. */}
         <ClimateProjector
           screenGeometry={furniture.screenCloth}
           materials={materials}

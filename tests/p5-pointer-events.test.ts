@@ -68,12 +68,11 @@ describe('3D canvas pointer routing (review fix A2)', () => {
     );
   });
 
-  it('renders the desktop zoom full-screen and above the shell', () => {
-    expect(bodyFor('.desktop-zoom')).toMatch(/position:\s*fixed/);
-    expect(bodyFor('.desktop-zoom')).toMatch(/z-index:\s*10/);
-    // Crossfade: the keyframes ramp opacity from transparent to opaque.
-    expect(P5_CSS).toMatch(
-      /@keyframes desktop-zoom-in\s*\{[\s\S]*?opacity:\s*0[\s\S]*?opacity:\s*1/,
-    );
+  it('keeps only the live detail class, not the removed zoom/overlay rules', () => {
+    expect(P5_CSS).not.toMatch(/\.desktop-zoom(?:__|\s|\{)/);
+    expect(P5_CSS).not.toMatch(/\.post-detail-overlay\s*\{/);
+    expect(P5_CSS).not.toMatch(/\.post-detail-backdrop\s*\{/);
+    // DetailMirror still uses this one for its tokenized rust shadow.
+    expect(bodyFor('.post-detail-card')).toMatch(/box-shadow/);
   });
 });

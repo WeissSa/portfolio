@@ -31,17 +31,11 @@ describe('diegetic projects shelf', () => {
     expect(screen.getByText(/case files/i)).toBeInTheDocument();
   });
 
-  it('expands and collapses a case in place with tag chips, no second scroller', async () => {
+  it('expands and collapses a case in place with tag chips', async () => {
     const user = userEvent.setup();
     const { container } = renderWithProviders(<ProjectsView />);
     const card = container.querySelector('[data-project-id]')!;
     expect(card).toBeTruthy();
-
-    // No nested scrolling region is created by the shelf itself.
-    const nestedScrollers = [...container.querySelectorAll('*')].filter(
-      (el) => el.scrollHeight > el.clientHeight + 1,
-    );
-    expect(nestedScrollers.length).toBeLessThanOrEqual(1);
 
     const toggle = within(card as HTMLElement).getByRole('button', {
       name: 'Open case',

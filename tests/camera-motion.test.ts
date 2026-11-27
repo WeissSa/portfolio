@@ -8,7 +8,6 @@ import {
   DRIFT_FADE_DISTANCE,
   IDLE_DRIFT_AMPLITUDE,
   idleDriftOffset,
-  driftEnvelope,
   motionAllowed,
   motionWindow,
 } from '../src/scene/camera-motion';
@@ -96,17 +95,27 @@ describe('smooth motion window (no pose jump at departure or arrival)', () => {
     }
   });
 
-  it('monotone envelope is bounded and exactly zero at settle', () => {
-    expect(driftEnvelope(0)).toBe(0);
-    expect(driftEnvelope(-0.1)).toBe(0);
+  it('real motion window ramps up to its peak then back down to settle', () => {
+    // The render loop uses `motionWindow`, not a linear envelope. It is
+    // monotone on each side of the peak (and exactly zero at settle).
+    const peak = DRIFT_FADE_DISTANCE / 2;
     let previous = 0;
-    for (let r = 0; r <= DRIFT_FADE_DISTANCE * 2; r += 0.05) {
-      const value = driftEnvelope(r);
+    for (let r = 0; r <= peak; r += 0.01) {
+      const value = motionWindow(r);
       expect(value).toBeGreaterThanOrEqual(previous);
       expect(value).toBeLessThanOrEqual(1);
       previous = value;
     }
-    expect(driftEnvelope(DRIFT_FADE_DISTANCE)).toBe(1);
+    expect(previous).toBeLessThanOrEqual(1);
+    expect(motionWindow(peak)).toBeCloseTo(1, 6);
+    previous = motionWindow(peak);
+    for (let r = peak; r <= DRIFT_FADE_DISTANCE; r += 0.01) {
+      const value = motionWindow(r);
+      expect(value).toBeLessThanOrEqual(previous + 1e-9);
+      expect(value).toBeGreaterThanOrEqual(0);
+      previous = value;
+    }
+    expect(motionWindow(DRIFT_FADE_DISTANCE)).toBe(0);
   });
 
   it('disables all motion under reduced motion or while paused', () => {
@@ -119,7 +128,6 @@ describe('smooth motion window (no pose jump at departure or arrival)', () => {
   it('is perfectly still at settle (idle demands 0 frames)', () => {
     // The only render-only offset is drift × window; both are zero at rest.
     expect(motionWindow(0)).toBe(0);
-    expect(driftEnvelope(0) * motionWindow(0)).toBe(0);
     expect(idleDriftOffset(0, IDLE_DRIFT_AMPLITUDE * motionWindow(0))).toEqual([
       0, 0, 0,
     ]);
