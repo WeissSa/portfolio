@@ -94,7 +94,7 @@ describe('App shell', () => {
   it('announces the active zone to screen readers', () => {
     window.location.hash = '#/projects';
     render(<App />);
-    expect(screen.getByText('Projects zone selected')).toBeInTheDocument();
+    expect(screen.getByText('Projects selected')).toBeInTheDocument();
   });
 });
 

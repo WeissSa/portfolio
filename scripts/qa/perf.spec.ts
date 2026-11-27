@@ -253,9 +253,7 @@ async function driveRuns(
     });
     (collected['mode-toggle'] ??= []).push(toggle);
     const dialog = await sample(page, 'dialog-open', async () => {
-      await page
-        .getByRole('button', { name: 'Open projector info panel' })
-        .click();
+      await page.getByRole('button', { name: 'View climate details' }).click();
       // polish(c): the detail surface is an sr-hidden a11y mirror in fine
       // pointer live 3D and a visible dialog in the coarse-pointer fallback.
       // Both are in the a11y tree; assert presence, not pixel visibility, so

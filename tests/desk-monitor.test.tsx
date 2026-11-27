@@ -97,7 +97,7 @@ describe('desktop zoom DOM (3D)', () => {
         within(zoom).getByRole('button', { name: new RegExp(label) }),
       ).toBeInTheDocument();
     }
-    expect(within(zoom).getByText(/About desktop opened/)).toBeInTheDocument();
+    expect(within(zoom).getByText(/About opened/)).toBeInTheDocument();
   });
 
   it('Escape closes the top window first, then returns to the room', async () => {
@@ -124,7 +124,7 @@ describe('desktop zoom DOM (3D)', () => {
     openZoom();
     await user.click(
       screen.getByRole('button', {
-        name: 'Close desktop and return to the room',
+        name: 'Close details',
       }),
     );
     expect(usePortfolioStore.getState().desktopOpen).toBe(false);
@@ -140,7 +140,7 @@ describe('desktop zoom DOM (3D)', () => {
     await waitFor(() =>
       expect(
         within(zoom).getByRole('button', {
-          name: 'Close desktop and return to the room',
+          name: 'Close details',
         }),
       ).toHaveFocus(),
     );

@@ -33,7 +33,7 @@ export function PostDetailOverlay() {
       onClose={() => selectPost(null)}
       closeLabel={`Close details for ${post.title}`}
     >
-      <PostCard post={post} expanded />
+      <PostCard post={post} expanded highlighted hideHeading />
       <p role="status" aria-live="polite" className="sr-only">
         Details opened for {post.title}
       </p>

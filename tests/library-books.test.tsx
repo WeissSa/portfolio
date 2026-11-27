@@ -129,19 +129,23 @@ describe('accessible DOM equivalent (never canvas-gated)', () => {
     ).not.toHaveClass('p5-card--highlight');
 
     // A PICKED book drives the same highlight via selectedPostId (the 3D → DOM
-    // bridge), independently of hover.
+    // bridge), independently of hover. The zone list is unmounted while the
+    // detail panel owns the screen, so the ONLY visible card is the one inside
+    // the panel — never a second copy behind it.
     act(() =>
       usePortfolioStore.setState({
         hoveredPostId: null,
         selectedPostId: postId(first),
       }),
     );
-    expect(main.querySelector(`[data-post-id="${postId(first)}"]`)).toHaveClass(
-      'p5-card--highlight',
+    expect(main.querySelector(`[data-post-id="${postId(first)}"]`)).toBeNull();
+    const panelCard = document.querySelector(
+      `.detail-mirror [data-post-id="${postId(first)}"]`,
     );
+    expect(panelCard).toHaveClass('p5-card--highlight');
     expect(
-      main.querySelector(`[data-post-id="${postId(second)}"]`),
-    ).not.toHaveClass('p5-card--highlight');
+      document.querySelectorAll('.detail-mirror [data-post-id]'),
+    ).toHaveLength(1);
     act(() => usePortfolioStore.setState({ selectedPostId: null }));
   });
 });

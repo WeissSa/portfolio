@@ -65,7 +65,7 @@ async function openProjector(page: Page): Promise<void> {
     await expect(page.locator('.scene-layer--ready')).toBeAttached();
     await page.waitForTimeout(SETTLE_MS);
   }
-  await page.getByRole('button', { name: 'Open projector info panel' }).click();
+  await page.getByRole('button', { name: 'View climate details' }).click();
 }
 
 async function assertReadablePanel(page: Page): Promise<void> {
@@ -131,7 +131,7 @@ test('fine-pointer live 3D: the detail panel is visible and scrollable', async (
   }));
   expect(
     restored.id === 'detail-return' ||
-      /Open projector info panel/.test(restored.text),
+      /View climate details/.test(restored.text),
     'focus must return to the trigger that opened the detail',
   ).toBe(true);
   await context.close();

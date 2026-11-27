@@ -88,6 +88,19 @@ export default function App() {
   // screen pick or by the keyboard-accessible trigger below.
   const climatePanelOpen = usePortfolioStore((s) => s.climatePanelOpen);
   const openClimatePanel = usePortfolioStore((s) => s.openClimatePanel);
+  const selectedPostId = usePortfolioStore((s) => s.selectedPostId);
+  const selectedProjectId = usePortfolioStore((s) => s.selectedProjectId);
+  /**
+   * ONE surface per content: while any detail panel owns the screen, the zone
+   * list behind it is unmounted. Otherwise the same post/climate body renders
+   * twice (expanded in the panel and again in the zone column), which is both a
+   * reading hazard and a second competing scroll container.
+   */
+  const detailOpen = Boolean(
+    selectedPostId ||
+      selectedProjectId ||
+      (mode === '3d' && (desktopOpen || climatePanelOpen)),
+  );
   const reducedMotionOptIn = usePortfolioStore((s) => s.reducedMotionOptIn);
   const setReducedMotionOptInAvailable = usePortfolioStore(
     (s) => s.setReducedMotionOptInAvailable,
@@ -211,7 +224,7 @@ export default function App() {
           pointerFine ? ' app-fine-pointer' : ''
         }${static3d ? ' app-static-3d' : ''}${
           sceneLive ? ' app-scene-live' : ''
-        }`}
+        }${detailOpen ? ' app-detail-open' : ''}`}
       >
         <a
           href="#main"
@@ -228,7 +241,7 @@ export default function App() {
 
         {/* Zone changes announced to screen readers (plan §3.3). */}
         <p aria-live="polite" className="sr-only">
-          {ZONE_NAMES[route]} zone selected
+          {ZONE_NAMES[route]} selected
         </p>
 
         {/* Reduced-motion 3D opt-in: no camera flights, so the visible ZONE
@@ -294,22 +307,28 @@ export default function App() {
             <MainMenu />
           </div>
           <main id="main" className="min-w-0 flex-1">
-            {/* Keyboard/SR equivalent of picking the 3D projector screen (§3.3).
-              Only rendered in 3D; the 2D #/climate route is untouched. */}
-            {mode === '3d' && displayRoute === '/climate' && (
-              <Button
-                type="button"
-                onClick={openClimatePanel}
-                aria-haspopup="dialog"
-                className="p5-btn p5-btn--red mb-3 min-h-[44px] px-4 font-bold"
-              >
-                Open projector info panel
-              </Button>
+            {/* The zone list is unmounted while a detail panel is open — the
+              panel is the only visible copy of that content. Reappears on close. */}
+            {!detailOpen && (
+              <>
+                {/* Keyboard/SR equivalent of picking the 3D projector screen.
+                    Only rendered in 3D; the 2D #/climate route is untouched. */}
+                {mode === '3d' && displayRoute === '/climate' && (
+                  <Button
+                    type="button"
+                    onClick={openClimatePanel}
+                    aria-haspopup="dialog"
+                    className="p5-btn p5-btn--red mb-3 min-h-[44px] px-4 font-bold"
+                  >
+                    View climate details
+                  </Button>
+                )}
+                <ZoneContent
+                  route={displayRoute}
+                  suppressAbout={mode === '3d' && desktopOpen}
+                />
+              </>
             )}
-            <ZoneContent
-              route={displayRoute}
-              suppressAbout={mode === '3d' && desktopOpen}
-            />
           </main>
         </div>
       </div>

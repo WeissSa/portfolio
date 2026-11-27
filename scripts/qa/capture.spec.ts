@@ -318,9 +318,7 @@ test.describe('key capture matrix (desktop / tablet / mobile)', () => {
     await page.locator('.scene-layer--ready').waitFor({ state: 'attached' });
     await page.waitForTimeout(SWIFT_SETTLE_MS);
     await closeDialogs(page);
-    await page
-      .getByRole('button', { name: 'Open projector info panel' })
-      .click();
+    await page.getByRole('button', { name: 'View climate details' }).click();
     await expectVisiblePanel(page, 'projector');
     const projectorMirror = page.locator('.detail-mirror');
     // Wait for CONTENT inside the mirror, not just its shell.

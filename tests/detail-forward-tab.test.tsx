@@ -89,12 +89,12 @@ const surfaces: readonly [
     new RegExp(PROJECTS[0]!.title),
     'case',
   ],
-  ['monitor', '#/about', { desktopOpen: true }, /About desktop/, 'monitor'],
+  ['monitor', '#/about', { desktopOpen: true }, /About/, 'monitor'],
   [
     'projector',
     '#/climate',
     { climatePanelOpen: true },
-    /Projector Feed/,
+    /Climate details/,
     'projector',
   ],
 ];
@@ -112,8 +112,8 @@ describe('natural forward Tab from the F2 trigger into the detail mirror', () =>
     const user = userEvent.setup();
     openDiegetic('#/climate', {});
     await user.click(
-      screen.getByRole('button', { name: 'Open projector info panel' }),
+      screen.getByRole('button', { name: 'View climate details' }),
     );
-    await proxyTabReachesMirror('projector', /Projector Feed/);
+    await proxyTabReachesMirror('projector', /Climate details/);
   });
 });

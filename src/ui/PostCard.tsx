@@ -19,6 +19,7 @@ export function PostCard({
   variant = 'library',
   expanded: controlledExpanded,
   highlighted = false,
+  hideHeading = false,
 }: {
   post: Post;
   variant?: 'library' | 'case';
@@ -26,6 +27,8 @@ export function PostCard({
   expanded?: boolean;
   /** A hovered/selected 3D book or game case highlights its DOM twin. */
   highlighted?: boolean;
+  /** The detail panel already shows the title in its header — don't repeat it. */
+  hideHeading?: boolean;
 }) {
   const [internalExpanded, setInternalExpanded] = useState(false);
   const expanded = controlledExpanded ?? internalExpanded;
@@ -43,10 +46,20 @@ export function PostCard({
       className={`p5-cut-in${highlighted ? ' p5-card--highlight' : ''}`}
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="p5-display flex-1 text-lg md:text-xl">
-          {post.featured && <StarMark />} {post.title}
-        </h3>
-        <div className="flex items-center gap-2">
+        {hideHeading ? (
+          // The dialog header already carries the title — keep it for screen
+          // readers but never paint a second copy of it inside the panel.
+          <h3 className="sr-only">
+            {post.featured && <StarMark />} {post.title}
+          </h3>
+        ) : (
+          <h3 className="p5-display flex-1 text-lg md:text-xl">
+            {post.featured && <StarMark />} {post.title}
+          </h3>
+        )}
+        <div
+          className={`flex items-center gap-2${hideHeading ? ' ml-auto' : ''}`}
+        >
           {post.repoUrl ? (
             <ActionIcon
               component="a"

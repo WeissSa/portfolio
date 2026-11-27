@@ -312,19 +312,23 @@ describe('keyboard-operable DOM equivalent (unchanged)', () => {
       'p5-card--highlight',
     );
 
-    // A PICKED case drives the same highlight via selectedProjectId.
+    // A PICKED case drives the same highlight via selectedProjectId. The zone
+    // shelf is unmounted while the detail panel is open, so only the panel's
+    // case card remains — one surface, no duplicate list behind it.
     act(() =>
       usePortfolioStore.setState({
         hoveredProjectId: null,
         selectedProjectId: firstId,
       }),
     );
-    expect(main.querySelector(`[data-project-id="${firstId}"]`)).toHaveClass(
-      'p5-card--highlight',
+    expect(main.querySelector(`[data-project-id="${firstId}"]`)).toBeNull();
+    const panelCard = document.querySelector(
+      `.detail-mirror [data-project-id="${firstId}"]`,
     );
-    expect(main.querySelector(`[data-project-id="${other}"]`)).not.toHaveClass(
-      'p5-card--highlight',
-    );
+    expect(panelCard).toHaveClass('p5-card--highlight');
+    expect(
+      document.querySelectorAll('.detail-mirror [data-project-id]'),
+    ).toHaveLength(1);
     act(() => usePortfolioStore.setState({ selectedProjectId: null }));
   });
 

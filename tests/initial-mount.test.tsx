@@ -38,9 +38,7 @@ describe('initial-mount handoff (no frame-0 jump)', () => {
 
     await user.click(screen.getByRole('link', { name: 'Projects' }));
     expect(window.location.hash).toBe('#/projects');
-    expect(
-      await screen.findByText('Projects zone selected'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Projects selected')).toBeInTheDocument();
     await waitFor(() => {
       expect(appContainer()).not.toHaveClass('app-initial');
       expect(usePortfolioStore.getState().hasNavigated).toBe(true);

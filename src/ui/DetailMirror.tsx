@@ -15,7 +15,7 @@
  * lights the matching in-world object (`detailMirrorFocused`) so the 3D frame
  * and the DOM readout stay in sync.
  */
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { useFocusTrap } from '../lib/a11y';
 import { usePortfolioStore } from '../state/store';
 
@@ -46,11 +46,12 @@ export function DetailMirror({
   surface,
   onClose,
   closeLabel,
-  closeText = 'Back to the room',
+  closeText = 'Close',
   blockEscape,
   children,
 }: DetailMirrorProps) {
   const setFocused = usePortfolioStore((state) => state.setDetailMirrorFocused);
+  const bodyRef = useRef<HTMLDivElement>(null);
   // This effect MUST run before the focus trap below: it has to remember the
   // opener while focus is still outside the panel. The trap then moves focus
   // into the dialog synchronously on mount.
@@ -91,6 +92,19 @@ export function DetailMirror({
     return () => document.removeEventListener('keydown', onKeyDown);
   }, [onClose, blockEscape]);
 
+  // The panel is the ONLY scroll container. Land focus on its scrollable body
+  // immediately on open so a wheel/touch gesture (and PageDown/Space) targets
+  // the right element without the visitor first having to Tab to a button.
+  // This runs AFTER useFocusTrap's initial focus (declared above), so it wins
+  // without fighting the trap's Tab cycle. The body is made focusable below.
+  useEffect(() => {
+    // Queue AFTER the opener-restore microtask above. React StrictMode's
+    // simulated unmount/remount queues that restore during development, and it
+    // would otherwise land focus on the sr-only trigger proxy (outside this
+    // panel) — which makes wheel/touch scrolling the body a no-op.
+    queueMicrotask(() => bodyRef.current?.focus({ preventScroll: true }));
+  }, []);
+
   return (
     <>
       {/* Dim the room just enough to make the page readable; a click outside
@@ -121,7 +135,7 @@ export function DetailMirror({
         <div className="detail-mirror__header">
           <div className="min-w-0">
             <p className="detail-mirror__chip" aria-hidden="true">
-              In-world readout
+              Details
             </p>
             <h2 className="p5-display text-lg text-p5-red">{title}</h2>
           </div>
@@ -134,7 +148,15 @@ export function DetailMirror({
             {closeText}
           </button>
         </div>
-        <div className="detail-mirror__body">{children}</div>
+        <div
+          ref={bodyRef}
+          tabIndex={0}
+          role="group"
+          aria-label="Details content — scroll to read"
+          className="detail-mirror__body"
+        >
+          {children}
+        </div>
       </section>
     </>
   );

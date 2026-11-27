@@ -167,10 +167,12 @@
 
 .p5-tag {
   display: inline-block;
+  max-width: 100%;
   padding: 0.15rem 0.6rem;
   font-size: var(--type-xs);
   font-weight: 700;
   text-transform: uppercase;
+  overflow-wrap: anywhere;
   background: var(--p5-white);
   color: var(--p5-black);
   clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%);
@@ -568,9 +570,25 @@
   padding: var(--space-md) var(--space-lg) var(--space-lg);
   overflow-y: auto;
   overscroll-behavior: contain;
+  /* Long tag names and unbroken URLs must wrap inside the panel, never get
+     clipped at the viewport edge. */
+  overflow-wrap: anywhere;
   font-size: 15px;
   line-height: 1.6;
   color: var(--p5-white);
+}
+
+/* Focus is moved here on open so wheel/touch/keyboard scrolling targets this
+   container immediately. Keep the ring inside the panel bounds. */
+.detail-mirror__body:focus-visible {
+  outline: 3px solid var(--state-focus);
+  outline-offset: -3px;
+}
+
+/* The open panel is the ONLY scrollable surface: stop the document from
+   scrolling behind it (the zone column itself is unmounted in App). */
+body:has(.app-detail-open) {
+  overflow: hidden;
 }
 
 .detail-mirror__body p,

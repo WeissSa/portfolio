@@ -32,7 +32,13 @@ export function ProjectDetailOverlay() {
       onClose={() => selectProject(null)}
       closeLabel={`Close details for ${project.title}`}
     >
-      <PostCard post={project} variant="case" expanded />
+      <PostCard
+        post={project}
+        variant="case"
+        expanded
+        highlighted
+        hideHeading
+      />
       <p role="status" aria-live="polite" className="sr-only">
         Project case opened for {project.title}
       </p>

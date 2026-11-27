@@ -168,12 +168,12 @@ describe('axe-core accessibility scans (forced 3D over canvas)', () => {
       new RegExp(PROJECTS[0]!.title),
       'case',
     ],
-    ['monitor', '#/about', { desktopOpen: true }, /About desktop/, 'monitor'],
+    ['monitor', '#/about', { desktopOpen: true }, /About/, 'monitor'],
     [
       'projector',
       '#/climate',
       { climatePanelOpen: true },
-      /Projector Feed/,
+      /Climate details/,
       'projector',
     ],
   ];

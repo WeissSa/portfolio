@@ -19,7 +19,6 @@ import {
   CLIMATE_ATTRIBUTION,
   CLIMATE_ATTRIBUTION_LINE,
   CLIMATE_STATEMENT,
-  CLIMATE_TITLE,
 } from '../src/content/climate';
 import { flatToHistorical, type HeatmapCell } from '../src/lib/climate';
 import { ClimateView } from '../src/ui/ClimateView';
@@ -417,7 +416,7 @@ describe('ClimateProjectorPanel (accessible DOM equivalent)', () => {
     // string Mantine renders in its OWN <h2> (aria-labelledby target). The
     // shared ClimateView keeps its own <h2> title and <h3> widget headings as
     // valid siblings; none is nested inside the title.
-    expect(dialog).toHaveAccessibleName(`${CLIMATE_TITLE} — Projector Feed`);
+    expect(dialog).toHaveAccessibleName('Climate details');
     expect(
       document.getElementById('projector-panel-climate-heading'),
     ).toBeInTheDocument();
@@ -451,7 +450,7 @@ describe('ClimateProjectorPanel (accessible DOM equivalent)', () => {
     );
     renderWithProviders(<ClimateProjectorPanel />);
     const dialog = screen.getByRole('dialog');
-    const title = `${CLIMATE_TITLE} — Projector Feed`;
+    const title = 'Climate details';
     const titleHeadings = [...dialog.querySelectorAll('h2')].filter(
       (heading) => heading.textContent?.trim() === title,
     );
@@ -495,7 +494,7 @@ describe('ClimateProjectorPanel (accessible DOM equivalent)', () => {
     );
     renderWithProviders(<ClimateProjectorPanel />);
     await user.click(
-      screen.getByRole('button', { name: 'Close climate panel' }),
+      screen.getByRole('button', { name: 'Close climate details' }),
     );
     expect(usePortfolioStore.getState().climatePanelOpen).toBe(false);
   });
@@ -539,7 +538,7 @@ describe('keyboard path in 3D + unchanged 2D route', () => {
     act(() => usePortfolioStore.setState({ mode: '3d' }));
 
     const trigger = screen.getByRole('button', {
-      name: 'Open projector info panel',
+      name: 'View climate details',
     });
     trigger.focus();
     expect(trigger).toHaveFocus();
@@ -552,7 +551,7 @@ describe('keyboard path in 3D + unchanged 2D route', () => {
     expect(usePortfolioStore.getState().climatePanelOpen).toBe(false);
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(
-      screen.queryByRole('button', { name: 'Open projector info panel' }),
+      screen.queryByRole('button', { name: 'View climate details' }),
     ).not.toBeInTheDocument();
   });
 

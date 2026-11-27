@@ -21,17 +21,17 @@ export function DesktopZoom() {
 
   return (
     <DetailMirror
-      label="About desktop — full screen"
-      title="About desktop"
+      label="About"
+      title="About"
       surface="monitor"
       onClose={closeDesktop}
-      closeLabel="Close desktop and return to the room"
-      closeText="Back to room"
+      closeLabel="Close details"
+      closeText="Close"
       blockEscape={() => usePortfolioStore.getState().openWindows.length > 0}
     >
       <AboutDesktop />
       <p role="status" aria-live="polite" className="sr-only">
-        About desktop opened. Press Escape to return to the 3D room.
+        About opened. Press Escape to close.
       </p>
     </DetailMirror>
   );
