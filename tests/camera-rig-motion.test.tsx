@@ -4,8 +4,8 @@
  * guarantees only the component can provide:
  *   1. reduced motion (instant) never drifts — the camera sits at the exact
  *      authored pose even across extra frames;
- *   2. drift/bank/overshoot are applied MID-FLIGHT (not just at the snap), the
- *      pass-past crosses the authored pose, and the final pose is exact;
+ *   2. the flight approaches the authored pose monotonically — no arrival bank
+ *      (roll) and no pass-past overshoot — and the final pose is exact;
  *   3. the shared perf clock is frozen for instant/paused and advances for a
  *      live flight, and a settled camera requests ZERO more frames (idle).
  */
@@ -92,7 +92,7 @@ describe('CameraRig personality wiring', () => {
     await renderer.unmount();
   });
 
-  it('applies drift/bank/overshoot mid-flight, crosses the pose, then snaps exact', async () => {
+  it('approaches monotonically without bank or pass-past, then snaps exact', async () => {
     const renderer = await mountRig(false, '/about');
     const camera = capturedCamera!;
     const from = new THREE.Vector3(...HOME_VIEWPOINT.position);
@@ -100,30 +100,40 @@ describe('CameraRig personality wiring', () => {
     const direction = to.clone().sub(from).normalize();
     expect(camera.position.toArray()).toEqual([...HOME_VIEWPOINT.position]);
 
-    let banked = false;
-    let drifted = false;
-    let crossedPose = false;
-    // Step frame-by-frame so the transient behaviour is observable.
+    // A camera posed ONLY by lookAt(worldUp) keeps its local right vector in
+    // the horizontal plane (Y≈0). The old arrival bank called rotateZ(), which
+    // rolls the right vector out of that plane — a reliable "no wobble" probe.
+    const right = new THREE.Vector3();
+    const noBank = () => {
+      right.set(1, 0, 0).applyQuaternion(camera.quaternion);
+      expect(Math.abs(right.y)).toBeLessThan(1e-3);
+    };
+
+    let moved = false;
+    let previousDistance = from.distanceTo(to);
+    // Step frame-by-frame so per-frame continuity is observable.
     for (let frame = 0; frame < 60; frame += 1) {
       await act(async () => {
         await renderer.advanceFrames(1, 0.05);
       });
       const pos = camera.position.clone();
-      if (frame > 2 && frame < 60) {
-        // Mid-flight: not the start pose, not yet the final pose.
-        if (pos.distanceTo(from) > 0.01 && pos.distanceTo(to) > 0.01)
-          drifted = true;
-        // Arrival bank is actually rotated onto the camera mid-flight.
-        if (Math.abs(camera.rotation.z) > 1e-4) banked = true;
-        // Render-only pass-past: projection onto the travel vector exceeds
-        // the authored pose at least once (overshoot crosses the target).
-        if (pos.clone().sub(from).dot(direction) > from.distanceTo(to) + 1e-4)
-          crossedPose = true;
+      if (pos.distanceTo(from) > 0.01 && pos.distanceTo(to) > 0.05) {
+        moved = true;
+        // No arrival bank: the camera is never rolled off the lookAt pose.
+        noBank();
+        // No settle overshoot: the camera never travels PAST the authored pose
+        // along the flight vector (4 mm drift tolerance).
+        expect(pos.clone().sub(from).dot(direction)).toBeLessThanOrEqual(
+          from.distanceTo(to) + 0.005,
+        );
       }
+      // Smooth, monotone approach: distance to target never grows between
+      // consecutive frames (sub-pixel drift jitter tolerance).
+      const distance = pos.distanceTo(to);
+      expect(distance).toBeLessThanOrEqual(previousDistance + 0.005);
+      previousDistance = distance;
     }
-    expect(drifted).toBe(true);
-    expect(banked).toBe(true);
-    expect(crossedPose).toBe(true);
+    expect(moved).toBe(true);
     expect(advanceSpy.mock.calls.some((call) => call[2] === false)).toBe(true);
 
     await act(async () => {
@@ -131,13 +141,16 @@ describe('CameraRig personality wiring', () => {
     });
     const target = ZONE_VIEWPOINTS['/about'].position;
     expect(camera.position.toArray()).toEqual([...target]);
-    // No residual arrival bank: the roll matches a plain lookAt at the pose
-    // (Euler z is not necessarily 0 after lookAt, so compare to the reference).
-    const reference = new THREE.PerspectiveCamera();
-    reference.position.set(...target);
-    reference.lookAt(new THREE.Vector3(...ZONE_VIEWPOINTS['/about'].target));
-    expect(camera.rotation.z).toBeCloseTo(reference.rotation.z, 6);
+    // No residual bank after settle.
+    noBank();
     expect(usePortfolioStore.getState().cameraSettled).toBe(true);
+
+    // No wobble AT settle: many extra frames on a settled rig keep the exact
+    // authored pose (the demand loop issues no more frames).
+    await act(async () => {
+      await renderer.advanceFrames(20, 0.05);
+    });
+    expect(camera.position.toArray()).toEqual([...target]);
     await renderer.unmount();
   });
 

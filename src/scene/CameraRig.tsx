@@ -16,15 +16,17 @@
  *  - prefers-reduced-motion (or a low-tier forced 2D) passes `instant`, which
  *    snaps the camera instead of animating.
  *
- * polish(e) — personality WITHOUT extra frames:
- *  - A small sinusoidal drift (camera-motion.ts) is sampled from the SAME pure
- *    clock step PainterlyPass uses (`advancePainterlyTime`), so it is tied to
- *    the existing perf clock and freezes with reduced motion / when paused.
- *  - The drift, a slight arrival bank and a brief settle overshoot are applied
- *    to `camera.position` only, on frames the flight already renders. They
- *    decay to zero as the damped `basePosition` reaches the viewpoint, so the
- *    camera snaps EXACTLY to the authored pose on settle — frustum/framing
- *    gates stay green. No `invalidate()` is added for drift: idle = 0 frames.
+ * Camera character (owner decision 2026-11-26: SMOOTH, no wobble):
+ *  - A sub-pixel sinusoidal drift (camera-motion.ts) is sampled from the SAME
+ *    pure clock step PainterlyPass uses (`advancePainterlyTime`), so it is tied
+ *    to the existing perf clock and freezes with reduced motion / when paused.
+ *  - The old arrival bank (roll) and settle overshoot (pass-past-then-back)
+ *    are REMOVED — they read as a wobble on arrival. Only the tiny drift is
+ *    applied, to `camera.position` only, ramped by `motionWindow` from zero at
+ *    departure to zero at settle. The visible pose therefore approaches the
+ *    authored viewpoint monotonically and snaps EXACTLY to it on settle —
+ *    frustum/framing gates stay green. No `invalidate()` for drift: idle = 0
+ *    frames.
  *
  * Per-frame hygiene: preallocated Vector3s + MathUtils.damp, no allocations in
  * useFrame. `delta` is clamped so a long hidden-tab gap cannot produce a giant
@@ -38,12 +40,10 @@ import { useDiegeticDetail } from '../lib/detail-mode';
 import { usePortfolioStore } from '../state/store';
 import { advancePainterlyTime } from './diegetic';
 import {
-  arrivalBank,
   IDLE_DRIFT_AMPLITUDE,
   idleDriftOffset,
   motionAllowed,
   motionWindow,
-  settleOvershoot,
 } from './camera-motion';
 import {
   getCameraViewpoint,
@@ -113,7 +113,6 @@ export function CameraRig({
   const desiredTarget = useMemo(() => new THREE.Vector3(), []);
   const currentTarget = useMemo(() => new THREE.Vector3(), []);
   const basePosition = useMemo(() => new THREE.Vector3(), []);
-  const travelDirection = useMemo(() => new THREE.Vector3(), []);
   // Preallocated drift output: idleDriftOffset writes here so useFrame never
   // allocates a Vec3 per frame.
   const driftScratch = useMemo<[number, number, number]>(() => [0, 0, 0], []);
@@ -235,29 +234,21 @@ export function CameraRig({
       driftScratch,
     );
 
-    // Settle overshoot draws the rendered camera along the flight vector, a
-    // few centimetres PAST the pose near arrival, then back to exact at settle
-    // (render-only; the settle gate below measures `basePosition`, untouched).
-    travelDirection.subVectors(desiredPosition, basePosition);
-    if (travelDirection.lengthSq() > 1e-8) travelDirection.normalize();
-    else travelDirection.set(0, 0, 0);
-    const overshoot = settleOvershoot(remaining);
-
+    // NO bank, NO overshoot. The rendered pose is the damped base plus a
+    // sub-pixel drift that vanishes at settle, so the approach never crosses
+    // past the authored viewpoint and the arrival cannot wobble.
     camera.position.set(
-      basePosition.x + drift[0] * envelope + travelDirection.x * overshoot,
-      basePosition.y + drift[1] * envelope + travelDirection.y * overshoot,
-      basePosition.z + drift[2] * envelope + travelDirection.z * overshoot,
+      basePosition.x + drift[0] * envelope,
+      basePosition.y + drift[1] * envelope,
+      basePosition.z + drift[2] * envelope,
     );
     camera.lookAt(currentTarget);
-    if (envelope > 0) {
-      camera.rotateZ(arrivalBank(clock.current) * envelope);
-    }
 
     if (
       basePosition.distanceToSquared(desiredPosition) < SETTLE_EPSILON_SQ &&
       currentTarget.distanceToSquared(desiredTarget) < SETTLE_EPSILON_SQ
     ) {
-      // Exact authored pose at rest — no drift, no bank, no overshoot. This is
+      // Exact authored pose at rest — no residual drift. This is
       // what keeps the diegetic frustum/focus framing tests valid.
       basePosition.copy(desiredPosition);
       currentTarget.copy(desiredTarget);

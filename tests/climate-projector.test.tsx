@@ -124,18 +124,13 @@ beforeEach(() => {
 describe('buildProjectorTexture (shared drawer, headless)', () => {
   it('returns null when no 2D context exists (graceful headless fallback)', () => {
     expect(
-      buildProjectorTexture(SMALL_CELLS, 2024, 'TODAY', noContextFactory),
+      buildProjectorTexture(SMALL_CELLS, 2024, noContextFactory),
     ).toBeNull();
   });
 
-  it('paints title, year, heatmap cells, today verdict and attribution', () => {
+  it('paints only AMBIENT décor: title, year, heatmap — never the duplicated detail', () => {
     const { factory, calls, canvas } = recordingFactory();
-    const texture = buildProjectorTexture(
-      SMALL_CELLS,
-      2024,
-      '26.0°C — 2.0°C HOTTER THAN USUAL',
-      factory,
-    );
+    const texture = buildProjectorTexture(SMALL_CELLS, 2024, factory);
     expect(texture).toBeInstanceOf(THREE.CanvasTexture);
     expect(texture!.image).toBe(canvas);
     expect(texture!.colorSpace).toBe(THREE.SRGBColorSpace);
@@ -145,26 +140,32 @@ describe('buildProjectorTexture (shared drawer, headless)', () => {
       .map((call) => String(call.args[0]));
     expect(text).toContain('OUR CLIMATE, OUR FUTURE');
     expect(text.some((line) => line.includes('2024'))).toBe(true);
-    expect(text).toContain('IS TODAY WEIRDLY HOT/COLD?');
-    expect(text).toContain('26.0°C — 2.0°C HOTTER THAN USUAL');
-    expect(text).toContain(CLIMATE_ATTRIBUTION_LINE);
-    expect(text).toContain(
+    // The single readable copy lives in the DOM panel; the wall must NOT paint
+    // the verdict, the statement or the attribution a second time.
+    for (const duplicated of [
+      'IS TODAY WEIRDLY HOT/COLD?',
+      CLIMATE_ATTRIBUTION_LINE,
       `${CLIMATE_ATTRIBUTION.supportLabel} ${CLIMATE_ATTRIBUTION.climateDefenseFund.label}`,
-    );
+    ]) {
+      expect(text.some((line) => line.includes(duplicated))).toBe(false);
+    }
     // The heatmap drawing is nested in save/translate/restore by the projector.
     expect(calls.map((call) => call.method)).toContain('translate');
     expect(calls.map((call) => call.method)).toContain('save');
     expect(calls.map((call) => call.method)).toContain('restore');
   });
 
-  it('paints a climate-LOCAL menu strip (year / back / info), not a global nav copy', () => {
+  it('paints one ambient strip (year + a pointer to the single panel), no global nav copy', () => {
     const a = recordingFactory();
-    buildProjectorTexture(SMALL_CELLS, 2024, 'SAME', a.factory);
+    buildProjectorTexture(SMALL_CELLS, 2024, a.factory);
     const texts = a.calls
       .filter((call) => call.method === 'fillText')
       .map((call) => String(call.args[0]));
-    for (const label of ['YEAR', 'BACK', 'INFO']) {
-      expect(texts.some((text) => text.includes(label))).toBe(true);
+    expect(texts.some((text) => text.includes('YEAR'))).toBe(true);
+    expect(texts.some((text) => text.includes('OPEN DETAILS'))).toBe(true);
+    // No second interactive content copy painted on the wall.
+    for (const label of ['BACK', 'INFO']) {
+      expect(texts.some((text) => text.includes(label))).toBe(false);
     }
     for (const globalRoute of ['ABOUT', 'EXPERIENCE', 'PROJECTS']) {
       expect(texts.some((text) => text.includes(globalRoute))).toBe(false);
@@ -174,8 +175,8 @@ describe('buildProjectorTexture (shared drawer, headless)', () => {
   it('is deterministic for identical inputs', () => {
     const a = recordingFactory();
     const b = recordingFactory();
-    buildProjectorTexture(SMALL_CELLS, 2024, 'SAME', a.factory);
-    buildProjectorTexture(SMALL_CELLS, 2024, 'SAME', b.factory);
+    buildProjectorTexture(SMALL_CELLS, 2024, a.factory);
+    buildProjectorTexture(SMALL_CELLS, 2024, b.factory);
     expect(b.calls).toEqual(a.calls);
   });
 });
@@ -219,22 +220,21 @@ describe('ClimateProjector R3F zone (headless, structural)', () => {
     screenGeometry.dispose();
   });
 
-  it('exposes climate-local back / info hit planes (4b)', async () => {
+  it('opens the ONE DOM panel from the screen; no second painted BACK/INFO copy', async () => {
     const renderer = await mount();
+    // No local interactive content planes remain on the wall — the year dial
+    // is the only local control, and the DOM panel is the single detail surface.
     for (const name of ['projected-back', 'projected-info']) {
-      const node = renderer.scene.find((item) => item.props.name === name);
-      expect(node, `${name} must exist`).toBeDefined();
+      expect(
+        renderer.scene.findAll((item) => item.props.name === name),
+        `${name} must be gone (centralized detail)`,
+      ).toHaveLength(0);
     }
-    const info = renderer.scene.find(
-      (item) => item.props.name === 'projected-info',
+    const screen = renderer.scene.find(
+      (node) => node.props.name === 'projector-screen-texture',
     )!;
-    act(() => info.props.onClick({ stopPropagation: vi.fn() }));
+    act(() => screen.props.onClick({ stopPropagation: vi.fn() }));
     expect(usePortfolioStore.getState().climatePanelOpen).toBe(true);
-    const back = renderer.scene.find(
-      (item) => item.props.name === 'projected-back',
-    )!;
-    act(() => back.props.onClick({ stopPropagation: vi.fn() }));
-    expect(window.location.hash).toBe('#/');
     await renderer.unmount();
     disposeRoomMaterials(materials);
     screenGeometry.dispose();

@@ -18,20 +18,3 @@ export function renderWithProviders(ui: ReactElement, options?: RenderOptions) {
     options,
   );
 }
-
-/** Minimal 2D context for in-world DetailPlane textures in jsdom (the global
- *  setup stub returns null, which makes DetailPlane render nothing). */
-export function fakeDetail2dContext(): CanvasRenderingContext2D {
-  const noop = () => {};
-  return {
-    fillStyle: '',
-    strokeStyle: '',
-    lineWidth: 1,
-    textBaseline: 'top',
-    textAlign: 'left',
-    font: '',
-    fillRect: noop,
-    strokeRect: noop,
-    fillText: noop,
-  } as unknown as CanvasRenderingContext2D;
-}

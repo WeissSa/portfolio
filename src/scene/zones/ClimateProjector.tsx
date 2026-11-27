@@ -1,14 +1,15 @@
 /**
  * The Projector — Climate (REWORK_PLAN §3.2.4 / §4.4, commit 9).
  *
- * The wall screen no longer shows a static title card: its material map is a
- * THREE.CanvasTexture painted by the SAME pure `drawHeatmap()` routine the 2D
- * widget uses, plus the title, the "Is Today Weirdly Hot/Cold?" verdict and the
- * Open-Meteo / Climate Defense Fund attributions. A year dial (two pickable
+ * OWNER DECISION (2026-11-26): the wall projection is AMBIENT DECORATION, not a
+ * second interactive content copy. Its material map is a THREE.CanvasTexture
+ * from the SAME pure `drawHeatmap()` routine the DOM widget uses, plus a title
+ * and the year — a diegetic heatmap, nothing more. The "Is Today Weirdly
+ * Hot/Cold?" verdict, the full statement and the attributions live ONLY in the
+ * one readable DOM panel (`ClimateProjectorPanel`). A year dial (two pickable
  * meshes) writes the SHARED `selectedClimateYear` store field; clicking the
- * screen opens the accessible DOM dialog (`ClimateProjectorPanel`) — no climate
- * content is ever canvas-only. The room-owned projector body + additive light
- * cone stay untouched in Room.tsx.
+ * screen opens that SAME single panel. No second dialog, no painted duplicate.
+ * The room-owned projector body + additive light cone stay in Room.tsx.
  *
  * Picking follows the established zone pattern: group handlers stop
  * propagation, and the whole canvas is pointer-events:none until
@@ -19,17 +20,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { useThree, type ThreeEvent } from '@react-three/fiber';
-import {
-  CLIMATE_ATTRIBUTION,
-  CLIMATE_ATTRIBUTION_LINE,
-  CLIMATE_TITLE,
-} from '../../content/climate';
+import { CLIMATE_TITLE } from '../../content/climate';
 import {
   availableYears,
   heatmapForYear,
   LEVEL_COLORS,
   reconcileSelectedYear,
-  todayComparison,
   yearsWithData,
   type HeatmapCell,
 } from '../../lib/climate';
@@ -38,7 +34,6 @@ import {
   heatmapSize,
   type HeatmapPalette,
 } from '../../lib/climate-draw';
-import { navigateAndCloseDetail } from '../../lib/navigation';
 import { PALETTE } from '../art/palette';
 import { useDeferredDispose } from '../../lib/deferred-dispose';
 import { focusDetailTrigger } from '../../lib/detail-mode';
@@ -86,7 +81,6 @@ export const browserClimateCanvas: ClimateCanvasFactory = (width, height) => {
 export function buildProjectorTexture(
   cells: readonly HeatmapCell[],
   year: number,
-  todayLabel: string,
   canvasFactory: ClimateCanvasFactory = browserClimateCanvas,
 ): THREE.CanvasTexture | null {
   const canvas = canvasFactory(
@@ -96,7 +90,8 @@ export function buildProjectorTexture(
   const ctx = canvas.getContext('2d');
   if (!ctx) return null;
 
-  // Cloth backing + jagged P5 title card.
+  // Cloth backing + jagged P5 title card. AMBIENT ONLY: the verdict, statement
+  // and attributions are the single DOM panel's job, never painted here too.
   ctx.fillStyle = CLOTH;
   ctx.fillRect(0, 0, PROJECTOR_TEXTURE_WIDTH, PROJECTOR_TEXTURE_HEIGHT);
   ctx.textBaseline = 'top';
@@ -112,8 +107,9 @@ export function buildProjectorTexture(
     104,
   );
 
-  // The heatmap itself — one shared drawing routine with the 2D widget.
-  const { width: heatWidth, height: heatHeight } = heatmapSize(cells, year);
+  // The heatmap itself — one shared drawing routine with the DOM widget, used
+  // here purely as diegetic decoration on the projected cloth.
+  const { width: heatWidth } = heatmapSize(cells, year);
   const heatX = Math.max(
     12,
     Math.round((PROJECTOR_TEXTURE_WIDTH - heatWidth) / 2),
@@ -124,37 +120,9 @@ export function buildProjectorTexture(
   drawHeatmap(ctx, cells, year, PROJECTOR_PALETTE);
   ctx.restore();
 
-  // "Is Today Weirdly Hot/Cold?" plaque painted below the heatmap.
-  const plaqueY = heatY + heatHeight + 24;
-  ctx.fillStyle = INK;
-  ctx.fillRect(48, plaqueY, PROJECTOR_TEXTURE_WIDTH - 96, 66);
-  ctx.textAlign = 'center';
-  ctx.fillStyle = DESIGN_TOKENS.climate.projectorPlaqueText;
-  ctx.font = `bold 22px ${DISPLAY_FONT}`;
-  ctx.fillText(
-    'IS TODAY WEIRDLY HOT/COLD?',
-    PROJECTOR_TEXTURE_WIDTH / 2,
-    plaqueY + 8,
-  );
-  ctx.fillStyle = DESIGN_TOKENS.climate.heatmapLabelText;
-  ctx.font = 'bold 22px system-ui, sans-serif';
-  ctx.fillText(todayLabel, PROJECTOR_TEXTURE_WIDTH / 2, plaqueY + 36);
-
-  // Full attribution links live in the accessible DOM panel; the projected
-  // line still names both sources so the room reads as the real widget.
-  ctx.fillStyle = INK;
-  ctx.font = '19px system-ui, sans-serif';
-  ctx.fillText(CLIMATE_ATTRIBUTION_LINE, PROJECTOR_TEXTURE_WIDTH / 2, 446);
-  ctx.fillStyle = RED;
-  ctx.font = 'bold 19px system-ui, sans-serif';
-  ctx.fillText(
-    `${CLIMATE_ATTRIBUTION.supportLabel} ${CLIMATE_ATTRIBUTION.climateDefenseFund.label}`,
-    PROJECTOR_TEXTURE_WIDTH / 2,
-    478,
-  );
-
-  // Commit 4b: CLIMATE-LOCAL menu strip (year / back / info) painted into the
-  // bottom of the SAME projected texture. Not a duplicate of the global nav.
+  // One ambient strip: the year dial plus a single affordance that points at
+  // the ONE readable DOM panel. No painted BACK/INFO content copy, no second
+  // interactive surface — the pointer menu (outside the shell) owns nav.
   const bounds = projectedStripBounds();
   const stripTop = bounds.stripTop;
   ctx.fillStyle = INK;
@@ -164,37 +132,31 @@ export function buildProjectorTexture(
     PROJECTOR_TEXTURE_WIDTH,
     PROJECTED_PANEL.stripHeight,
   );
-  // Brass frame + purple rule: the strip reads as part of the screen rather
-  // than text floating on the wall; gilt lettering stays on the dark inlay.
   ctx.fillStyle = PALETTE.brassLight;
   ctx.fillRect(18, stripTop + 3, PROJECTOR_TEXTURE_WIDTH - 36, 3);
   ctx.fillRect(18, bounds.bottomRuleTop, PROJECTOR_TEXTURE_WIDTH - 36, 3);
   ctx.fillStyle = DESIGN_TOKENS.p5.link;
   ctx.fillRect(24, bounds.purpleRuleTop, PROJECTOR_TEXTURE_WIDTH - 48, 2);
   ctx.fillStyle = PALETTE.brassDark;
-  for (const divider of [0.44, 0.69]) {
-    ctx.fillRect(
-      PROJECTOR_TEXTURE_WIDTH * divider,
-      stripTop + 8,
-      2,
-      PROJECTED_PANEL.stripHeight - 16,
-    );
-  }
+  ctx.fillRect(
+    PROJECTOR_TEXTURE_WIDTH * 0.52,
+    stripTop + 8,
+    2,
+    PROJECTED_PANEL.stripHeight - 16,
+  );
   ctx.textAlign = 'center';
   ctx.fillStyle = DESIGN_TOKENS.climate.projectorPlaqueText;
   ctx.font = `bold ${PROJECTED_PANEL.fontPx}px ${DISPLAY_FONT}`;
-  const items = ['YEAR ◀ ▶', 'BACK', 'INFO'];
-  items.forEach((label, index) => {
-    ctx.fillText(
-      label,
-      [
-        PROJECTOR_TEXTURE_WIDTH * 0.3,
-        PROJECTOR_TEXTURE_WIDTH * 0.58,
-        PROJECTOR_TEXTURE_WIDTH * 0.8,
-      ][index]!,
-      PROJECTED_PANEL.textBaseline,
-    );
-  });
+  ctx.fillText(
+    'YEAR ◀ ▶',
+    PROJECTOR_TEXTURE_WIDTH * 0.28,
+    PROJECTED_PANEL.textBaseline,
+  );
+  ctx.fillText(
+    'OPEN DETAILS →',
+    PROJECTOR_TEXTURE_WIDTH * 0.76,
+    PROJECTED_PANEL.textBaseline,
+  );
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
@@ -267,19 +229,8 @@ export function ClimateProjector({
     [climate.historical, climate.status, renderYear],
   );
 
-  const todayLabel = useMemo(() => {
-    if (climate.currentTemp === null) {
-      return 'Live temperature unavailable — historical heatmap only';
-    }
-    const comparison = todayComparison(
-      climate.historical,
-      climate.currentTemp,
-      new Date(),
-    );
-    if (!comparison) return 'Today’s comparison is unavailable';
-    const direction = comparison.difference > 0 ? 'HOTTER' : 'COLDER';
-    return `${climate.currentTemp.toFixed(1)}°C — ${Math.abs(comparison.difference).toFixed(1)}°C ${direction} THAN USUAL`;
-  }, [climate.currentTemp, climate.historical]);
+  // The live "weirdly hot/cold" verdict is authored ONCE in the DOM panel, not
+  // painted here too — so a live-temperature tick cannot repaint the wall.
 
   // 3c P7: mobile/low tiers stay on the room's static screenFabric until the
   // climate zone is entered (sticky — leaving the zone keeps the painted map).
@@ -291,28 +242,23 @@ export function ClimateProjector({
   // when the year dial is clicked back and forth. New data starts a new cache;
   // the effect disposes every texture in the old one (no leak across toggles).
   // The deps intentionally START A NEW CACHE (and dispose the old one) when the
-  // dataset/label/factory changes; the memo body itself needs no values.
+  // dataset/factory changes; the memo body itself needs no values.
   const cache = useMemo(
     () => new Map<string, THREE.CanvasTexture>(),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [climate.historical, climate.status, todayLabel, canvasFactory],
+    [climate.historical, climate.status, canvasFactory],
   );
   useDeferredDispose(() => {
     for (const cached of cache.values()) cached.dispose();
     cache.clear();
   }, [cache]);
 
-  const textureKey = `${renderYear}|${todayLabel}`;
+  const textureKey = String(renderYear);
   const texture = useMemo(() => {
     if (!shouldPaint) return null;
     const cached = cache.get(textureKey);
     if (cached) return cached;
-    const built = buildProjectorTexture(
-      cells,
-      renderYear,
-      todayLabel,
-      canvasFactory,
-    );
+    const built = buildProjectorTexture(cells, renderYear, canvasFactory);
     if (!built) return null;
     cache.set(textureKey, built);
     if (cache.size > MAX_PROJECTOR_TEXTURE_CACHE) {
@@ -323,15 +269,7 @@ export function ClimateProjector({
       }
     }
     return built;
-  }, [
-    cache,
-    cells,
-    renderYear,
-    todayLabel,
-    textureKey,
-    canvasFactory,
-    shouldPaint,
-  ]);
+  }, [cache, cells, renderYear, textureKey, canvasFactory, shouldPaint]);
 
   // One lightweight material per texture; the CACHED textures outlive material
   // swaps and are disposed by the cache effect, never on a year change.
@@ -379,75 +317,17 @@ export function ClimateProjector({
       }
     };
 
-  // Local panel highlight is deliberately SEPARATE from the canonical global
-  // nav highlight: it never lights the plaque or the CRT (no triple flash).
-  const [localItem, setLocalItem] = useState<'back' | 'info' | null>(null);
-  const localGeometry = useMemo(
-    () =>
-      new THREE.PlaneGeometry(
-        0.34,
-        (PROJECTED_PANEL.stripHeight / PROJECTED_PANEL.textureHeight) *
-          PROJECTED_PANEL.screenHeight,
-      ),
-    [],
-  );
-  const localMaterial = useMemo(
-    () =>
-      new THREE.MeshBasicMaterial({
-        color: DESIGN_TOKENS.state.focus,
-        transparent: true,
-        opacity: 0.22,
-        depthWrite: false,
-      }),
-    [],
-  );
-  // Transparent (not `visible={false}`) so the local hit planes stay raycastable.
-  const hitMaterial = useMemo(
-    () =>
-      new THREE.MeshBasicMaterial({
-        transparent: true,
-        opacity: 0,
-        depthWrite: false,
-      }),
-    [],
-  );
-  useDeferredDispose(() => {
-    localGeometry.dispose();
-    localMaterial.dispose();
-    hitMaterial.dispose();
-  }, [localGeometry, localMaterial, hitMaterial]);
-
   const stripY =
     -PROJECTED_PANEL.screenHeight / 2 +
     ((PROJECTED_PANEL.stripHeight / PROJECTED_PANEL.textureHeight) *
       PROJECTED_PANEL.screenHeight) /
       2;
-  const localPick =
-    (item: 'back' | 'info') => (event: ThreeEvent<MouseEvent>) => {
-      event.stopPropagation();
-      setLocalItem(null);
-      if (item === 'back') navigateAndCloseDetail('/');
-      else {
-        focusDetailTrigger();
-        openClimatePanel();
-      }
-    };
-  const localHover =
-    (item: 'back' | 'info') => (event: ThreeEvent<PointerEvent>) => {
-      event.stopPropagation();
-      setLocalItem(item);
-      document.body.style.cursor = 'pointer';
-    };
-
-  const localOut = () => {
-    setLocalItem(null);
-    document.body.style.cursor = '';
-  };
 
   const onScreenClick = (event: ThreeEvent<MouseEvent>) => {
     event.stopPropagation();
-    // The projected panel already shows climate data in-world; INFO paints the
-    // fuller card below. The DOM mirror is the fallback/a11y path.
+    // OWNER DECISION: one surface. The wall is ambient decoration; the ONLY
+    // readable detail is the single DOM panel this opens (no painted INFO copy,
+    // no second dialog).
     focusDetailTrigger();
     openClimatePanel();
   };
@@ -510,42 +390,6 @@ export function ClimateProjector({
           state={pickAffordance(dialHover === 'next', false, spotlight)}
           name="projected-next-affordance"
         />
-      </group>
-      {/* Climate-zone-LOCAL menu: back / info hit planes inside the painted
-          strip. The year dial above is the third local control. */}
-      <group name="climate-local-menu">
-        {(
-          [
-            ['back', 0.152],
-            ['info', 0.57],
-          ] as const
-        ).map(([item, x]) => (
-          <group key={item}>
-            <mesh
-              name={`projected-${item}`}
-              geometry={localGeometry}
-              material={hitMaterial}
-              position={[x, stripY, 0.032]}
-              onClick={localPick(item)}
-              onPointerOver={localHover(item)}
-              onPointerOut={localOut}
-            />
-            {localItem === item && (
-              <mesh
-                name={`projected-${item}-highlight`}
-                geometry={localGeometry}
-                material={localMaterial}
-                position={[x, stripY, 0.028]}
-              />
-            )}
-            <PickableEdges
-              geometry={localGeometry}
-              position={[x, stripY, 0.03]}
-              state={pickAffordance(localItem === item, false, spotlight)}
-              name={`projected-${item}-affordance`}
-            />
-          </group>
-        ))}
       </group>
     </group>
   );

@@ -622,6 +622,72 @@
   line-height: 1.6;
 }
 
+/* --------------------------------------------------------------------------
+ * Projects case shelf (owner fix 2026-11-26): ONE diegetic page with a single
+ * scroll region. We deliberately set NO `overflow`/`max-height` here — the
+ * enclosing column (live 3D) or the document (2D/fallback) is the only
+ * scroller, so an expanded case can never create a competing nested region.
+ * ------------------------------------------------------------------------ */
+.projects-shelf {
+  position: relative;
+  padding: var(--space-md);
+  border: 2px solid var(--border-panel);
+  background: color-mix(in srgb, var(--p5-ink) 92%, transparent);
+  box-shadow: 6px 8px 0 0
+    color-mix(in srgb, var(--p5-red-deep) 45%, transparent);
+}
+
+.projects-shelf__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding-bottom: var(--space-sm);
+  border-bottom: 2px solid var(--state-focus);
+}
+
+.projects-shelf__count {
+  flex-shrink: 0;
+  color: var(--state-focus);
+  font-weight: 700;
+  font-size: var(--type-sm);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.projects-shelf__list {
+  list-style: none;
+  margin: 0;
+  padding: var(--space-md) 0 0;
+  /* ONE column: in live 3D the column is only ~50% of the viewport, so a
+     two-column grid squeezed titles to one letter per line. A single case
+     file per row always has room for the title + controls. */
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-md);
+}
+
+.projects-shelf__item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+.projects-shelf__index {
+  flex: none;
+  min-width: 2rem;
+  color: var(--state-focus);
+  font-family: 'Anton', 'Arial Narrow', Haettenschweiler, sans-serif;
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.projects-shelf__item > .p5-panel {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 /* Review fix: the diegetic right-column layout now starts at Tailwind's `md`
    breakpoint (768px). Below 1024px the old rule left the sr-only menu hidden
    AND no right column, so the plaque was covered by an empty gutter. */

@@ -21,23 +21,31 @@ import { PALETTE } from './art/palette';
 
 /** Plate size + camera-space depth used by the frustum fit below. */
 export const HOME_BADGE_SIZE = { width: 0.32, height: 0.12 } as const;
-const BADGE_X = -0.62;
+/**
+ * Owner decision (2026-11-26): the diegetic HOME control was misaligned /
+ * off-centre. In live 3D the right half of the viewport is the DOM column, so
+ * the "visible clean band" is the LEFT half — the badge is centred in THAT
+ * band (viewport x=25% ⇒ NDC -0.5), not at viewport centre where the cards
+ * would cover it. `y` stays fixed so it is vertically consistent per zone.
+ */
+const BAND_CENTER_NDC_X = -0.5;
 const BADGE_Y = -0.36;
 const BADGE_Z = -1.1;
 /** Air gap (world units) between the plate edge and the frustum edge. */
 const EDGE_MARGIN = 0.03;
 
 /**
- * Aspect-aware camera-space placement. At narrow viewports (QA 900px, aspect
- * 0.75–1.125) the old fixed x pushed the ◀ HOME glyphs OUT of the frustum, so
- * pull the plate inward until its left edge clears the frustum half-extent.
- * Wide viewports keep the original bottom-left placement.
+ * Aspect-aware camera-space placement. Converting NDC -0.5 to camera space at
+ * the badge depth keeps the control centred in the reserved left band at
+ * every aspect; the clamp is a defensive guard for exotic narrow windows so
+ * the ◀ HOME glyphs can never clip off the left edge.
  */
 export function homeControlPlacement(aspect: number): [number, number, number] {
   const halfWidth =
     Math.abs(BADGE_Z) * Math.tan((HOME_FOV_DEGREES * Math.PI) / 360) * aspect;
+  const centerX = BAND_CENTER_NDC_X * halfWidth;
   const minX = EDGE_MARGIN + HOME_BADGE_SIZE.width / 2 - halfWidth;
-  return [Math.max(BADGE_X, minX), BADGE_Y, BADGE_Z];
+  return [Math.max(centerX, minX), BADGE_Y, BADGE_Z];
 }
 
 export function HomeControl() {

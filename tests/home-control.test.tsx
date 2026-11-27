@@ -3,9 +3,9 @@
  * without Tab. It lives inside the R3F canvas (camera-parented), never as a
  * floating DOM overlay, and keeps the DOM menu as the a11y/keyboard path.
  *
- * Review sweep additions: the badge must fit the frustum at narrow viewports,
- * and a hover flip must free ONLY the colour material (not the stable
- * geometry/texture the remounted scene still draws).
+ * Review sweep additions: the badge is centred in the visible left band, fits
+ * narrow viewports, and a hover flip must free ONLY the colour material (not
+ * the stable geometry/texture the remounted scene still draws).
  */
 import ReactThreeTestRenderer, { act } from '@react-three/test-renderer';
 import * as THREE from 'three';
@@ -100,6 +100,8 @@ describe('in-world HOME control', () => {
     act(() => usePortfolioStore.setState({ activeZone: '/experience' }));
     const renderer = await ReactThreeTestRenderer.create(<HomeControl />, {
       frameloop: 'never',
+      width: 1440,
+      height: 900,
     });
     const controls = () =>
       renderer.scene.findAll(
@@ -109,7 +111,14 @@ describe('in-world HOME control', () => {
             'diegetic-home-control',
       );
     expect(controls()).toHaveLength(1);
-    expect(controls()[0]!.props.position).toEqual([-0.62, -0.36, -1.1]);
+    // Centred in the reserved left band (viewport 25% ⇒ NDC -0.5), not at the
+    // viewport centre where the 3D DOM column would cover the plate.
+    const [x, y, z] = controls()[0]!.props.position as [number, number, number];
+    expect(x).toBeCloseTo(
+      -0.5 * 1.1 * Math.tan((HOME_FOV_DEGREES * Math.PI) / 360) * (1440 / 900),
+      6,
+    );
+    expect([y, z]).toEqual([-0.36, -1.1]);
 
     const stopPropagation = vi.fn();
     act(() => controls()[0]!.props.onClick({ stopPropagation }));
@@ -148,9 +157,10 @@ describe('in-world HOME control', () => {
     await flat.unmount();
   });
 
-  it('keeps every glyph corner inside the frustum at narrow viewports', async () => {
+  it('centres the badge in the visible left band and keeps every corner in frustum', async () => {
     act(() => usePortfolioStore.setState({ activeZone: '/experience' }));
-    // QA's 900px / 768–1023px band: aspect 0.75 clipped the fixed x placement.
+    // Owner 2026-11-26: the badge must sit in the CLEAR band, not beneath the
+    // 3D DOM column that occupies the right half of the viewport.
     const renderer = await ReactThreeTestRenderer.create(<HomeControl />, {
       frameloop: 'never',
       width: 768,
@@ -162,16 +172,19 @@ describe('in-world HOME control', () => {
     expect(controls).toHaveLength(1);
     const position = controls[0]!.props.position as [number, number, number];
     expect(badgeWithinFrustum(position, 768 / 1024)).toBe(true);
-    expect(position[0]).toBeGreaterThan(-0.62); // pulled inward from desktop
+    expect(position[0]).toBeLessThan(0); // left-of-centre = visible band
     await renderer.unmount();
 
     // Pure helper across the QA aspect range and the wide desktop case.
     for (const aspect of [0.75, 0.9, 1.125, 1.6]) {
-      expect(badgeWithinFrustum(homeControlPlacement(aspect), aspect)).toBe(
-        true,
-      );
+      const placement = homeControlPlacement(aspect);
+      const halfWidth =
+        1.1 * Math.tan((HOME_FOV_DEGREES * Math.PI) / 360) * aspect;
+      expect(badgeWithinFrustum(placement, aspect)).toBe(true);
+      // NDC -0.5 ⇒ the centre of the reserved left half at every aspect.
+      expect(placement[0]).toBeCloseTo(-0.5 * halfWidth, 6);
+      expect(placement[1]).toBe(-0.36);
     }
-    expect(homeControlPlacement(1.6)).toEqual([-0.62, -0.36, -1.1]);
   });
 
   it('disposes only the material on hover; geometry/texture on true unmount', async () => {
