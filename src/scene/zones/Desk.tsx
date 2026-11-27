@@ -40,7 +40,7 @@ export function crtDockX(textureX: number): number {
 }
 
 export function DeskZone({ monitor, materials }: DeskZoneProps) {
-  const openDesktop = usePortfolioStore((state) => state.openDesktop);
+  const openDetail = usePortfolioStore((state) => state.openDetail);
   const pointerFine = usePortfolioStore((state) => state.pointerFine);
   const menuHoverRoute = usePortfolioStore((state) => state.menuHoverRoute);
   const menuFocusRoute = usePortfolioStore((state) => state.menuFocusRoute);
@@ -119,10 +119,10 @@ export function DeskZone({ monitor, materials }: DeskZoneProps) {
 
   const onClick = (event: ThreeEvent<MouseEvent>) => {
     event.stopPropagation();
-    // In-world CRT content is painted below; this flips the store flag and
-    // focuses the F2 trigger proxy (no-op when the DOM proxy is absent).
+    // In-world CRT content is painted below; this opens the one About detail
+    // and focuses the F2 trigger proxy (no-op when the DOM proxy is absent).
     focusDetailTrigger();
-    openDesktop();
+    openDetail({ kind: 'about' });
   };
   const onPointerOver = (event: ThreeEvent<PointerEvent>) => {
     event.stopPropagation();

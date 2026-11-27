@@ -504,7 +504,7 @@ describe('RoomScene headless render', () => {
 
   it('actually animates a ProjectCases lid in useFrame when selected', async () => {
     const projectId = postId(PROJECTS[0]!);
-    usePortfolioStore.getState().selectProject(projectId);
+    usePortfolioStore.getState().openDetail({ kind: 'project', id: projectId });
     try {
       const renderer = await ReactThreeTestRenderer.create(
         <RoomScene
@@ -534,7 +534,7 @@ describe('RoomScene headless render', () => {
 
       await renderer.unmount();
     } finally {
-      usePortfolioStore.getState().selectProject(null);
+      usePortfolioStore.getState().closeDetail();
     }
   });
 });

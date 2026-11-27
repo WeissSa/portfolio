@@ -51,7 +51,7 @@ describe('Experience library (2D)', () => {
       ),
     );
     expect(
-      screen.getByText('Repository is private — details under NDA.'),
+      screen.getByText('Source code is private — details under NDA.'),
     ).toBeInTheDocument();
     expect(details[0]).toHaveAttribute('aria-expanded', 'true');
   });
@@ -87,11 +87,11 @@ describe('Projects game cases (2D)', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('offers an Open case toggle per project', () => {
+  it('offers an View project toggle per project', () => {
     window.location.hash = '#/projects';
     render(<App />);
-    expect(screen.getAllByRole('button', { name: 'Open case' })).toHaveLength(
-      5,
-    );
+    expect(
+      screen.getAllByRole('button', { name: 'View project' }),
+    ).toHaveLength(5);
   });
 });

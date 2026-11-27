@@ -104,11 +104,11 @@ describe('3D-by-default on capable devices (owner decision)', () => {
     vi.restoreAllMocks();
     window.location.hash = '';
     usePortfolioStore.setState({
+      activeDetail: null,
       mode: '2d',
       autoMode: '2d',
       activeZone: '/',
       hasNavigated: false,
-      desktopOpen: false,
       openWindows: [],
     });
   });
@@ -158,7 +158,7 @@ describe('3D-by-default on capable devices (owner decision)', () => {
     // The informed opt-in is the only way reduced motion reaches 3D.
     await waitFor(() => expect(usePortfolioStore.getState().mode).toBe('3d'));
     const user = userEvent.setup();
-    await user.click(screen.getByRole('button', { name: 'Automatic mode' }));
+    await user.click(screen.getByRole('button', { name: 'Auto' }));
     expect(usePortfolioStore.getState().mode).toBe('2d');
     expect(localStorage.getItem(REDUCED_MOTION_OPTIN_KEY)).toBeNull();
 
@@ -202,7 +202,7 @@ describe('3D-by-default on capable devices (owner decision)', () => {
     expect(screen.queryByTestId('scene-stub')).not.toBeInTheDocument();
 
     const user = userEvent.setup();
-    await user.click(screen.getByRole('button', { name: 'Automatic mode' }));
+    await user.click(screen.getByRole('button', { name: 'Auto' }));
     expect(usePortfolioStore.getState().mode).toBe('3d');
     expect(screen.getByTestId('scene-stub')).toBeInTheDocument();
   });
@@ -216,14 +216,17 @@ describe('3D-by-default on capable devices (owner decision)', () => {
         autoMode: '3d',
         openWindows: [],
       });
-      usePortfolioStore.getState().openDesktop();
+      usePortfolioStore.getState().openDetail({ kind: 'about' });
     });
     render(<App />);
 
     await waitFor(() => expect(usePortfolioStore.getState().mode).toBe('3d'));
     expect(screen.getAllByRole('button', { name: /Bio/ })).toHaveLength(1);
     expect(document.querySelectorAll('#about-icon-bio')).toHaveLength(1);
-    expect(document.querySelectorAll('#about-heading')).toHaveLength(1);
+    // The detail frame owns the heading; AboutDesktop hides its copy so the
+    // same title is never shown twice.
+    expect(document.querySelectorAll('#about-heading')).toHaveLength(0);
+    expect(document.querySelectorAll('.detail-mirror h2')).toHaveLength(1);
 
     // One Escape closes only the top window (a duplicate instance would run a
     // second document handler and close both).

@@ -78,28 +78,22 @@ export function CameraRig({
   tier,
 }: CameraRigProps) {
   const activeZone = usePortfolioStore((state) => state.activeZone);
-  // Desktop zoom (commit 7): fly to the monitor close-up while the 2D desktop
-  // overlay is open, and back to the zone viewpoint when it closes.
-  const desktopOpen = usePortfolioStore((state) => state.desktopOpen);
-  const selectedPostId = usePortfolioStore((state) => state.selectedPostId);
-  const selectedProjectId = usePortfolioStore(
-    (state) => state.selectedProjectId,
-  );
-  const climatePanelOpen = usePortfolioStore((state) => state.climatePanelOpen);
+  // One detail state drives the camera close-up: no four flags to disagree.
+  const detailKind = usePortfolioStore((state) => state.activeDetail?.kind);
+  const desktopOpen = detailKind === 'about';
   // Only fine-pointer live 3D flies to a detail close-up; fallback modes keep
   // the zone viewpoint (the visible DOM dialog does its own thing).
   const diegetic = useDiegeticDetail();
-  const detail: DetailKind | null = diegetic
-    ? selectedPostId
-      ? 'book'
-      : selectedProjectId
-        ? 'case'
-        : desktopOpen
-          ? 'monitor'
-          : climatePanelOpen
-            ? 'projector'
-            : null
-    : null;
+  const detail: DetailKind | null =
+    diegetic && detailKind
+      ? detailKind === 'post'
+        ? 'book'
+        : detailKind === 'project'
+          ? 'case'
+          : detailKind === 'about'
+            ? 'monitor'
+            : 'projector'
+      : null;
   const setCameraSettled = usePortfolioStore((state) => state.setCameraSettled);
   const camera = useThree((state) => state.camera);
   const invalidate = useThree((state) => state.invalidate);

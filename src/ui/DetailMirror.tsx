@@ -1,26 +1,24 @@
 /**
- * The ONE readable detail panel (owner decision 2026-11-25, UX fix pass).
+ * The ONE readable detail frame (owner decision 2026-11-25, round-5 fix).
  *
- * Every detail surface — 3D book/case/monitor/projector pick, 2D route, coarse
- * pointer and reduced-motion fallback — renders this same component. It is a
- * visible, scrollable DOM panel styled as an in-world page/screen: a brass
- * bezel frames the real, verbatim DOM content (full prose, tag chips and repo
- * / demo links) while the 3D room remains visible around it. No truncated
- * painted text is ever the only copy of a detail.
+ * Every detail surface — book, project case, About desktop or climate detail —
+ * renders its content through this component. It is a visible, scrollable DOM
+ * panel styled as an in-world page/screen: the full verbatim content is here,
+ * never a truncated painted copy. The room stays visible around it.
  *
- * Accessibility: role=dialog + aria-modal, a trapped Tab cycle, a visible
- * close control, Escape to dismiss, a polite live announcement (supplied by
- * each caller inside `children`) and focus restored to the 3D trigger proxy
- * (`#detail-return`) or the DOM opener on close. Focus entering the panel also
- * lights the matching in-world object (`detailMirrorFocused`) so the 3D frame
- * and the DOM readout stay in sync.
+ * Accessibility: role=dialog + aria-modal, trapped Tab, a visible Close button,
+ * Escape to dismiss, a polite live announcement from the caller, and focus
+ * restored to the 3D pick proxy (`#detail-return`) or the DOM opener. Focus
+ * starts in the scrollable body so wheel scrolling works immediately on open.
  */
-import { useEffect, useRef, type ReactNode } from 'react';
-import { useFocusTrap } from '../lib/a11y';
+import { useRef, type ReactNode } from 'react';
+import { UI_COPY } from '../content/ui-copy';
+import { useModalFrame } from '../lib/dialog-effects';
+import { useDetailFocusRestore } from '../lib/use-detail-focus-restore';
 import { usePortfolioStore } from '../state/store';
 
 export interface DetailMirrorProps {
-  /** Accessible dialog name (the same title the visible dialog would carry). */
+  /** Accessible dialog name (the same title the visible dialog carries). */
   label: string;
   /** Visible heading inside the framed panel. */
   title: string;
@@ -32,9 +30,8 @@ export interface DetailMirrorProps {
   /** Visible text of the close control. */
   closeText?: string;
   /**
-   * Escape guard for nested UI. The About desktop keeps its own window stack:
-   * the first Escape closes the top window, and only later Escapes close this
-   * panel. Every other surface leaves this unset.
+   * Escape guard for nested UI. The About section keeps its own window stack:
+   * the first Escape closes the top window, later Escapes close this panel.
    */
   blockEscape?: () => boolean;
   children: ReactNode;
@@ -46,70 +43,32 @@ export function DetailMirror({
   surface,
   onClose,
   closeLabel,
-  closeText = 'Close',
+  closeText = UI_COPY.close,
   blockEscape,
   children,
 }: DetailMirrorProps) {
   const setFocused = usePortfolioStore((state) => state.setDetailMirrorFocused);
   const bodyRef = useRef<HTMLDivElement>(null);
-  // This effect MUST run before the focus trap below: it has to remember the
-  // opener while focus is still outside the panel. The trap then moves focus
-  // into the dialog synchronously on mount.
-  useEffect(() => {
-    const saved = document.activeElement as HTMLElement | null;
-    return () => {
-      setFocused(false);
-      // Un-mount happens in this commit; restore focus on the next microtask
-      // so the trigger is definitely back in the tab order.
-      queueMicrotask(() => {
-        const trigger = document.getElementById('detail-return');
-        const target =
-          saved &&
-          saved.isConnected &&
-          saved !== document.body &&
-          trigger !== saved
-            ? saved
-            : (trigger ?? saved);
-        if (target && typeof target.focus === 'function') {
-          target.focus({ preventScroll: true });
-        }
-      });
-    };
-  }, [setFocused]);
 
-  // Restore is owned by the effect above (it prefers the F2 canvas-trigger
-  // proxy), so the generic trap must not race it with a second restore.
-  const trapRef = useFocusTrap<HTMLElement>(true, false);
+  // MUST be called before the modal frame: it remembers the opener while focus
+  // is still outside the panel, and restores it after the frame unmounts.
+  useDetailFocusRestore();
 
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape' || event.defaultPrevented) return;
-      if (blockEscape?.()) return;
-      event.preventDefault();
-      onClose();
-    };
-    document.addEventListener('keydown', onKeyDown);
-    return () => document.removeEventListener('keydown', onKeyDown);
-  }, [onClose, blockEscape]);
-
-  // The panel is the ONLY scroll container. Land focus on its scrollable body
-  // immediately on open so a wheel/touch gesture (and PageDown/Space) targets
-  // the right element without the visitor first having to Tab to a button.
-  // This runs AFTER useFocusTrap's initial focus (declared above), so it wins
-  // without fighting the trap's Tab cycle. The body is made focusable below.
-  useEffect(() => {
-    // Queue AFTER the opener-restore microtask above. React StrictMode's
-    // simulated unmount/remount queues that restore during development, and it
-    // would otherwise land focus on the sr-only trigger proxy (outside this
-    // panel) — which makes wheel/touch scrolling the body a no-op.
-    queueMicrotask(() => bodyRef.current?.focus({ preventScroll: true }));
-  }, []);
+  // The modal frame owns the scrim, body scroll lock, shell inert state, Escape
+  // and the focus trap. Restore is owned by the effect above (it prefers the
+  // F2 canvas-trigger proxy), so the trap must not race it with a second one.
+  const trapRef = useModalFrame<HTMLElement>({
+    active: true,
+    onClose,
+    blockEscape,
+    initialFocus: bodyRef,
+    restoreFocus: false,
+  });
 
   return (
     <>
-      {/* Dim the room just enough to make the page readable; a click outside
-          dismisses exactly like the old Mantine backdrop did. The room stays
-          visible — this is a framed readout, not an opaque full-screen swap. */}
+      {/* A click outside dismisses exactly like a conventional backdrop. The
+          room stays visible — this is a framed detail, not a full-screen swap. */}
       <div
         className="detail-panel-scrim"
         aria-hidden="true"
@@ -135,14 +94,14 @@ export function DetailMirror({
         <div className="detail-mirror__header">
           <div className="min-w-0">
             <p className="detail-mirror__chip" aria-hidden="true">
-              Details
+              {UI_COPY.detailChip}
             </p>
             <h2 className="p5-display text-lg text-p5-red">{title}</h2>
           </div>
           <button
             type="button"
             onClick={onClose}
-            aria-label={closeLabel ?? `Close details for ${label}`}
+            aria-label={closeLabel ?? UI_COPY.closeDetailsLabel(label)}
             className="p5-btn p5-btn--red detail-mirror__close"
           >
             {closeText}
@@ -151,8 +110,8 @@ export function DetailMirror({
         <div
           ref={bodyRef}
           tabIndex={0}
-          role="group"
-          aria-label="Details content — scroll to read"
+          role="region"
+          aria-label={`${title} details`}
           className="detail-mirror__body"
         >
           {children}

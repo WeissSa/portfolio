@@ -1,3 +1,4 @@
+import { DetailOverlay } from '../src/ui/DetailOverlay';
 /**
  * Climate projector (REWORK_PLAN §3.2.4 / §4.4, commit 9): live heatmap
  * CanvasTexture created by the SHARED drawHeatmap routine, year dial → store →
@@ -19,10 +20,11 @@ import {
   CLIMATE_ATTRIBUTION,
   CLIMATE_ATTRIBUTION_LINE,
   CLIMATE_STATEMENT,
+  CLIMATE_TITLE,
 } from '../src/content/climate';
+import { POSTS, postId } from '../src/content/posts';
 import { flatToHistorical, type HeatmapCell } from '../src/lib/climate';
 import { ClimateView } from '../src/ui/ClimateView';
-import { ClimateProjectorPanel } from '../src/ui/ClimateProjectorPanel';
 import {
   buildProjectorTexture,
   ClimateProjector,
@@ -112,10 +114,10 @@ function readyClimate() {
 
 beforeEach(() => {
   usePortfolioStore.setState({
+    activeDetail: null,
     climate: readyClimate(),
     selectedClimateYear: 2024,
     mode: '2d',
-    climatePanelOpen: false,
   });
   document.body.style.cursor = '';
 });
@@ -160,8 +162,10 @@ describe('buildProjectorTexture (shared drawer, headless)', () => {
     const texts = a.calls
       .filter((call) => call.method === 'fillText')
       .map((call) => String(call.args[0]));
-    expect(texts.some((text) => text.includes('YEAR'))).toBe(true);
-    expect(texts.some((text) => text.includes('OPEN DETAILS'))).toBe(true);
+    expect(texts.some((text) => text.toLowerCase().includes('year'))).toBe(
+      true,
+    );
+    expect(texts.some((text) => text.includes('VIEW DETAILS'))).toBe(true);
     // No second interactive content copy painted on the wall.
     for (const label of ['BACK', 'INFO']) {
       expect(texts.some((text) => text.includes(label))).toBe(false);
@@ -233,7 +237,9 @@ describe('ClimateProjector R3F zone (headless, structural)', () => {
       (node) => node.props.name === 'projector-screen-texture',
     )!;
     act(() => screen.props.onClick({ stopPropagation: vi.fn() }));
-    expect(usePortfolioStore.getState().climatePanelOpen).toBe(true);
+    expect(usePortfolioStore.getState().activeDetail?.kind === 'climate').toBe(
+      true,
+    );
     await renderer.unmount();
     disposeRoomMaterials(materials);
     screenGeometry.dispose();
@@ -388,7 +394,9 @@ describe('ClimateProjector R3F zone (headless, structural)', () => {
     const stopPropagation = vi.fn();
     act(() => screen.props.onClick({ stopPropagation }));
     expect(stopPropagation).toHaveBeenCalledTimes(1);
-    expect(usePortfolioStore.getState().climatePanelOpen).toBe(true);
+    expect(usePortfolioStore.getState().activeDetail?.kind === 'climate').toBe(
+      true,
+    );
     await renderer.unmount();
     disposeRoomMaterials(materials);
     screenGeometry.dispose();
@@ -407,19 +415,21 @@ describe('ClimateProjector R3F zone (headless, structural)', () => {
 describe('ClimateProjectorPanel (accessible DOM equivalent)', () => {
   it('shows the same statement, widgets, selector, legend and links as 2D', () => {
     act(() =>
-      usePortfolioStore.setState({ climatePanelOpen: true, mode: '3d' }),
+      usePortfolioStore.setState({
+        activeDetail: { kind: 'climate' },
+        mode: '3d',
+      }),
     );
-    renderWithProviders(<ClimateProjectorPanel />);
+    renderWithProviders(<DetailOverlay />);
     const dialog = screen.getByRole('dialog');
     expect(dialog).toHaveAttribute('aria-modal', 'true');
     // The dialog's accessible name comes from the Modal's `title` prop — a plain
     // string Mantine renders in its OWN <h2> (aria-labelledby target). The
     // shared ClimateView keeps its own <h2> title and <h3> widget headings as
     // valid siblings; none is nested inside the title.
-    expect(dialog).toHaveAccessibleName('Climate details');
-    expect(
-      document.getElementById('projector-panel-climate-heading'),
-    ).toBeInTheDocument();
+    expect(dialog).toHaveAccessibleName(`${CLIMATE_TITLE} — Details`);
+    // One surface means one stable heading id — no idPrefix duplicate hack.
+    expect(document.getElementById('climate-heading')).toBeInTheDocument();
     expect(dialog).toHaveTextContent(CLIMATE_STATEMENT);
     expect(
       within(dialog).getByRole('heading', {
@@ -446,11 +456,14 @@ describe('ClimateProjectorPanel (accessible DOM equivalent)', () => {
 
   it('renders one valid h2 from the title prop (no <p> or nested heading)', () => {
     act(() =>
-      usePortfolioStore.setState({ climatePanelOpen: true, mode: '3d' }),
+      usePortfolioStore.setState({
+        activeDetail: { kind: 'climate' },
+        mode: '3d',
+      }),
     );
-    renderWithProviders(<ClimateProjectorPanel />);
+    renderWithProviders(<DetailOverlay />);
     const dialog = screen.getByRole('dialog');
-    const title = 'Climate details';
+    const title = `${CLIMATE_TITLE} — Details`;
     const titleHeadings = [...dialog.querySelectorAll('h2')].filter(
       (heading) => heading.textContent?.trim() === title,
     );
@@ -473,15 +486,20 @@ describe('ClimateProjectorPanel (accessible DOM equivalent)', () => {
     document.body.appendChild(opener);
     opener.focus();
     act(() =>
-      usePortfolioStore.setState({ climatePanelOpen: true, mode: '3d' }),
+      usePortfolioStore.setState({
+        activeDetail: { kind: 'climate' },
+        mode: '3d',
+      }),
     );
-    renderWithProviders(<ClimateProjectorPanel />);
+    renderWithProviders(<DetailOverlay />);
     const dialog = await screen.findByRole('dialog');
     await waitFor(() =>
       expect(dialog).toContainElement(document.activeElement as HTMLElement),
     );
     await userEvent.keyboard('{Escape}');
-    expect(usePortfolioStore.getState().climatePanelOpen).toBe(false);
+    expect(usePortfolioStore.getState().activeDetail?.kind === 'climate').toBe(
+      false,
+    );
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     await waitFor(() => expect(opener).toHaveFocus());
     opener.remove();
@@ -490,43 +508,60 @@ describe('ClimateProjectorPanel (accessible DOM equivalent)', () => {
   it('closes from the close button', async () => {
     const user = userEvent.setup();
     act(() =>
-      usePortfolioStore.setState({ climatePanelOpen: true, mode: '3d' }),
+      usePortfolioStore.setState({
+        activeDetail: { kind: 'climate' },
+        mode: '3d',
+      }),
     );
-    renderWithProviders(<ClimateProjectorPanel />);
-    await user.click(
-      screen.getByRole('button', { name: 'Close climate details' }),
+    renderWithProviders(<DetailOverlay />);
+    await user.click(screen.getByRole('button', { name: 'Close details' }));
+    expect(usePortfolioStore.getState().activeDetail?.kind === 'climate').toBe(
+      false,
     );
-    expect(usePortfolioStore.getState().climatePanelOpen).toBe(false);
   });
 
   it('closes on backdrop click', async () => {
     const user = userEvent.setup();
     act(() =>
-      usePortfolioStore.setState({ climatePanelOpen: true, mode: '3d' }),
+      usePortfolioStore.setState({
+        activeDetail: { kind: 'climate' },
+        mode: '3d',
+      }),
     );
-    renderWithProviders(<ClimateProjectorPanel />);
+    renderWithProviders(<DetailOverlay />);
     await user.click(
       document.querySelector('.detail-panel-scrim') as HTMLElement,
     );
-    expect(usePortfolioStore.getState().climatePanelOpen).toBe(false);
+    expect(usePortfolioStore.getState().activeDetail?.kind === 'climate').toBe(
+      false,
+    );
   });
 
-  it('Escape defers to a sibling 3D modal instead of double-closing', async () => {
+  it('opening another detail replaces it; Escape closes only the current one', async () => {
     act(() =>
-      usePortfolioStore.setState({ climatePanelOpen: true, mode: '3d' }),
+      usePortfolioStore.setState({
+        activeDetail: { kind: 'climate' },
+        mode: '3d',
+      }),
     );
-    renderWithProviders(<ClimateProjectorPanel />);
+    renderWithProviders(<DetailOverlay />);
     await screen.findByRole('dialog');
 
-    // Inject a sibling overlay flag directly (the open actions would clear the
-    // panel). Its Escape handler runs first; the panel must not also close.
-    act(() => usePortfolioStore.setState({ selectedPostId: 'cidel' }));
-    await userEvent.keyboard('{Escape}');
-    expect(usePortfolioStore.getState().climatePanelOpen).toBe(true);
+    // ONE surface: opening a book replaces the climate detail instead of
+    // stacking a second dialog with a competing Escape handler.
+    act(() =>
+      usePortfolioStore.setState({
+        activeDetail: { kind: 'post', id: postId(POSTS[0]!) },
+      }),
+    );
+    await waitFor(() =>
+      expect(screen.queryByText(CLIMATE_STATEMENT)).not.toBeInTheDocument(),
+    );
+    expect(screen.getAllByRole('dialog')).toHaveLength(1);
 
-    act(() => usePortfolioStore.setState({ selectedPostId: null }));
     await userEvent.keyboard('{Escape}');
-    expect(usePortfolioStore.getState().climatePanelOpen).toBe(false);
+    expect(usePortfolioStore.getState().activeDetail).toBeNull();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 });
 
@@ -543,12 +578,16 @@ describe('keyboard path in 3D + unchanged 2D route', () => {
     trigger.focus();
     expect(trigger).toHaveFocus();
     await user.keyboard('{Enter}');
-    expect(usePortfolioStore.getState().climatePanelOpen).toBe(true);
+    expect(usePortfolioStore.getState().activeDetail?.kind === 'climate').toBe(
+      true,
+    );
     expect(await screen.findByRole('dialog')).toBeInTheDocument();
 
     // Leaving 3D clears the panel but keeps the shared year.
     act(() => usePortfolioStore.getState().setMode('2d'));
-    expect(usePortfolioStore.getState().climatePanelOpen).toBe(false);
+    expect(usePortfolioStore.getState().activeDetail?.kind === 'climate').toBe(
+      false,
+    );
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(
       screen.queryByRole('button', { name: 'View climate details' }),
@@ -556,9 +595,7 @@ describe('keyboard path in 3D + unchanged 2D route', () => {
   });
 
   it('renders the full 2D /climate view with the shared year selector', async () => {
-    act(() =>
-      usePortfolioStore.setState({ mode: '2d', climatePanelOpen: false }),
-    );
+    act(() => usePortfolioStore.setState({ activeDetail: null, mode: '2d' }));
     renderWithProviders(<ClimateView />);
     expect(
       screen.getByRole('heading', {
@@ -584,10 +621,10 @@ describe('UX fix: no painted projector INFO plane', () => {
     try {
       act(() =>
         usePortfolioStore.setState({
+          activeDetail: { kind: 'climate' },
           mode: '3d',
           sceneReady: true,
           pointerFine: true,
-          climatePanelOpen: true,
         }),
       );
       const renderer = await ReactThreeTestRenderer.create(

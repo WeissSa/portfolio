@@ -44,7 +44,10 @@ export function DisplayTitle({
   className?: string;
   children: ReactNode;
 }) {
-  const Tag = `h${level}` as unknown as 'h1' | 'h2' | 'h3';
+  // Explicit tag map: no string→JSX-tag cast needed, and TypeScript checks the
+  // level is one of the three supported headings.
+  const HEADING_TAGS = { 1: 'h1', 2: 'h2', 3: 'h3' } as const;
+  const Tag = HEADING_TAGS[level];
   return (
     <Tag className={`p5-display text-2xl md:text-3xl ${className}`.trim()}>
       {children}

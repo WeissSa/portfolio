@@ -369,7 +369,9 @@ test.describe('diegetic plaque framing + reveal-on-focus', () => {
     await page.mouse.move(850, 350);
     await page.waitForTimeout(200);
     await page.mouse.click(850, 350);
-    await expect(page.getByRole('dialog', { name: 'About' })).toBeVisible();
+    await expect(
+      page.getByRole('dialog', { name: 'About Sam — Details' }),
+    ).toBeVisible();
     await page.addStyleTag({
       content:
         '.detail-mirror, .detail-panel-scrim { display: none !important; }',

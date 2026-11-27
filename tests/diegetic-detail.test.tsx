@@ -1,3 +1,4 @@
+import { DetailOverlay } from '../src/ui/DetailOverlay';
 /**
  * Unified detail panel contract (UX fix pass 2026-11-25, reverses polish(c)).
  *
@@ -14,11 +15,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders } from './helpers';
 import { POSTS, PROJECTS, postId } from '../src/content/posts';
 import { isDiegeticDetail } from '../src/lib/detail-mode';
-import { usePortfolioStore } from '../src/state/store';
-import { PostDetailOverlay } from '../src/ui/PostDetailOverlay';
-import { ProjectDetailOverlay } from '../src/ui/ProjectDetailOverlay';
-import { DesktopZoom } from '../src/ui/DesktopZoom';
-import { ClimateProjectorPanel } from '../src/ui/ClimateProjectorPanel';
+import { usePortfolioStore, detailPostId } from '../src/state/store';
 
 /** Fine-pointer LIVE 3D — the only mode with a camera detail close-up. */
 function live3d(): void {
@@ -42,13 +39,10 @@ function installTrigger(): HTMLButtonElement {
 
 beforeEach(() => {
   usePortfolioStore.setState({
+    activeDetail: null,
     mode: '2d',
     sceneReady: false,
     pointerFine: false,
-    selectedPostId: null,
-    selectedProjectId: null,
-    desktopOpen: false,
-    climatePanelOpen: false,
     detailMirrorFocused: false,
     openWindows: [],
   });
@@ -82,8 +76,10 @@ describe('one visible, readable panel in live 3D', () => {
     const post = POSTS[0]!;
     installTrigger();
     live3d();
-    usePortfolioStore.setState({ selectedPostId: postId(post) });
-    renderWithProviders(<PostDetailOverlay />);
+    usePortfolioStore.setState({
+      activeDetail: { kind: 'post', id: postId(post) },
+    });
+    renderWithProviders(<DetailOverlay />);
 
     const dialog = await screen.findByRole('dialog', {
       name: new RegExp(post.title),
@@ -107,8 +103,10 @@ describe('one visible, readable panel in live 3D', () => {
     const post = POSTS[0]!;
     installTrigger();
     live3d();
-    usePortfolioStore.setState({ selectedPostId: postId(post) });
-    renderWithProviders(<PostDetailOverlay />);
+    usePortfolioStore.setState({
+      activeDetail: { kind: 'post', id: postId(post) },
+    });
+    renderWithProviders(<DetailOverlay />);
     const dialog = await screen.findByRole('dialog');
     const close = within(dialog).getByRole('button', { name: /Close details/ });
 
@@ -126,12 +124,14 @@ describe('one visible, readable panel in live 3D', () => {
     const post = POSTS[0]!;
     const trigger = installTrigger();
     live3d();
-    usePortfolioStore.setState({ selectedPostId: postId(post) });
-    renderWithProviders(<PostDetailOverlay />);
+    usePortfolioStore.setState({
+      activeDetail: { kind: 'post', id: postId(post) },
+    });
+    renderWithProviders(<DetailOverlay />);
     await screen.findByRole('dialog');
 
     await userEvent.keyboard('{Escape}');
-    expect(usePortfolioStore.getState().selectedPostId).toBeNull();
+    expect(detailPostId(usePortfolioStore.getState().activeDetail)).toBeNull();
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     await waitFor(() => expect(trigger).toHaveFocus());
   });
@@ -140,8 +140,10 @@ describe('one visible, readable panel in live 3D', () => {
     const project = PROJECTS[0]!;
     installTrigger();
     live3d();
-    usePortfolioStore.setState({ selectedProjectId: postId(project) });
-    const caseView = renderWithProviders(<ProjectDetailOverlay />);
+    usePortfolioStore.setState({
+      activeDetail: { kind: 'project', id: postId(project) },
+    });
+    const caseView = renderWithProviders(<DetailOverlay />);
     expect(await screen.findByRole('dialog')).toHaveAttribute(
       'data-detail-surface',
       'case',
@@ -149,11 +151,8 @@ describe('one visible, readable panel in live 3D', () => {
     expect(document.querySelector('.project-detail-overlay')).toBeNull();
     caseView.unmount();
 
-    usePortfolioStore.setState({
-      selectedProjectId: null,
-      desktopOpen: true,
-    });
-    const crtView = renderWithProviders(<DesktopZoom />);
+    usePortfolioStore.setState({ activeDetail: { kind: 'about' } });
+    const crtView = renderWithProviders(<DetailOverlay />);
     expect(await screen.findByRole('dialog')).toHaveAttribute(
       'data-detail-surface',
       'monitor',
@@ -161,8 +160,8 @@ describe('one visible, readable panel in live 3D', () => {
     expect(document.querySelector('.desktop-zoom')).toBeNull();
     crtView.unmount();
 
-    usePortfolioStore.setState({ desktopOpen: false, climatePanelOpen: true });
-    const projectorView = renderWithProviders(<ClimateProjectorPanel />);
+    usePortfolioStore.setState({ activeDetail: { kind: 'climate' } });
+    const projectorView = renderWithProviders(<DetailOverlay />);
     expect(await screen.findByRole('dialog')).toHaveAttribute(
       'data-detail-surface',
       'projector',
@@ -194,8 +193,10 @@ describe('the SAME panel in every non-picking fallback', () => {
     it(`book panel is visible in ${label}`, async () => {
       const post = POSTS[0]!;
       apply();
-      usePortfolioStore.setState({ selectedPostId: postId(post) });
-      renderWithProviders(<PostDetailOverlay />);
+      usePortfolioStore.setState({
+        activeDetail: { kind: 'post', id: postId(post) },
+      });
+      renderWithProviders(<DetailOverlay />);
 
       const dialog = await screen.findByRole('dialog', {
         name: new RegExp(post.title),
@@ -223,8 +224,10 @@ describe('the SAME panel in every non-picking fallback', () => {
     try {
       const post = POSTS[0]!;
       live3d();
-      usePortfolioStore.setState({ selectedPostId: postId(post) });
-      renderWithProviders(<PostDetailOverlay />);
+      usePortfolioStore.setState({
+        activeDetail: { kind: 'post', id: postId(post) },
+      });
+      renderWithProviders(<DetailOverlay />);
       const dialog = await screen.findByRole('dialog', {
         name: new RegExp(post.title),
       });
@@ -239,10 +242,10 @@ describe('the SAME panel in every non-picking fallback', () => {
   it('case and projector fallbacks share it too', async () => {
     const project = PROJECTS[0]!;
     usePortfolioStore.setState({
+      activeDetail: { kind: 'project', id: postId(project) },
       mode: '2d',
-      selectedProjectId: postId(project),
     });
-    renderWithProviders(<ProjectDetailOverlay />);
+    renderWithProviders(<DetailOverlay />);
     expect(await screen.findByRole('dialog')).toHaveAttribute(
       'aria-modal',
       'true',
@@ -265,8 +268,10 @@ describe('live ↔ fallback handover while a detail is open', () => {
     const trigger = installTrigger();
     const post = POSTS[0]!;
     live3d();
-    usePortfolioStore.setState({ selectedPostId: postId(post) });
-    const view = renderWithProviders(<PostDetailOverlay />);
+    usePortfolioStore.setState({
+      activeDetail: { kind: 'post', id: postId(post) },
+    });
+    const view = renderWithProviders(<DetailOverlay />);
 
     const panel = await screen.findByRole('dialog', {
       name: new RegExp(post.title),
@@ -284,7 +289,7 @@ describe('live ↔ fallback handover while a detail is open', () => {
     expect(await screen.findByRole('dialog')).toBe(panel);
 
     await userEvent.keyboard('{Escape}');
-    expect(usePortfolioStore.getState().selectedPostId).toBeNull();
+    expect(detailPostId(usePortfolioStore.getState().activeDetail)).toBeNull();
     await waitFor(() => expect(trigger).toHaveFocus());
     view.unmount();
   });

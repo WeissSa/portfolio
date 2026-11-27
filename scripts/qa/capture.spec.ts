@@ -7,6 +7,7 @@ import {
   type BrowserContext,
   type Page,
 } from '@playwright/test';
+import { assertPanelContract } from './panel-contract';
 import {
   SCENE_FAILURE_STORAGE_KEY,
   SCENE_FAILURE_VALUE,
@@ -186,26 +187,8 @@ async function expectVisiblePanel(page: Page, surface: string): Promise<void> {
   const mirror = page.locator(
     `.detail-mirror[data-detail-surface="${surface}"]`,
   );
-  await expect(mirror).toHaveCount(1);
-  await expect(mirror).toBeVisible();
-  await expect(mirror).toHaveAttribute('aria-modal', 'true');
-  const box = await mirror.boundingBox();
-  expect(
-    box?.width ?? 0,
-    `${surface} panel must be readable, not sr-hidden`,
-  ).toBeGreaterThan(300);
-  expect(
-    box?.height ?? 0,
-    `${surface} panel must fit the viewport`,
-  ).toBeLessThanOrEqual(900);
-  const scroll = await mirror
-    .locator('.detail-mirror__body')
-    .evaluate((el) => ({
-      overflow: getComputedStyle(el).overflowY,
-      fontPx: parseFloat(getComputedStyle(el).fontSize),
-    }));
-  expect(scroll.overflow).toBe('auto');
-  expect(scroll.fontPx).toBeGreaterThanOrEqual(14);
+  // One shared contract: geometry, focus, wheel, font size, jargon, duplicates.
+  await assertPanelContract(page, mirror, { width: 1440, height: 900 });
   await expect(page.locator('.detail-panel-scrim')).toHaveCount(1);
   await expect(page.locator('#detail-return')).toHaveCount(1);
 }
@@ -467,13 +450,13 @@ test.describe('recordings', () => {
     await togglePage.locator('.scene-layer--ready').waitFor();
     await activateControl(
       togglePage,
-      togglePage.getByRole('button', { name: '3D room mode' }),
+      togglePage.getByRole('button', { name: '3D view' }),
     );
     await togglePage.waitForTimeout(1500);
     await togglePage.screenshot();
     await activateControl(
       togglePage,
-      togglePage.getByRole('button', { name: 'Automatic mode' }),
+      togglePage.getByRole('button', { name: 'Auto' }),
     );
     await togglePage.waitForTimeout(1500);
     await togglePage.screenshot();

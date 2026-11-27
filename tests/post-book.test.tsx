@@ -45,7 +45,7 @@ describe('opened book — flat variant', () => {
       /After graduating I happily took a return offer to Gusto/,
     );
     expect(book).toHaveTextContent(
-      'Repository is private — details under NDA.',
+      'Source code is private — details under NDA.',
     );
   });
 

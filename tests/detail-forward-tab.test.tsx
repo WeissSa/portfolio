@@ -28,14 +28,11 @@ function openDiegetic(hash: string, state: Record<string, unknown>): void {
   render(<App />);
   act(() =>
     usePortfolioStore.setState({
+      activeDetail: null,
       mode: '3d',
       sceneReady: true,
       pointerFine: true,
       activeZone: (hash === '#/' ? '/' : hash.replace('#', '')) as Route,
-      selectedPostId: null,
-      selectedProjectId: null,
-      desktopOpen: false,
-      climatePanelOpen: false,
       ...state,
     }),
   );
@@ -57,13 +54,14 @@ async function proxyTabReachesMirror(
   proxy.focus();
   expect(proxy).toHaveFocus();
   await user.tab();
-  // The mirror's close button is its FIRST tabbable child, so the single
-  // forward Tab must land on it specifically — not merely anywhere inside the
-  // mirror (which could mask a changed DOM order or a skipped close control).
-  const close = within(mirror).getByRole('button', {
-    name: /Close (details|desktop|climate)/,
-  });
+  // One forward Tab from the proxy reaches the single dialog's Close button.
+  const close = within(mirror).getByRole('button', { name: /Close/ });
   await waitFor(() => expect(close).toHaveFocus());
+  // The scrollable body follows Close in DOM order and is focused on open, so
+  // wheel AND keyboard scrolling work immediately, without hunting for a Tab.
+  await user.tab();
+  const body = within(mirror).getByRole('region', { name: /details$/ });
+  await waitFor(() => expect(body).toHaveFocus());
   expect(mirror).toHaveClass('detail-mirror');
   expect(mirror).toHaveAttribute('data-detail-surface', surface);
 }
@@ -78,23 +76,29 @@ const surfaces: readonly [
   [
     'book',
     '#/experience',
-    { selectedPostId: postId(POSTS[0]!) },
+    { activeDetail: { kind: 'post', id: postId(POSTS[0]!) } },
     new RegExp(POSTS[0]!.title),
     'book',
   ],
   [
     'case',
     '#/projects',
-    { selectedProjectId: postId(PROJECTS[0]!) },
+    { activeDetail: { kind: 'project', id: postId(PROJECTS[0]!) } },
     new RegExp(PROJECTS[0]!.title),
     'case',
   ],
-  ['monitor', '#/about', { desktopOpen: true }, /About/, 'monitor'],
+  [
+    'monitor',
+    '#/about',
+    { activeDetail: { kind: 'about' } },
+    /About Sam/,
+    'monitor',
+  ],
   [
     'projector',
     '#/climate',
-    { climatePanelOpen: true },
-    /Climate details/,
+    { activeDetail: { kind: 'climate' } },
+    /Details/,
     'projector',
   ],
 ];
@@ -114,6 +118,6 @@ describe('natural forward Tab from the F2 trigger into the detail mirror', () =>
     await user.click(
       screen.getByRole('button', { name: 'View climate details' }),
     );
-    await proxyTabReachesMirror('projector', /Climate details/);
+    await proxyTabReachesMirror('projector', /Details/);
   });
 });

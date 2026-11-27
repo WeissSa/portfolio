@@ -19,7 +19,11 @@ import {
   type RoomMaterials,
 } from '../src/scene/art/materials';
 import { ProjectCases } from '../src/scene/zones/ProjectCases';
-import { usePortfolioStore } from '../src/state/store';
+import {
+  usePortfolioStore,
+  detailPostId,
+  detailProjectId,
+} from '../src/state/store';
 
 // jsdom has no WebGL2: stub the lazy scene so forcing 3D mode never creates a
 // Canvas (capability gates + error boundary have their own tests).
@@ -35,12 +39,10 @@ const publicProject = PROJECTS.find((project) => project.repoUrl)!;
 beforeEach(() => {
   window.location.hash = '#/projects';
   usePortfolioStore.setState({
+    activeDetail: null,
     mode: '2d',
-    selectedPostId: null,
     hoveredPostId: null,
-    selectedProjectId: null,
     hoveredProjectId: null,
-    desktopOpen: false,
   });
   document.body.style.cursor = '';
 });
@@ -80,7 +82,9 @@ describe('R3F case zone (headless, structural)', () => {
 
     const stopPropagation = vi.fn();
     act(() => group!.props.onClick({ stopPropagation }));
-    expect(usePortfolioStore.getState().selectedProjectId).toBe(firstId);
+    expect(detailProjectId(usePortfolioStore.getState().activeDetail)).toBe(
+      firstId,
+    );
     expect(stopPropagation).toHaveBeenCalledTimes(1);
 
     await renderer.unmount();
@@ -125,13 +129,15 @@ describe('R3F case zone (headless, structural)', () => {
     expect(group.rotation.x).toBe(0);
     expect(group.position.y).toBeCloseTo(lidPart.position![1], 6);
 
-    act(() => usePortfolioStore.getState().selectProject(firstId));
+    act(() =>
+      usePortfolioStore.getState().openDetail({ kind: 'project', id: firstId }),
+    );
     await renderer.advanceFrames(20, 0.05);
     // Selected: the lid has lifted and hinged toward its open pose.
     expect(group.rotation.x).toBeLessThan(-0.5);
     expect(group.position.y).toBeGreaterThan(lidPart.position![1] + 0.02);
 
-    act(() => usePortfolioStore.getState().selectProject(null));
+    act(() => usePortfolioStore.getState().closeDetail());
     await renderer.advanceFrames(30, 0.05);
     // Deselected: it settles back to the exact closed pose.
     expect(group.rotation.x).toBeCloseTo(0, 3);
@@ -167,7 +173,9 @@ describe('R3F case zone (headless, structural)', () => {
 
 describe('shared project detail dialog', () => {
   it('renders the selected project with repo link and accessible tags', async () => {
-    usePortfolioStore.setState({ selectedProjectId: postId(publicProject) });
+    usePortfolioStore.setState({
+      activeDetail: { kind: 'project', id: postId(publicProject) },
+    });
     renderProjects();
 
     const dialog = screen.getByRole('dialog', {
@@ -191,12 +199,14 @@ describe('shared project detail dialog', () => {
     expect(repo).toHaveAttribute('rel', 'noopener noreferrer');
 
     expect(
-      screen.getByText(`Project case opened for ${publicProject.title}`),
+      screen.getByText(`Project details opened for ${publicProject.title}`),
     ).toBeInTheDocument();
   });
 
   it('titles the dialog with one valid h2 (title prop, no nested headings)', async () => {
-    usePortfolioStore.setState({ selectedProjectId: postId(publicProject) });
+    usePortfolioStore.setState({
+      activeDetail: { kind: 'project', id: postId(publicProject) },
+    });
     renderProjects();
 
     const dialog = screen.getByRole('dialog', {
@@ -217,18 +227,24 @@ describe('shared project detail dialog', () => {
   });
 
   it('only one modal dialog can own the screen', async () => {
-    usePortfolioStore.setState({ selectedPostId: postId(PROJECTS[1]!) });
-    act(() => usePortfolioStore.getState().selectProject(firstId));
+    usePortfolioStore.setState({
+      activeDetail: { kind: 'post', id: postId(PROJECTS[1]!) },
+    });
+    act(() =>
+      usePortfolioStore.getState().openDetail({ kind: 'project', id: firstId }),
+    );
     const state = usePortfolioStore.getState();
-    expect(state.selectedProjectId).toBe(firstId);
-    expect(state.selectedPostId).toBeNull();
+    expect(detailProjectId(state.activeDetail)).toBe(firstId);
+    expect(detailPostId(state.activeDetail)).toBeNull();
   });
 
   it('traps focus, closes on Esc and restores focus to the opener', async () => {
     const opener = document.createElement('button');
     document.body.appendChild(opener);
     opener.focus();
-    usePortfolioStore.setState({ selectedProjectId: firstId });
+    usePortfolioStore.setState({
+      activeDetail: { kind: 'project', id: firstId },
+    });
     renderProjects();
 
     const dialog = await screen.findByRole('dialog', {
@@ -239,7 +255,9 @@ describe('shared project detail dialog', () => {
     );
 
     await userEvent.keyboard('{Escape}');
-    expect(usePortfolioStore.getState().selectedProjectId).toBeNull();
+    expect(
+      detailProjectId(usePortfolioStore.getState().activeDetail),
+    ).toBeNull();
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     await waitFor(() => expect(opener).toHaveFocus());
     opener.remove();
@@ -247,7 +265,9 @@ describe('shared project detail dialog', () => {
 
   it('closes on the close button and on backdrop click', async () => {
     const user = userEvent.setup();
-    usePortfolioStore.setState({ selectedProjectId: firstId });
+    usePortfolioStore.setState({
+      activeDetail: { kind: 'project', id: firstId },
+    });
     renderProjects();
 
     const dialog = screen.getByRole('dialog', {
@@ -258,15 +278,21 @@ describe('shared project detail dialog', () => {
         name: `Close details for ${first.title}`,
       }),
     );
-    expect(usePortfolioStore.getState().selectedProjectId).toBeNull();
+    expect(
+      detailProjectId(usePortfolioStore.getState().activeDetail),
+    ).toBeNull();
 
     // Reopen via the store, then dismiss through the backdrop.
-    act(() => usePortfolioStore.getState().selectProject(firstId));
+    act(() =>
+      usePortfolioStore.getState().openDetail({ kind: 'project', id: firstId }),
+    );
     const backdrop = document.querySelector(
       '.detail-panel-scrim',
     ) as HTMLElement;
     await user.click(backdrop);
-    expect(usePortfolioStore.getState().selectedProjectId).toBeNull();
+    expect(
+      detailProjectId(usePortfolioStore.getState().activeDetail),
+    ).toBeNull();
   });
 
   it('clears the selection on a 3D → 2D switch and unmounts the dialog', async () => {
@@ -274,14 +300,19 @@ describe('shared project detail dialog', () => {
     // clear a 3D selection set before the initial commit.
     renderProjects();
     act(() => {
-      usePortfolioStore.setState({ mode: '3d', selectedProjectId: firstId });
+      usePortfolioStore.setState({
+        activeDetail: { kind: 'project', id: firstId },
+        mode: '3d',
+      });
     });
     expect(
       screen.getByRole('dialog', { name: new RegExp(first.title) }),
     ).toBeInTheDocument();
 
     act(() => usePortfolioStore.getState().setMode('2d'));
-    expect(usePortfolioStore.getState().selectedProjectId).toBeNull();
+    expect(
+      detailProjectId(usePortfolioStore.getState().activeDetail),
+    ).toBeNull();
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 });
@@ -297,11 +328,11 @@ describe('keyboard-operable DOM equivalent (unchanged)', () => {
       ).toBeInTheDocument();
     }
     expect(
-      within(main).getAllByRole('button', { name: 'Open case' }),
+      within(main).getAllByRole('button', { name: 'View project' }),
     ).toHaveLength(PROJECTS.length);
   });
 
-  it('highlights only the DOM twin of a hovered/selected case', () => {
+  it('highlights one DOM twin on hover and replaces the shelf behind an open detail', () => {
     const main = renderProjects();
     act(() => usePortfolioStore.getState().setHoveredProject(firstId));
     expect(main.querySelector(`[data-project-id="${firstId}"]`)).toHaveClass(
@@ -312,31 +343,23 @@ describe('keyboard-operable DOM equivalent (unchanged)', () => {
       'p5-card--highlight',
     );
 
-    // A PICKED case drives the same highlight via selectedProjectId. The zone
-    // shelf is unmounted while the detail panel is open, so only the panel's
-    // case card remains — one surface, no duplicate list behind it.
+    // ONE surface: the project shelf is not mounted behind its detail.
     act(() =>
       usePortfolioStore.setState({
+        activeDetail: { kind: 'project', id: firstId },
         hoveredProjectId: null,
-        selectedProjectId: firstId,
       }),
     );
     expect(main.querySelector(`[data-project-id="${firstId}"]`)).toBeNull();
-    const panelCard = document.querySelector(
-      `.detail-mirror [data-project-id="${firstId}"]`,
-    );
-    expect(panelCard).toHaveClass('p5-card--highlight');
-    expect(
-      document.querySelectorAll('.detail-mirror [data-project-id]'),
-    ).toHaveLength(1);
-    act(() => usePortfolioStore.setState({ selectedProjectId: null }));
+    expect(screen.getAllByRole('dialog')).toHaveLength(1);
+    act(() => usePortfolioStore.setState({ activeDetail: null }));
   });
 
   it('a DOM case toggle still expands details without the 3D scene', async () => {
     const user = userEvent.setup();
     const main = renderProjects();
     const toggle = within(main).getAllByRole('button', {
-      name: 'Open case',
+      name: 'View project',
     })[0]!;
     toggle.focus();
     expect(toggle).toHaveFocus();
@@ -352,10 +375,10 @@ describe('UX fix: no painted case card in the room', () => {
   beforeEach(() => {
     materials = createRoomMaterials({});
     usePortfolioStore.setState({
+      activeDetail: { kind: 'project', id: firstId },
       mode: '3d',
       sceneReady: true,
       pointerFine: true,
-      selectedProjectId: firstId,
     });
   });
 

@@ -22,7 +22,7 @@ import {
 } from '../affordance';
 import { useDeferredDispose } from '../../lib/deferred-dispose';
 import { focusDetailTrigger } from '../../lib/detail-mode';
-import { usePortfolioStore } from '../../state/store';
+import { selectPostDetailId, usePortfolioStore } from '../../state/store';
 import {
   bookAtlasRows,
   createLibraryBooks,
@@ -51,9 +51,9 @@ export function LibraryZone({ cells, materials }: LibraryZoneProps) {
     [cells],
   );
   const hoveredPostId = usePortfolioStore((state) => state.hoveredPostId);
-  const selectedPostId = usePortfolioStore((state) => state.selectedPostId);
+  const selectedPostId = usePortfolioStore(selectPostDetailId);
   const setHoveredPost = usePortfolioStore((state) => state.setHoveredPost);
-  const selectPost = usePortfolioStore((state) => state.selectPost);
+  const openDetail = usePortfolioStore((state) => state.openDetail);
   // Experience-zone spotlight: all books get a subtle gold lift once the
   // camera settles; hover/selection keep the stronger shared affordance.
   const spotlight = useZoneSpotlight('/experience');
@@ -154,7 +154,7 @@ export function LibraryZone({ cells, materials }: LibraryZoneProps) {
     if (book) {
       // Pointer pick: focus the sr-only DOM proxy so F2 can restore focus.
       focusDetailTrigger();
-      selectPost(book.id);
+      openDetail({ kind: 'post', id: book.id });
     }
   };
 

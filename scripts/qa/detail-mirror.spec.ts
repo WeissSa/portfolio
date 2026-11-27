@@ -7,6 +7,7 @@ import {
   type BrowserContext,
   type Page,
 } from '@playwright/test';
+import { assertPanelContract } from './panel-contract';
 
 /**
  * Real-browser contract for the ONE readable detail panel (UX fix pass).
@@ -68,33 +69,15 @@ async function openProjector(page: Page): Promise<void> {
   await page.getByRole('button', { name: 'View climate details' }).click();
 }
 
-async function assertReadablePanel(page: Page): Promise<void> {
-  const panel = page.locator('.detail-mirror');
-  await expect(panel).toBeVisible();
-  await expect(panel).toHaveAttribute('role', 'dialog');
-  await expect(panel).toHaveAttribute('aria-modal', 'true');
-  const box = await panel.boundingBox();
-  expect(box?.width ?? 0, 'panel is readable').toBeGreaterThan(300);
-  expect(box?.height ?? 0, 'panel fits the viewport').toBeLessThanOrEqual(900);
-  expect((box?.y ?? -1) >= 0, 'panel is not clipped at the top').toBe(true);
-  expect(
-    (box?.y ?? 0) + (box?.height ?? 0) <= DESKTOP.height,
-    'panel is not clipped at the bottom',
-  ).toBe(true);
-  const body = panel.locator('.detail-mirror__body');
-  const metrics = await body.evaluate((el) => ({
-    overflowY: getComputedStyle(el).overflowY,
-    fontPx: parseFloat(getComputedStyle(el).fontSize),
-    scrollHeight: el.scrollHeight,
-    clientHeight: el.clientHeight,
-  }));
-  expect(metrics.overflowY).toBe('auto');
-  expect(metrics.fontPx, 'AA-size reading text').toBeGreaterThanOrEqual(14);
-  // Full copy is asserted by content in the calling test (headline + the
-  // attribution link), not by a viewport-dependent scrollHeight>clientHeight
-  // comparison: a tall viewport can legitimately fit the whole panel, while
-  // overflowY:auto guarantees scrolling whenever the text does exceed it.
-  await expect(panel.getByRole('button', { name: /Close/ })).toBeVisible();
+async function assertReadablePanel(
+  page: Page,
+  viewport: { width: number; height: number } = DESKTOP,
+): Promise<void> {
+  // Shared value-level contract (no more 14px vs 15px disagreement).
+  await assertPanelContract(page, page.locator('.detail-mirror'), viewport);
+  await expect(
+    page.locator('.detail-mirror').getByRole('button', { name: /Close/ }),
+  ).toBeVisible();
 }
 
 test('fine-pointer live 3D: the detail panel is visible and scrollable', async ({

@@ -242,13 +242,10 @@ async function driveRuns(
     const toggle = await sample(page, 'mode-toggle', async () => {
       await activateControl(
         page,
-        page.getByRole('button', { name: '3D room mode' }),
+        page.getByRole('button', { name: '3D view' }),
       );
       await page.waitForTimeout(250);
-      await activateControl(
-        page,
-        page.getByRole('button', { name: 'Automatic mode' }),
-      );
+      await activateControl(page, page.getByRole('button', { name: 'Auto' }));
       await ready(page);
     });
     (collected['mode-toggle'] ??= []).push(toggle);
@@ -286,12 +283,9 @@ async function driveRuns(
     for (let i = 0; i < 5; i += 1) {
       await activateControl(
         page,
-        page.getByRole('button', { name: '3D room mode' }),
+        page.getByRole('button', { name: '3D view' }),
       );
-      await activateControl(
-        page,
-        page.getByRole('button', { name: 'Automatic mode' }),
-      );
+      await activateControl(page, page.getByRole('button', { name: 'Auto' }));
     }
     const after = await measureInfo(page);
     expect(after).not.toBeNull();

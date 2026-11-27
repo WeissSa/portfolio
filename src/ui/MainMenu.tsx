@@ -2,6 +2,7 @@ import { createRef, useCallback, useMemo, type KeyboardEvent } from 'react';
 import { ActionIcon, Button, Tooltip } from '@mantine/core';
 import { LINKS } from '../content/links';
 import { HEADLINE, SITE_OWNER } from '../content/bio';
+import { UI_COPY } from '../content/ui-copy';
 import { Route, ROUTES, useRoute } from '../lib/router';
 import { usePortfolioStore } from '../state/store';
 import { GitHubIcon, LinkedInIcon } from './primitives';
@@ -72,12 +73,12 @@ export function MainMenu() {
   };
 
   return (
-    <nav aria-label="Main menu" className="main-menu p5-cut-in">
+    <nav aria-label={UI_COPY.mainMenu} className="main-menu p5-cut-in">
       {/* Reveal-on-focus: in 3D desktop the nav is sr-only, but focusing any
           link un-hides this chip + the real links, so sighted keyboard users
           ALWAYS see where focus landed. */}
       <p className="main-menu__focus-chip" aria-hidden="true">
-        Keyboard menu — focus visible
+        {UI_COPY.menuFocusChip}
       </p>
       <div className="p5-panel p5-panel--red mb-2 px-4 py-3">
         <p className="p5-display text-lg leading-tight text-p5-black">
@@ -99,7 +100,7 @@ export function MainMenu() {
               href={`#${r}`}
               // Same hash (e.g. HOME while already on '#/' with a detail
               // open) fires no hashchange, so clear the detail here too.
-              onClick={() => usePortfolioStore.getState().closeAllDetails()}
+              onClick={() => usePortfolioStore.getState().closeDetail()}
               onKeyDown={onKeyDown}
               onFocus={() => setMenuFocusRoute(r)}
               onBlur={() => setMenuFocusRoute(null)}

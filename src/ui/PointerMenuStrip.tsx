@@ -10,6 +10,7 @@
  * first closes every detail/modal — HOME therefore wins even during a
  * detail close-up.
  */
+import { UI_COPY } from '../content/ui-copy';
 import { ROUTES, useRoute, type Route } from '../lib/router';
 import { navigateAndCloseDetail } from '../lib/navigation';
 import { usePortfolioStore } from '../state/store';
@@ -29,7 +30,7 @@ export function PointerMenuStrip() {
 
   return (
     <div className="pointer-menu-strip" aria-hidden="true">
-      <p className="pointer-menu-strip__label">Sam Weiss — room menu</p>
+      <p className="pointer-menu-strip__label">{UI_COPY.pointerMenuLabel}</p>
       {ROUTES.map((r) => (
         <button
           key={r}

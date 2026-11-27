@@ -1,5 +1,5 @@
 import { POSTS, postId } from '../content/posts';
-import { usePortfolioStore } from '../state/store';
+import { selectPostDetailId, usePortfolioStore } from '../state/store';
 import { DisplayTitle } from './primitives';
 import { PostCard } from './PostCard';
 
@@ -9,7 +9,7 @@ export function ExperienceView() {
   // matching DOM card. The list itself is fully keyboard/screen-reader usable
   // regardless — the 3D scene never gates access to the content.
   const hoveredPostId = usePortfolioStore((state) => state.hoveredPostId);
-  const selectedPostId = usePortfolioStore((state) => state.selectedPostId);
+  const selectedPostId = usePortfolioStore(selectPostDetailId);
 
   return (
     <section aria-labelledby="experience-heading" className="p5-cut-in">

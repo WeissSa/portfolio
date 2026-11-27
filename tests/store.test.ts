@@ -1,16 +1,18 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { usePortfolioStore } from '../src/state/store';
+import {
+  usePortfolioStore,
+  detailPostId,
+  detailProjectId,
+} from '../src/state/store';
 
 describe('portfolio store', () => {
   beforeEach(() => {
     window.location.hash = '';
     usePortfolioStore.setState({
+      activeDetail: null,
       activeZone: '/',
       hasNavigated: false,
-      selectedPostId: null,
       hoveredPostId: null,
-      desktopOpen: false,
-      selectedProjectId: null,
       hoveredProjectId: null,
     });
   });
@@ -52,21 +54,21 @@ describe('portfolio store', () => {
   });
 
   it('tracks book selection, hover and fine-pointer state (commit 6)', () => {
-    const { selectPost, setHoveredPost, setPointerFine } =
+    const { openDetail, closeDetail, setHoveredPost, setPointerFine } =
       usePortfolioStore.getState();
-    expect(usePortfolioStore.getState().selectedPostId).toBeNull();
+    expect(detailPostId(usePortfolioStore.getState().activeDetail)).toBeNull();
     expect(usePortfolioStore.getState().hoveredPostId).toBeNull();
     expect(usePortfolioStore.getState().pointerFine).toBe(false);
 
-    selectPost('gusto-software-engineer');
+    openDetail({ kind: 'post', id: 'gusto-software-engineer' });
     setHoveredPost('gusto-software-engineer');
     setPointerFine(true);
     const state = usePortfolioStore.getState();
-    expect(state.selectedPostId).toBe('gusto-software-engineer');
+    expect(detailPostId(state.activeDetail)).toBe('gusto-software-engineer');
     expect(state.hoveredPostId).toBe('gusto-software-engineer');
     expect(state.pointerFine).toBe(true);
 
-    selectPost(null);
+    closeDetail();
     setHoveredPost(null);
     setPointerFine(false);
   });
@@ -74,73 +76,62 @@ describe('portfolio store', () => {
   it('clears 3D-only UI state when leaving 3D mode (A3/B3)', () => {
     const { setMode } = usePortfolioStore.getState();
     setMode('3d');
-    // Inject a stale multi-modal pair directly: the open actions now enforce
-    // the one-modal invariant (tested separately), but a stale combination
-    // from an older session must still be fully cleared on a 3d → 2d switch.
+    // One stale detail plus hover ids from an older session must all be
+    // cleared on a 3d → 2d switch — no detail may leak into the 2D zone.
     usePortfolioStore.setState({
-      selectedPostId: 'gusto-software-engineer',
+      activeDetail: { kind: 'post', id: 'gusto-software-engineer' },
       hoveredPostId: 'gusto-software-engineer',
-      selectedProjectId: 'dreamzzz-game-development-project',
       hoveredProjectId: 'dreamzzz-game-development-project',
-      desktopOpen: true,
-      climatePanelOpen: true,
     });
-    expect(usePortfolioStore.getState().desktopOpen).toBe(true);
-    expect(usePortfolioStore.getState().climatePanelOpen).toBe(true);
-    expect(usePortfolioStore.getState().selectedPostId).not.toBeNull();
-    expect(usePortfolioStore.getState().selectedProjectId).not.toBeNull();
+    expect(detailPostId(usePortfolioStore.getState().activeDetail)).toBe(
+      'gusto-software-engineer',
+    );
 
     setMode('2d');
     const state = usePortfolioStore.getState();
     expect(state.mode).toBe('2d');
-    expect(state.selectedPostId).toBeNull();
+    expect(state.activeDetail).toBeNull();
+    expect(detailPostId(state.activeDetail)).toBeNull();
     expect(state.hoveredPostId).toBeNull();
-    expect(state.selectedProjectId).toBeNull();
+    expect(detailProjectId(state.activeDetail)).toBeNull();
     expect(state.hoveredProjectId).toBeNull();
-    expect(state.desktopOpen).toBe(false);
-    expect(state.climatePanelOpen).toBe(false);
   });
 
   it('lets only one 3D modal own the screen at a time', () => {
     const s = () => usePortfolioStore.getState();
-    usePortfolioStore.setState({
-      mode: '3d',
-      selectedPostId: null,
-      selectedProjectId: null,
-      desktopOpen: false,
-      climatePanelOpen: false,
-    });
+    usePortfolioStore.setState({ activeDetail: null, mode: '3d' });
 
     // Opening the projector clears the book/case dialogs and the desktop zoom.
-    usePortfolioStore.setState({
-      selectedPostId: 'gusto-software-engineer',
-      selectedProjectId: 'dreamzzz-game-development-project',
-      desktopOpen: true,
-    });
-    s().openClimatePanel();
-    expect(s().climatePanelOpen).toBe(true);
-    expect(s().selectedPostId).toBeNull();
-    expect(s().selectedProjectId).toBeNull();
-    expect(s().desktopOpen).toBe(false);
+    usePortfolioStore.setState({ activeDetail: { kind: 'about' } });
+    s().openDetail({ kind: 'climate' });
+    expect(s().activeDetail?.kind === 'climate').toBe(true);
+    expect(detailPostId(s().activeDetail)).toBeNull();
+    expect(detailProjectId(s().activeDetail)).toBeNull();
+    expect(s().activeDetail?.kind === 'about').toBe(false);
 
     // Each of the other open actions clears climatePanelOpen in turn.
-    s().selectPost('cidel');
-    expect(s().selectedPostId).toBe('cidel');
-    expect(s().climatePanelOpen).toBe(false);
-    s().selectProject('dreamzzz-game-development-project');
-    expect(s().selectedProjectId).toBe('dreamzzz-game-development-project');
-    expect(s().selectedPostId).toBeNull();
-    expect(s().climatePanelOpen).toBe(false);
-    s().openDesktop();
-    expect(s().desktopOpen).toBe(true);
-    expect(s().selectedProjectId).toBeNull();
-    expect(s().climatePanelOpen).toBe(false);
+    s().openDetail({ kind: 'post', id: 'cidel' });
+    expect(detailPostId(s().activeDetail)).toBe('cidel');
+    expect(s().activeDetail?.kind === 'climate').toBe(false);
+    s().openDetail({
+      kind: 'project',
+      id: 'dreamzzz-game-development-project',
+    });
+    expect(detailProjectId(s().activeDetail)).toBe(
+      'dreamzzz-game-development-project',
+    );
+    expect(detailPostId(s().activeDetail)).toBeNull();
+    expect(s().activeDetail?.kind === 'climate').toBe(false);
+    s().openDetail({ kind: 'about' });
+    expect(s().activeDetail?.kind === 'about').toBe(true);
+    expect(detailProjectId(s().activeDetail)).toBeNull();
+    expect(s().activeDetail?.kind === 'climate').toBe(false);
 
     // Closing (null/false) never resurrects another dialog.
-    s().closeDesktop();
-    expect(s().selectedPostId).toBeNull();
-    expect(s().selectedProjectId).toBeNull();
-    expect(s().climatePanelOpen).toBe(false);
+    s().closeDetail();
+    expect(detailPostId(s().activeDetail)).toBeNull();
+    expect(detailProjectId(s().activeDetail)).toBeNull();
+    expect(s().activeDetail?.kind === 'climate').toBe(false);
   });
 
   it('clearSceneHover resets hover ids and the body cursor', () => {
@@ -156,11 +147,14 @@ describe('portfolio store', () => {
   });
 
   it('tracks case selection/hover and keeps book/case dialogs mutually exclusive (commit 8)', () => {
-    const { selectPost, selectProject, setHoveredProject } =
+    const { openDetail, closeDetail, setHoveredProject } =
       usePortfolioStore.getState();
-    selectProject('dreamzzz-game-development-project');
+    openDetail({
+      kind: 'project',
+      id: 'dreamzzz-game-development-project',
+    });
     setHoveredProject('dreamzzz-game-development-project');
-    expect(usePortfolioStore.getState().selectedProjectId).toBe(
+    expect(detailProjectId(usePortfolioStore.getState().activeDetail)).toBe(
       'dreamzzz-game-development-project',
     );
     expect(usePortfolioStore.getState().hoveredProjectId).toBe(
@@ -168,27 +162,36 @@ describe('portfolio store', () => {
     );
 
     // Picking a book closes the case dialog; closing (null) never re-opens it.
-    selectPost('gusto-software-engineer');
-    expect(usePortfolioStore.getState().selectedPostId).toBe(
+    openDetail({ kind: 'post', id: 'gusto-software-engineer' });
+    expect(detailPostId(usePortfolioStore.getState().activeDetail)).toBe(
       'gusto-software-engineer',
     );
-    expect(usePortfolioStore.getState().selectedProjectId).toBeNull();
-    selectPost(null);
-    expect(usePortfolioStore.getState().selectedProjectId).toBeNull();
+    expect(
+      detailProjectId(usePortfolioStore.getState().activeDetail),
+    ).toBeNull();
+    closeDetail();
+    expect(
+      detailProjectId(usePortfolioStore.getState().activeDetail),
+    ).toBeNull();
 
-    selectProject(null);
+    closeDetail();
     setHoveredProject(null);
-    expect(usePortfolioStore.getState().selectedProjectId).toBeNull();
+    expect(
+      detailProjectId(usePortfolioStore.getState().activeDetail),
+    ).toBeNull();
     expect(usePortfolioStore.getState().hoveredProjectId).toBeNull();
   });
 
   it('does not clear a case selection on the initial 2D gate', () => {
     usePortfolioStore.setState({
+      activeDetail: {
+        kind: 'project',
+        id: 'dreamzzz-game-development-project',
+      },
       mode: '2d',
-      selectedProjectId: 'dreamzzz-game-development-project',
     });
     usePortfolioStore.getState().setMode('2d');
-    expect(usePortfolioStore.getState().selectedProjectId).toBe(
+    expect(detailProjectId(usePortfolioStore.getState().activeDetail)).toBe(
       'dreamzzz-game-development-project',
     );
   });
@@ -196,43 +199,52 @@ describe('portfolio store', () => {
   it('does not clear 2D-opened detail panels on the initial 2D gate', () => {
     // App's capability effect calls setMode('2d') on mount; a detail panel
     // opened directly from the DOM must survive it (no real 3d → 2d change).
-    usePortfolioStore.setState({ mode: '2d', selectedPostId: 'cidel' });
+    usePortfolioStore.setState({
+      activeDetail: { kind: 'post', id: 'cidel' },
+      mode: '2d',
+    });
     usePortfolioStore.getState().setMode('2d');
-    expect(usePortfolioStore.getState().selectedPostId).toBe('cidel');
+    expect(detailPostId(usePortfolioStore.getState().activeDetail)).toBe(
+      'cidel',
+    );
   });
 
   it('tracks the monitor desktop zoom separately from the book/route state', () => {
-    const { openDesktop, closeDesktop, clear3dSelection } =
+    const { openDetail, closeDetail, clear3dSelection } =
       usePortfolioStore.getState();
-    closeDesktop();
-    expect(usePortfolioStore.getState().desktopOpen).toBe(false);
-    openDesktop();
-    expect(usePortfolioStore.getState().desktopOpen).toBe(true);
+    closeDetail();
+    expect(usePortfolioStore.getState().activeDetail?.kind === 'about').toBe(
+      false,
+    );
+    openDetail({ kind: 'about' });
+    expect(usePortfolioStore.getState().activeDetail?.kind === 'about').toBe(
+      true,
+    );
     // Independent of the hash route (2D #/about still works) and book ids.
     expect(usePortfolioStore.getState().activeZone).toBe('/');
-    expect(usePortfolioStore.getState().selectedPostId).toBeNull();
+    expect(detailPostId(usePortfolioStore.getState().activeDetail)).toBeNull();
     clear3dSelection();
-    expect(usePortfolioStore.getState().desktopOpen).toBe(false);
+    expect(usePortfolioStore.getState().activeDetail?.kind === 'about').toBe(
+      false,
+    );
   });
 
   it('shares the climate year across modes but clears the 3D-only panel (commit 9)', () => {
-    const {
-      setSelectedClimateYear,
-      openClimatePanel,
-      closeClimatePanel,
-      setMode,
-    } = usePortfolioStore.getState();
+    const { setSelectedClimateYear, openDetail, closeDetail, setMode } =
+      usePortfolioStore.getState();
     const originalYear = usePortfolioStore.getState().selectedClimateYear;
     setMode('3d');
     setSelectedClimateYear(2019);
-    openClimatePanel();
+    openDetail({ kind: 'climate' });
     expect(usePortfolioStore.getState().selectedClimateYear).toBe(2019);
-    expect(usePortfolioStore.getState().climatePanelOpen).toBe(true);
+    expect(usePortfolioStore.getState().activeDetail?.kind === 'climate').toBe(
+      true,
+    );
 
     // 3d → 2d clears the dialog but NOT the visitor's year choice.
     setMode('2d');
     let state = usePortfolioStore.getState();
-    expect(state.climatePanelOpen).toBe(false);
+    expect(state.activeDetail?.kind === 'climate').toBe(false);
     expect(state.selectedClimateYear).toBe(2019);
 
     // A plain 2d → 2d gate cannot clear either value.
@@ -240,9 +252,11 @@ describe('portfolio store', () => {
     state = usePortfolioStore.getState();
     expect(state.selectedClimateYear).toBe(2019);
 
-    openClimatePanel();
-    closeClimatePanel();
-    expect(usePortfolioStore.getState().climatePanelOpen).toBe(false);
+    openDetail({ kind: 'climate' });
+    closeDetail();
+    expect(usePortfolioStore.getState().activeDetail?.kind === 'climate').toBe(
+      false,
+    );
     setSelectedClimateYear(originalYear);
   });
 

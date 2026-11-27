@@ -9,39 +9,10 @@
  */
 import { useCallback } from 'react';
 import { Button } from '@mantine/core';
+import { UI_COPY } from '../content/ui-copy';
 import { clearManualMode, writeManualMode } from '../lib/device-tier';
 import { usePortfolioStore, type Mode } from '../state/store';
-
-/** Reduced-motion visitors may opt INTO a static-cut 3D session (commit 4). */
-function ReducedMotionOptIn() {
-  const available = usePortfolioStore((s) => s.reducedMotionOptInAvailable);
-  const optedIn = usePortfolioStore((s) => s.reducedMotionOptIn);
-  const setOptIn = usePortfolioStore((s) => s.setReducedMotionOptIn);
-  const setMode = usePortfolioStore((s) => s.setMode);
-  if (!available) return null;
-  return (
-    <Button
-      type="button"
-      aria-label="Static 3D under reduced motion"
-      aria-pressed={optedIn}
-      onClick={() => {
-        const next = !optedIn;
-        setOptIn(next);
-        if (!next) {
-          clearManualMode();
-          setMode('2d');
-        } else {
-          writeManualMode('3d');
-          setMode('3d');
-        }
-      }}
-      radius={0}
-      className="p5-btn p5-btn--red px-3"
-    >
-      <span aria-hidden="true">Static 3D</span>
-    </Button>
-  );
-}
+import { ReducedMotionOptIn } from './ReducedMotionOptIn';
 
 export function ModeToggle() {
   const mode = usePortfolioStore((state) => state.mode);
@@ -73,11 +44,15 @@ export function ModeToggle() {
 
   return (
     <>
-      <div role="group" aria-label="Rendering mode" className="flex gap-2">
+      <div
+        role="group"
+        aria-label={UI_COPY.viewOptionsLabel}
+        className="flex gap-2"
+      >
         <ReducedMotionOptIn />
         <Button
           type="button"
-          aria-label="3D room mode"
+          aria-label={UI_COPY.view3d}
           aria-pressed={mode === '3d'}
           aria-describedby={canUse3d ? undefined : 'mode-3d-unavailable'}
           disabled={!canUse3d}
@@ -94,7 +69,7 @@ export function ModeToggle() {
         </Button>
         <Button
           type="button"
-          aria-label="Automatic mode"
+          aria-label={UI_COPY.viewAuto}
           onClick={useAuto}
           radius={0}
           className="p5-btn p5-btn--red px-3"
@@ -104,12 +79,14 @@ export function ModeToggle() {
       </div>
       {!canUse3d && (
         <span id="mode-3d-unavailable" className="sr-only">
-          3D mode is unavailable on this device: WebGL2 is missing or a
+          The 3D view is not available on this device: WebGL2 is missing or a
           data-saver / reduced-motion / low-power restriction applies.
         </span>
       )}
       <span className="sr-only" role="status" aria-live="polite">
-        {mode === '3d' ? '3D room mode enabled' : '2D mode enabled'}
+        {UI_COPY.modeEnabled(
+          mode === '3d' ? UI_COPY.view3d : UI_COPY.viewStandard,
+        )}
       </span>
     </>
   );

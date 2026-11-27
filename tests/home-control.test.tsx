@@ -10,7 +10,11 @@
 import ReactThreeTestRenderer, { act } from '@react-three/test-renderer';
 import * as THREE from 'three';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { usePortfolioStore } from '../src/state/store';
+import {
+  usePortfolioStore,
+  detailPostId,
+  detailProjectId,
+} from '../src/state/store';
 import {
   HOME_BADGE_SIZE,
   HomeControl,
@@ -123,10 +127,14 @@ describe('in-world HOME control', () => {
     // HOME must win even while an in-world detail owns the camera: opening a
     // detail closes the others by design, so set the live one and pick HOME.
     act(() => {
-      usePortfolioStore.getState().selectPost('detail-post');
+      usePortfolioStore
+        .getState()
+        .openDetail({ kind: 'post', id: 'detail-post' });
       window.location.hash = '#/experience';
     });
-    expect(usePortfolioStore.getState().selectedPostId).toBe('detail-post');
+    expect(detailPostId(usePortfolioStore.getState().activeDetail)).toBe(
+      'detail-post',
+    );
     expect(window.location.hash).toBe('#/experience');
 
     const stopPropagation = vi.fn();
@@ -134,10 +142,10 @@ describe('in-world HOME control', () => {
     expect(stopPropagation).toHaveBeenCalledTimes(1);
     expect(window.location.hash).toBe('#/');
     const afterHome = usePortfolioStore.getState();
-    expect(afterHome.selectedPostId).toBeNull();
-    expect(afterHome.selectedProjectId).toBeNull();
-    expect(afterHome.climatePanelOpen).toBe(false);
-    expect(afterHome.desktopOpen).toBe(false);
+    expect(detailPostId(afterHome.activeDetail)).toBeNull();
+    expect(detailProjectId(afterHome.activeDetail)).toBeNull();
+    expect(afterHome.activeDetail?.kind === 'climate').toBe(false);
+    expect(afterHome.activeDetail?.kind === 'about').toBe(false);
 
     act(() => usePortfolioStore.setState({ activeZone: '/' }));
     expect(controls()).toHaveLength(0);

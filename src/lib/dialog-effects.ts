@@ -1,22 +1,29 @@
 /**
- * Side effects shared by the DOM dialogs layered over the 3D canvas (review
- * backlog items 3 and 4):
+ * The one modal frame shared by every detail surface. It owns the side effects
+ * that used to be repeated in four overlay wrappers:
  *
- *  - while a modal is open, the authoritative 2D `.app-shell` is marked inert
- *    and aria-hidden so AT and pointer input cannot reach the background; the
- *    dialog's focus trap still owns keyboard focus;
- *  - a dialog covering the canvas clears 3D hover ids and the R3F pointer
- *    cursor, both on mount and on unmount, so no stale highlight leaks through.
+ *  - the `.app-shell` is inert + aria-hidden while a detail is open, and
+ *    restored when the LAST one closes;
+ *  - the document cannot scroll behind the dialog (the panel body is the sole
+ *    scroll container — this is the round-5 "wheel does nothing until Tab"
+ *    fix: focus also starts inside the scroll body);
+ *  - 3D hover ids / the R3F pointer cursor are cleared on open and close;
+ *  - Escape dismisses the detail unless a nested UI (About's window stack)
+ *    consumes it;
+ *  - focus is trapped and restored by `useFocusTrap`.
  */
-import { useEffect } from 'react';
+import { useEffect, useRef, type RefObject } from 'react';
 import { usePortfolioStore } from '../state/store';
+import { useFocusTrap } from './a11y';
 
-// Dialogs can overlap (e.g. a window opened from the desktop zoom), so the
-// shell is only restored when the LAST one closes. Depth is module-scoped
-// because every dialog talks about the same single .app-shell in App.
+// Dialogs can overlap (an About window opened from the desktop), so the shell
+// and body lock are only released when the LAST one closes. Module-scoped
+// because every frame talks about the same .app-shell and document body.
 let inertDepth = 0;
 let priorInert: string | null = null;
 let priorAriaHidden: string | null = null;
+let scrollLockDepth = 0;
+let priorBodyOverflow = '';
 
 function setShellInert(inert: boolean): void {
   if (typeof document === 'undefined') return;
@@ -42,21 +49,87 @@ function setShellInert(inert: boolean): void {
   }
 }
 
-/** Make the background shell inert/aria-hidden while `active`, restore on close. */
-export function useInertBackground(active: boolean): void {
-  useEffect(() => {
-    if (!active) return;
-    setShellInert(true);
-    return () => setShellInert(false);
-  }, [active]);
+/** Lock document scroll while `active`; the dialog body becomes the scroller. */
+function setBodyScrollLocked(locked: boolean): void {
+  if (typeof document === 'undefined') return;
+  if (locked) {
+    if (scrollLockDepth === 0) {
+      priorBodyOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+    }
+    scrollLockDepth += 1;
+  } else {
+    scrollLockDepth = Math.max(0, scrollLockDepth - 1);
+    if (scrollLockDepth === 0) {
+      document.body.style.overflow = priorBodyOverflow;
+    }
+  }
 }
 
-/** Clear 3D hover highlights + cursor when a dialog covers/uncovers the scene. */
-export function useClearSceneHover(active: boolean): void {
+/** Clear 3D hover highlights + cursor when a detail covers/uncovers the scene. */
+function useClearSceneHover(active: boolean): void {
   const clearSceneHover = usePortfolioStore((state) => state.clearSceneHover);
   useEffect(() => {
     if (!active) return;
     clearSceneHover();
     return () => clearSceneHover();
   }, [active, clearSceneHover]);
+}
+
+export interface ModalFrameOptions {
+  active: boolean;
+  onClose: () => void;
+  /** Return true to let a nested UI consume the Escape key. */
+  blockEscape?: () => boolean;
+  /** Element focused on open — the scrollable detail body, not the close button. */
+  initialFocus?: RefObject<HTMLElement | null>;
+  /** Let the caller own focus restore (e.g. prefer the in-world pick proxy). */
+  restoreFocus?: boolean;
+}
+
+/**
+ * Install every modal side effect and return the ref to put on the dialog
+ * container. `active` is always true for the single mounted DetailOverlay.
+ */
+export function useModalFrame<T extends HTMLElement>({
+  active,
+  onClose,
+  blockEscape,
+  initialFocus,
+  restoreFocus = false,
+}: ModalFrameOptions): RefObject<T | null> {
+  const frameRef = useFocusTrap<T>(active, restoreFocus, initialFocus);
+
+  useEffect(() => {
+    if (!active) return;
+    setShellInert(true);
+    setBodyScrollLocked(true);
+    return () => {
+      setShellInert(false);
+      setBodyScrollLocked(false);
+    };
+  }, [active]);
+
+  useClearSceneHover(active);
+
+  // Refs keep the Escape handler stable: a re-render of the detail body must
+  // never tear down and reinstall the listener mid-interaction.
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+  const blockEscapeRef = useRef(blockEscape);
+  blockEscapeRef.current = blockEscape;
+
+  useEffect(() => {
+    if (!active) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || event.defaultPrevented) return;
+      if (blockEscapeRef.current?.()) return;
+      event.preventDefault();
+      onCloseRef.current();
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [active]);
+
+  return frameRef;
 }

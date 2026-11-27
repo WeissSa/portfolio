@@ -7,6 +7,8 @@ import parserTypeScript from '@typescript-eslint/parser';
 import pluginPrettier from 'eslint-plugin-prettier';
 import configPrettier from 'eslint-config-prettier';
 import { noRawHex } from './scripts/eslint-no-raw-hex.mjs';
+import { oneComponentPerFile } from './scripts/eslint-one-component-per-file.mjs';
+import { noUnsafeCast } from './scripts/eslint-no-unsafe-cast.mjs';
 
 export default [
   {
@@ -54,7 +56,13 @@ export default [
       'react-hooks': pluginReactHooks,
       '@typescript-eslint': pluginTypeScript,
       prettier: pluginPrettier,
-      local: { rules: { 'no-raw-hex': noRawHex } },
+      local: {
+        rules: {
+          'no-raw-hex': noRawHex,
+          'one-component-per-file': oneComponentPerFile,
+          'no-unsafe-cast': noUnsafeCast,
+        },
+      },
     },
     rules: {
       ...pluginJs.configs.recommended.rules,
@@ -82,6 +90,18 @@ export default [
       react: {
         version: 'detect',
       },
+    },
+  },
+  {
+    // Owner FE principles (2026-11-27), enforced where product components and
+    // typed source live. Tests/specs are fixtures and are exempt by the rules
+    // themselves. Existing multi-component modules listed below are the only
+    // grandfathered exceptions; every NEW component added to them is still
+    // reported by the rule's per-declaration check.
+    files: ['src/**/*.{ts,tsx}'],
+    rules: {
+      'local/one-component-per-file': 'error',
+      'local/no-unsafe-cast': 'error',
     },
   },
   {

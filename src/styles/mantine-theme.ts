@@ -20,10 +20,9 @@ import {
 
 /** Flat 10-shade tuple: every shade IS the canonical token value. */
 function solid(value: string): MantineColorsTuple {
-  return Array.from(
-    { length: 10 },
-    () => value,
-  ) as unknown as MantineColorsTuple;
+  // A tuple literal needs no cast: the 10 entries are checked against the
+  // MantineColorsTuple shape directly.
+  return [value, value, value, value, value, value, value, value, value, value];
 }
 
 export const MANTINE_COLORS = {

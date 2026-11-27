@@ -11,6 +11,37 @@ export type Mode = '2d' | '3d';
 export type ClimateStatus = 'idle' | 'loading' | 'ready' | 'error';
 export type ClimateSource = 'live' | 'cache' | 'snapshot' | null;
 
+/**
+ * The ONE open detail surface. A book, a project case, the About desktop and
+ * the climate detail are mutually exclusive views of the same DOM overlay:
+ * there is never a second flag that can leave two copies of content mounted.
+ */
+export type ActiveDetail =
+  | { kind: 'post'; id: string }
+  | { kind: 'project'; id: string }
+  | { kind: 'about' }
+  | { kind: 'climate' };
+
+/** Post id when the open detail is a book (used for 3D↔DOM highlighting). */
+export function detailPostId(detail: ActiveDetail | null): string | null {
+  return detail?.kind === 'post' ? detail.id : null;
+}
+
+/** Post id when the open detail is a project case. */
+export function detailProjectId(detail: ActiveDetail | null): string | null {
+  return detail?.kind === 'project' ? detail.id : null;
+}
+
+export const selectActiveDetail = (state: PortfolioStore) => state.activeDetail;
+export const selectPostDetailId = (state: PortfolioStore) =>
+  detailPostId(state.activeDetail);
+export const selectProjectDetailId = (state: PortfolioStore) =>
+  detailProjectId(state.activeDetail);
+export const selectAboutDetailOpen = (state: PortfolioStore) =>
+  state.activeDetail?.kind === 'about';
+export const selectClimateDetailOpen = (state: PortfolioStore) =>
+  state.activeDetail?.kind === 'climate';
+
 export interface ClimateState {
   status: ClimateStatus;
   source: ClimateSource;
@@ -44,12 +75,16 @@ export interface PortfolioStore {
   /** Explicit teardown of 3D-only UI state (also used by setMode). */
   clear3dSelection: () => void;
   /**
-   * Close every detail/modal without disturbing the live scene. Navigation
-   * always wins over a close-up: clicking HOME (or any route) while a book,
-   * case, monitor or projector panel is open must return the camera to the
-   * destination zone instead of leaving `detail` overriding `activeZone`.
+   * The single open detail surface — null when none is showing. Navigation
+   * always wins over a close-up: clicking HOME (or any route) clears it so the
+   * camera returns to the destination zone instead of `detail` overriding
+   * `activeZone`.
    */
-  closeAllDetails: () => void;
+  activeDetail: ActiveDetail | null;
+  /** Open one detail; replaces (never stacks with) whatever was open. */
+  openDetail: (detail: ActiveDetail) => void;
+  /** Close the open detail. Safe to call when nothing is open. */
+  closeDetail: () => void;
   /**
    * Capability-derived automatic mode (no manual override). The toggle's
    * "Auto" option restores this after clearing a stuck override; safe default
@@ -93,12 +128,9 @@ export interface PortfolioStore {
   closeTopWindow: () => AboutWindowId | null;
   closeAllWindows: () => void;
 
-  /* Library / Experience (commit 6): a pickable 3D book writes these ids; the
-   * SAME accessible DOM components read them, so content is never canvas-only. */
+  /* Library / Experience: a pickable 3D book highlights its DOM twin while a
+   * book detail is open. The id itself lives in `activeDetail`. */
 
-  /** Selected book → opens the shared DOM detail overlay. Null = closed. */
-  selectedPostId: string | null;
-  selectPost: (id: string | null) => void;
   /** Hovered book → highlights the matching DOM card (visual parity). */
   hoveredPostId: string | null;
   setHoveredPost: (id: string | null) => void;
@@ -112,32 +144,9 @@ export interface PortfolioStore {
    */
   clearSceneHover: () => void;
 
-  /* Desk / About desktop zoom (commit 7): the monitor sets this flag; App
-   * renders the SAME AboutDesktop DOM full-screen, and CameraRig flies to the
-   * monitor close-up. Separate from selectedPostId / hash route so 2D #/about
-   * keeps working. */
-  /** True while the 3D monitor's full-screen desktop-OS overlay is open. */
-  desktopOpen: boolean;
-  openDesktop: () => void;
-  closeDesktop: () => void;
-
-  /* Game cases / Projects (commit 8): a picked 3D case writes its id here;
-   * the SAME PostCard used by the 2D Projects list renders in a DOM dialog.
-   * Keys are post ids (PROJECTS is a subset of POSTS), so content lookup and
-   * data-project-id parity need no second id scheme. */
-  /** Selected game case → opens the shared DOM project detail dialog. */
-  selectedProjectId: string | null;
-  selectProject: (id: string | null) => void;
   /** Hovered case → highlights the matching 2D project card (visual parity). */
   hoveredProjectId: string | null;
   setHoveredProject: (id: string | null) => void;
-
-  /* Climate projector info panel (commit 9): clicking the 3D screen opens the
-   * SAME accessible ClimateView used by the 2D route in a DOM dialog. 3D-only. */
-  /** True while the projector's climate info dialog is open. */
-  climatePanelOpen: boolean;
-  openClimatePanel: () => void;
-  closeClimatePanel: () => void;
 
   /* Commit 4 bidirectional diegetic/DOM sync. The canonical HIGHLIGHT is
    * derived from these: in-world hover and DOM keyboard focus both write here,
@@ -197,21 +206,9 @@ const IDLE_CLIMATE: ClimateState = {
   isStale: false,
 };
 
-/**
- * All 3D modal flags in their closed state. Opening ANY one modal clears the
- * others so two focus-trapped `aria-modal` dialogs (and their Escape handlers)
- * can never stack. Closing a modal only clears its own flag.
- */
-const CLOSED_MODALS = {
-  selectedPostId: null,
-  selectedProjectId: null,
-  desktopOpen: false,
-  climatePanelOpen: false,
-};
-
 /** 3D-only UI state that must not survive a switch back to 2D (A3/B3). */
 const CLEARED_3D_UI = {
-  ...CLOSED_MODALS,
+  activeDetail: null,
   hoveredPostId: null,
   hoveredProjectId: null,
   menuHoverRoute: null,
@@ -235,9 +232,16 @@ export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
     get().clearSceneHover();
     set(CLEARED_3D_UI);
   },
-  closeAllDetails: () => {
+  activeDetail: null,
+  openDetail: (activeDetail) => {
     get().clearSceneHover();
-    set({ ...CLOSED_MODALS, detailMirrorFocused: false });
+    // One assignment: a new detail replaces the old one instead of stacking a
+    // second dialog (the round-5 "same content twice" bug).
+    set({ activeDetail });
+  },
+  closeDetail: () => {
+    get().clearSceneHover();
+    set({ activeDetail: null, detailMirrorFocused: false });
   },
   autoMode: '2d',
   setAutoMode: (autoMode) => set({ autoMode }),
@@ -319,18 +323,6 @@ export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
   },
   closeAllWindows: () => set({ openWindows: [] }),
 
-  selectedPostId: null,
-  // Picking a book, a case, the monitor or the projector is mutually exclusive:
-  // only one modal dialog may own the screen. Closing (null) never touches the
-  // other flags, so a close handler cannot resurrect a different detail view.
-  selectPost: (selectedPostId) => {
-    get().clearSceneHover();
-    set(
-      selectedPostId
-        ? { ...CLOSED_MODALS, selectedPostId }
-        : { selectedPostId },
-    );
-  },
   hoveredPostId: null,
   setHoveredPost: (hoveredPostId) => set({ hoveredPostId }),
   pointerFine: false,
@@ -353,37 +345,8 @@ export const usePortfolioStore = create<PortfolioStore>((set, get) => ({
     }
   },
 
-  desktopOpen: false,
-  openDesktop: () => {
-    get().clearSceneHover();
-    set({ ...CLOSED_MODALS, desktopOpen: true });
-  },
-  closeDesktop: () => {
-    get().clearSceneHover();
-    set({ desktopOpen: false });
-  },
-
-  selectedProjectId: null,
-  selectProject: (selectedProjectId) => {
-    get().clearSceneHover();
-    set(
-      selectedProjectId
-        ? { ...CLOSED_MODALS, selectedProjectId }
-        : { selectedProjectId },
-    );
-  },
   hoveredProjectId: null,
   setHoveredProject: (hoveredProjectId) => set({ hoveredProjectId }),
-
-  climatePanelOpen: false,
-  openClimatePanel: () => {
-    get().clearSceneHover();
-    set({ ...CLOSED_MODALS, climatePanelOpen: true });
-  },
-  closeClimatePanel: () => {
-    get().clearSceneHover();
-    set({ climatePanelOpen: false });
-  },
 
   menuHoverRoute: null,
   setMenuHoverRoute: (menuHoverRoute) => set({ menuHoverRoute }),

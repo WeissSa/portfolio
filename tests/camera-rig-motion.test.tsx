@@ -45,13 +45,7 @@ vi.mock('../src/scene/diegetic', async (importOriginal) => {
 
 async function mountRig(instant: boolean, zone: Route, paused = false) {
   act(() => {
-    usePortfolioStore.setState({
-      activeZone: zone,
-      desktopOpen: false,
-      selectedPostId: null,
-      selectedProjectId: null,
-      climatePanelOpen: false,
-    });
+    usePortfolioStore.setState({ activeDetail: null, activeZone: zone });
   });
   advanceSpy.mockClear();
   return ReactThreeTestRenderer.create(

@@ -1,9 +1,10 @@
 import { useId, useState } from 'react';
 import { ActionIcon, Button } from '@mantine/core';
 import { displayTags, postId, type Post } from '../content/posts';
+import { UI_COPY } from '../content/ui-copy';
 import { assetUrl, P5Panel, StarMark, TagChip, GitHubIcon } from './primitives';
 
-export const NDA_NOTE = 'Repository is private — details under NDA.';
+export const NDA_NOTE = UI_COPY.ndaNote;
 
 /**
  * Expandable P5 panel for one post — the SAME component used by the 2D
@@ -19,7 +20,6 @@ export function PostCard({
   variant = 'library',
   expanded: controlledExpanded,
   highlighted = false,
-  hideHeading = false,
 }: {
   post: Post;
   variant?: 'library' | 'case';
@@ -27,8 +27,6 @@ export function PostCard({
   expanded?: boolean;
   /** A hovered/selected 3D book or game case highlights its DOM twin. */
   highlighted?: boolean;
-  /** The detail panel already shows the title in its header — don't repeat it. */
-  hideHeading?: boolean;
 }) {
   const [internalExpanded, setInternalExpanded] = useState(false);
   const expanded = controlledExpanded ?? internalExpanded;
@@ -46,20 +44,10 @@ export function PostCard({
       className={`p5-cut-in${highlighted ? ' p5-card--highlight' : ''}`}
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
-        {hideHeading ? (
-          // The dialog header already carries the title — keep it for screen
-          // readers but never paint a second copy of it inside the panel.
-          <h3 className="sr-only">
-            {post.featured && <StarMark />} {post.title}
-          </h3>
-        ) : (
-          <h3 className="p5-display flex-1 text-lg md:text-xl">
-            {post.featured && <StarMark />} {post.title}
-          </h3>
-        )}
-        <div
-          className={`flex items-center gap-2${hideHeading ? ' ml-auto' : ''}`}
-        >
+        <h3 className="p5-display flex-1 text-lg md:text-xl">
+          {post.featured && <StarMark />} {post.title}
+        </h3>
+        <div className="flex items-center gap-2">
           {post.repoUrl ? (
             <ActionIcon
               component="a"
@@ -83,10 +71,10 @@ export function PostCard({
               className="p5-btn text-sm"
             >
               {expanded
-                ? 'Close'
+                ? UI_COPY.close
                 : variant === 'case'
-                  ? 'Open case'
-                  : 'Details'}
+                  ? UI_COPY.openCase
+                  : UI_COPY.openDetails}
             </Button>
           )}
         </div>

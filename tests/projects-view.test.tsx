@@ -22,13 +22,15 @@ describe('diegetic projects shelf', () => {
     expect(list.tagName).toBe('OL');
     expect(list.querySelectorAll(':scope > li')).toHaveLength(PROJECTS.length);
     expect(
-      screen.getByRole('heading', { name: /Projects — Game Cases/i }),
+      screen.getByRole('heading', { name: /Projects/i }),
     ).toBeInTheDocument();
-    // Numbered case files are decorative; the accessible names come from cards.
+    // Numbered projects are decorative; the accessible names come from cards.
     expect(document.querySelectorAll('.projects-shelf__index')).toHaveLength(
       PROJECTS.length,
     );
-    expect(screen.getByText(/case files/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(`${String(PROJECTS.length).padStart(2, '0')} projects`),
+    ).toBeInTheDocument();
   });
 
   it('expands and collapses a case in place with tag chips', async () => {
@@ -38,7 +40,7 @@ describe('diegetic projects shelf', () => {
     expect(card).toBeTruthy();
 
     const toggle = within(card as HTMLElement).getByRole('button', {
-      name: 'Open case',
+      name: 'View project',
     });
     await user.click(toggle);
     expect(
@@ -50,7 +52,9 @@ describe('diegetic projects shelf', () => {
       }).length,
     ).toBeGreaterThan(0);
     expect(
-      within(card as HTMLElement).queryByRole('button', { name: 'Open case' }),
+      within(card as HTMLElement).queryByRole('button', {
+        name: 'View project',
+      }),
     ).toBeNull();
 
     await user.click(

@@ -113,16 +113,19 @@ void main() {
 }
 `;
 
-export interface PainterlyUniforms {
-  tDiffuse: { value: THREE.Texture | null };
-  uResolution: { value: THREE.Vector2 };
-  uTime: { value: number };
-  uGrain: { value: number };
-  uVignette: { value: number };
-  uGrade: { value: number };
-  uEdge: { value: number };
-  uStroke: { value: number };
-}
+export type PainterlyUniforms = {
+  /** ShaderMaterial accepts a name→IUniform map; declare that shape directly
+   *  so no `as unknown as Record<...>` cast is needed at the material boundary. */
+  [name: string]: THREE.IUniform;
+  tDiffuse: THREE.IUniform<THREE.Texture | null>;
+  uResolution: THREE.IUniform<THREE.Vector2>;
+  uTime: THREE.IUniform<number>;
+  uGrain: THREE.IUniform<number>;
+  uVignette: THREE.IUniform<number>;
+  uGrade: THREE.IUniform<number>;
+  uEdge: THREE.IUniform<number>;
+  uStroke: THREE.IUniform<number>;
+};
 
 export const PAINTERLY_DEFAULTS = {
   /** Owner feedback 2026-11-23: softened from 0.05 — do NOT re-harden
@@ -282,7 +285,7 @@ function PainterlyPassInner({
     const quadScene = new THREE.Scene();
     const quadCamera = new THREE.Camera(); // Identity matrices + clip-space quad.
     const material = new THREE.ShaderMaterial({
-      uniforms: uniforms as unknown as Record<string, THREE.IUniform>,
+      uniforms,
       vertexShader: PAINTERLY_VERTEX_SHADER,
       fragmentShader: PAINTERLY_FRAGMENT_SHADER,
       depthTest: false,

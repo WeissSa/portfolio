@@ -71,6 +71,8 @@ export function useFocusRestore(active: boolean): void {
 export function useFocusTrap<T extends HTMLElement>(
   active: boolean,
   restoreFocus = true,
+  /** Prefer this element on open (the detail body is the scroll container). */
+  initialFocus?: RefObject<HTMLElement | null>,
 ): RefObject<T | null> {
   const ref = useRef<T>(null);
   // Keep the latest value in a ref: putting `restoreFocus` in the effect deps
@@ -88,7 +90,9 @@ export function useFocusTrap<T extends HTMLElement>(
 
     const focusFirst = () => {
       const focusables = node.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
-      (focusables[0] ?? node).focus();
+      // The scrollable body is focusable (tabIndex=0) so wheel AND keyboard
+      // scrolling work the instant a detail opens, with no Tab needed.
+      (initialFocus?.current ?? focusables[0] ?? node).focus();
     };
     // Effects run after the commit, so the node (and its focusable children)
     // is already attached. Focusing synchronously avoids a one-frame race in
@@ -143,7 +147,7 @@ export function useFocusTrap<T extends HTMLElement>(
         previouslyFocused.focus({ preventScroll: true });
       }
     };
-  }, [active]);
+  }, [active, initialFocus]);
 
   return ref;
 }

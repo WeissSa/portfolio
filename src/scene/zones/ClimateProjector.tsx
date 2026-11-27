@@ -6,7 +6,7 @@
  * from the SAME pure `drawHeatmap()` routine the DOM widget uses, plus a title
  * and the year — a diegetic heatmap, nothing more. The "Is Today Weirdly
  * Hot/Cold?" verdict, the full statement and the attributions live ONLY in the
- * one readable DOM panel (`ClimateProjectorPanel`). A year dial (two pickable
+ * one readable DOM panel (the shared DetailOverlay). A year dial (two pickable
  * meshes) writes the SHARED `selectedClimateYear` store field; clicking the
  * screen opens that SAME single panel. No second dialog, no painted duplicate.
  * The room-owned projector body + additive light cone stay in Room.tsx.
@@ -21,6 +21,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { useThree, type ThreeEvent } from '@react-three/fiber';
 import { CLIMATE_TITLE } from '../../content/climate';
+import { UI_COPY } from '../../content/ui-copy';
 import {
   availableYears,
   heatmapForYear,
@@ -148,12 +149,12 @@ export function buildProjectorTexture(
   ctx.fillStyle = DESIGN_TOKENS.climate.projectorPlaqueText;
   ctx.font = `bold ${PROJECTED_PANEL.fontPx}px ${DISPLAY_FONT}`;
   ctx.fillText(
-    'YEAR ◀ ▶',
+    'Change year ◀ ▶',
     PROJECTOR_TEXTURE_WIDTH * 0.28,
     PROJECTED_PANEL.textBaseline,
   );
   ctx.fillText(
-    'OPEN DETAILS →',
+    UI_COPY.projectorPaintedCta,
     PROJECTOR_TEXTURE_WIDTH * 0.76,
     PROJECTED_PANEL.textBaseline,
   );
@@ -189,7 +190,7 @@ export function ClimateProjector({
   const setSelectedClimateYear = usePortfolioStore(
     (state) => state.setSelectedClimateYear,
   );
-  const openClimatePanel = usePortfolioStore((state) => state.openClimatePanel);
+  const openDetail = usePortfolioStore((state) => state.openDetail);
   const invalidate = useThree((state) => state.invalidate);
   // Climate-zone spotlight: the year dial + back/info strip gain gold edges
   // after the camera settles, matching the plaque/CRT/book/case affordances.
@@ -329,7 +330,7 @@ export function ClimateProjector({
     // readable detail is the single DOM panel this opens (no painted INFO copy,
     // no second dialog).
     focusDetailTrigger();
-    openClimatePanel();
+    openDetail({ kind: 'climate' });
   };
   const onPointerOver = (event: ThreeEvent<PointerEvent>) => {
     event.stopPropagation();

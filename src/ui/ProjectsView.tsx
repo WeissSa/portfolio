@@ -1,5 +1,6 @@
 import { PROJECTS, postId } from '../content/posts';
-import { usePortfolioStore } from '../state/store';
+import { UI_COPY } from '../content/ui-copy';
+import { selectProjectDetailId, usePortfolioStore } from '../state/store';
 import { DisplayTitle } from './primitives';
 import { PostCard } from './PostCard';
 
@@ -17,9 +18,7 @@ export function ProjectsView() {
   // matching DOM card. The list stays fully keyboard/screen-reader operable;
   // the scene never gates access to any project content.
   const hoveredProjectId = usePortfolioStore((state) => state.hoveredProjectId);
-  const selectedProjectId = usePortfolioStore(
-    (state) => state.selectedProjectId,
-  );
+  const selectedProjectId = usePortfolioStore(selectProjectDetailId);
 
   return (
     <section
@@ -28,10 +27,10 @@ export function ProjectsView() {
     >
       <div className="projects-shelf__header">
         <DisplayTitle level={2} className="text-p5-red">
-          <span id="projects-heading">Projects — Game Cases</span>
+          <span id="projects-heading">{UI_COPY.projectsTitle}</span>
         </DisplayTitle>
         <span className="projects-shelf__count" aria-hidden="true">
-          {String(PROJECTS.length).padStart(2, '0')} case files
+          {UI_COPY.projectsCount(PROJECTS.length)}
         </span>
       </div>
       <ol className="projects-shelf__list">

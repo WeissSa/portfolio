@@ -28,9 +28,8 @@ vi.mock('../src/ui/SceneLayer', () => ({
 beforeEach(() => {
   window.location.hash = '#/';
   usePortfolioStore.setState({
+    activeDetail: null,
     mode: '2d',
-    desktopOpen: false,
-    selectedPostId: null,
     hoveredPostId: null,
     openWindows: [],
   });
@@ -41,8 +40,8 @@ function openZoom() {
   render(<App />);
   act(() => {
     usePortfolioStore.setState({
+      activeDetail: { kind: 'about' },
       mode: '3d',
-      desktopOpen: true,
       openWindows: [],
     });
   });
@@ -73,7 +72,9 @@ describe('desk monitor picking (headless, structural)', () => {
 
     const stopPropagation = vi.fn();
     act(() => group!.props.onClick({ stopPropagation }));
-    expect(usePortfolioStore.getState().desktopOpen).toBe(true);
+    expect(usePortfolioStore.getState().activeDetail?.kind === 'about').toBe(
+      true,
+    );
     expect(stopPropagation).toHaveBeenCalledTimes(1);
 
     act(() => group!.props.onPointerOver({ stopPropagation }));
@@ -97,7 +98,7 @@ describe('desktop zoom DOM (3D)', () => {
         within(zoom).getByRole('button', { name: new RegExp(label) }),
       ).toBeInTheDocument();
     }
-    expect(within(zoom).getByText(/About opened/)).toBeInTheDocument();
+    expect(within(zoom).getByText(/About details opened/)).toBeInTheDocument();
   });
 
   it('Escape closes the top window first, then returns to the room', async () => {
@@ -109,13 +110,17 @@ describe('desktop zoom DOM (3D)', () => {
     ).toBeInTheDocument();
 
     await user.keyboard('{Escape}');
-    expect(usePortfolioStore.getState().desktopOpen).toBe(true);
+    expect(usePortfolioStore.getState().activeDetail?.kind === 'about').toBe(
+      true,
+    );
     expect(
       within(zoom).queryByRole('dialog', { name: 'Bio window' }),
     ).not.toBeInTheDocument();
 
     await user.keyboard('{Escape}');
-    expect(usePortfolioStore.getState().desktopOpen).toBe(false);
+    expect(usePortfolioStore.getState().activeDetail?.kind === 'about').toBe(
+      false,
+    );
     expect(document.querySelector('.detail-mirror')).not.toBeInTheDocument();
   });
 
@@ -124,10 +129,12 @@ describe('desktop zoom DOM (3D)', () => {
     openZoom();
     await user.click(
       screen.getByRole('button', {
-        name: 'Close details',
+        name: 'Close About details',
       }),
     );
-    expect(usePortfolioStore.getState().desktopOpen).toBe(false);
+    expect(usePortfolioStore.getState().activeDetail?.kind === 'about').toBe(
+      false,
+    );
     expect(document.querySelector('.detail-mirror')).not.toBeInTheDocument();
   });
 
@@ -137,11 +144,11 @@ describe('desktop zoom DOM (3D)', () => {
     opener.focus();
 
     const zoom = openZoom();
+    // Focus lands in the scrollable body on open (immediate wheel scrolling),
+    // not on the close button.
     await waitFor(() =>
       expect(
-        within(zoom).getByRole('button', {
-          name: 'Close details',
-        }),
+        within(zoom).getByRole('region', { name: /details$/ }),
       ).toHaveFocus(),
     );
     await userEvent.keyboard('{Escape}');
@@ -156,7 +163,10 @@ describe('2D About stays authoritative', () => {
     window.location.hash = '#/about';
     render(<App />);
     act(() => {
-      usePortfolioStore.setState({ desktopOpen: true, mode: '2d' });
+      usePortfolioStore.setState({
+        activeDetail: { kind: 'about' },
+        mode: '2d',
+      });
     });
 
     // The zoom is 3D-only; a stale flag cannot double-render the About zone.
@@ -177,10 +187,10 @@ describe('UX fix: no clipped painted CRT plane', () => {
     try {
       act(() =>
         usePortfolioStore.setState({
+          activeDetail: { kind: 'about' },
           mode: '3d',
           sceneReady: true,
           pointerFine: true,
-          desktopOpen: true,
         }),
       );
       const renderer = await ReactThreeTestRenderer.create(

@@ -26,15 +26,15 @@ describe('ModeToggle', () => {
     const user = userEvent.setup();
     renderWithProviders(<ModeToggle />);
 
-    const button = screen.getByRole('button', { name: '3D room mode' });
+    const button = screen.getByRole('button', { name: '3D view' });
     expect(button).toHaveAttribute('aria-pressed', 'false');
-    expect(screen.getByText('2D mode enabled')).toBeInTheDocument();
+    expect(screen.getByText('Standard view on')).toBeInTheDocument();
 
     button.focus();
     await user.keyboard('{Enter}');
     expect(usePortfolioStore.getState().mode).toBe('3d');
     expect(button).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByText('3D room mode enabled')).toBeInTheDocument();
+    expect(screen.getByText('3D view on')).toBeInTheDocument();
     expect(localStorage.getItem(MODE_STORAGE_KEY)).toBe('3d');
 
     await user.keyboard(' ');
@@ -46,7 +46,7 @@ describe('ModeToggle', () => {
   it('writes an override that outlives the component', async () => {
     const user = userEvent.setup();
     const { unmount } = renderWithProviders(<ModeToggle />);
-    await user.click(screen.getByRole('button', { name: '3D room mode' }));
+    await user.click(screen.getByRole('button', { name: '3D view' }));
     unmount();
 
     // Persistence is external to the store (survives remount/reload).
@@ -60,7 +60,7 @@ describe('ModeToggle', () => {
     localStorage.setItem(MODE_STORAGE_KEY, '3d');
     renderWithProviders(<ModeToggle />);
 
-    await user.click(screen.getByRole('button', { name: 'Automatic mode' }));
+    await user.click(screen.getByRole('button', { name: 'Auto' }));
     expect(localStorage.getItem(MODE_STORAGE_KEY)).toBeNull();
     expect(usePortfolioStore.getState().mode).toBe('2d');
   });
@@ -76,13 +76,13 @@ describe('ModeToggle', () => {
     writeReducedMotionOptIn(true);
     renderWithProviders(<ModeToggle />);
 
-    await user.click(screen.getByRole('button', { name: 'Automatic mode' }));
+    await user.click(screen.getByRole('button', { name: 'Auto' }));
     expect(usePortfolioStore.getState().mode).toBe('2d');
     expect(usePortfolioStore.getState().reducedMotionOptIn).toBe(false);
     expect(readReducedMotionOptIn()).toBe(false);
     expect(localStorage.getItem(REDUCED_MOTION_OPTIN_KEY)).toBeNull();
     expect(
-      screen.getByRole('button', { name: 'Static 3D under reduced motion' }),
+      screen.getByRole('button', { name: 'Reduced motion view' }),
     ).toHaveAttribute('aria-pressed', 'false');
   });
 
@@ -96,9 +96,9 @@ describe('ModeToggle', () => {
     });
     renderWithProviders(<ModeToggle />);
     const static3d = screen.getByRole('button', {
-      name: 'Static 3D under reduced motion',
+      name: 'Reduced motion view',
     });
-    const threeD = screen.getByRole('button', { name: '3D room mode' });
+    const threeD = screen.getByRole('button', { name: '3D view' });
     expect(static3d).toHaveAttribute('aria-pressed', 'false');
     expect(threeD).toHaveAttribute('aria-pressed', 'false');
 
@@ -107,7 +107,7 @@ describe('ModeToggle', () => {
     expect(threeD).toHaveAttribute('aria-pressed', 'true');
     expect(localStorage.getItem(REDUCED_MOTION_OPTIN_KEY)).toBe('true');
 
-    await user.click(screen.getByRole('button', { name: 'Automatic mode' }));
+    await user.click(screen.getByRole('button', { name: 'Auto' }));
     expect(static3d).toHaveAttribute('aria-pressed', 'false');
     expect(threeD).toHaveAttribute('aria-pressed', 'false');
   });
@@ -117,11 +117,11 @@ describe('ModeToggle', () => {
     usePortfolioStore.setState({ mode: '2d', autoMode: '2d' });
     renderWithProviders(<ModeToggle />);
 
-    const button = screen.getByRole('button', { name: '3D room mode' });
+    const button = screen.getByRole('button', { name: '3D view' });
     expect(button).toBeDisabled();
     expect(button).toHaveAttribute('aria-describedby', 'mode-3d-unavailable');
     expect(
-      screen.getByText(/3D mode is unavailable on this device/),
+      screen.getByText(/3D view is not available on this device/),
     ).toBeInTheDocument();
 
     await user.click(button);
@@ -129,7 +129,7 @@ describe('ModeToggle', () => {
     expect(localStorage.getItem(MODE_STORAGE_KEY)).toBeNull();
 
     // Auto still works and cannot re-enable 3D on an incapable device.
-    await user.click(screen.getByRole('button', { name: 'Automatic mode' }));
+    await user.click(screen.getByRole('button', { name: 'Auto' }));
     expect(usePortfolioStore.getState().mode).toBe('2d');
   });
 });

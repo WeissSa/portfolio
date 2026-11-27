@@ -2,10 +2,10 @@
  * Game cases — Projects (REWORK_PLAN §3.2.3, commit 8).
  *
  * Each of the five desk-shelf cases is a distinct pick target. Clicking one
- * writes its post id into `selectedProjectId`; the SAME accessible PostCard
- * used by the 2D Projects list then renders in a focus-managed DOM dialog, so
- * no detail content ever lives in the canvas. Hover sets `hoveredProjectId`
- * (the 2D card highlights in parity) and the pointer cursor.
+ * opens a single `{ kind: 'project', id }` detail; the SAME accessible PostCard
+ * used by the 2D Projects list then renders in the one focus-managed DOM
+ * dialog, so no detail content ever lives in the canvas. Hover sets
+ * `hoveredProjectId` (the 2D card highlights in parity) and the pointer cursor.
  *
  * The selected case's lid lifts + tilts open; the hovered case lifts slightly.
  * Both are damped scalars animated in useFrame with three preallocated number
@@ -22,7 +22,7 @@ import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
 import { PROJECTS, postId } from '../../content/posts';
 import { focusDetailTrigger } from '../../lib/detail-mode';
 import { PickableEdges, pickAffordance, useZoneSpotlight } from '../affordance';
-import { usePortfolioStore } from '../../state/store';
+import { selectProjectDetailId, usePortfolioStore } from '../../state/store';
 import type { RoomPart } from '../art/geometry';
 import type { RoomMaterials } from '../art/materials';
 
@@ -53,11 +53,9 @@ export function ProjectCases({ cases, materials }: ProjectCasesProps) {
     [cases, projectIds],
   );
 
-  const selectedProjectId = usePortfolioStore(
-    (state) => state.selectedProjectId,
-  );
+  const selectedProjectId = usePortfolioStore(selectProjectDetailId);
   const hoveredProjectId = usePortfolioStore((state) => state.hoveredProjectId);
-  const selectProject = usePortfolioStore((state) => state.selectProject);
+  const openDetail = usePortfolioStore((state) => state.openDetail);
   const setHoveredProject = usePortfolioStore(
     (state) => state.setHoveredProject,
   );
@@ -127,7 +125,7 @@ export function ProjectCases({ cases, materials }: ProjectCasesProps) {
     const id = pick(index);
     if (id) {
       focusDetailTrigger();
-      selectProject(id);
+      openDetail({ kind: 'project', id });
     }
   };
   const onPointerOver =

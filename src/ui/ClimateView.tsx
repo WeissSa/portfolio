@@ -1,4 +1,3 @@
-import { useEffect, useMemo } from 'react';
 import { NativeSelect } from '@mantine/core';
 import {
   CLIMATE_ATTRIBUTION,
@@ -11,16 +10,8 @@ import {
   TODAY_WIDGET_COPY,
   TODAY_WIDGET_TITLE,
 } from '../content/climate';
-import { formatDataAge } from '../lib/climate-api';
-import {
-  availableYears,
-  climateMeterEmoji,
-  heatmapForYear,
-  heatmapLegendColor,
-  reconcileSelectedYear,
-  todayComparison,
-  yearsWithData,
-} from '../lib/climate';
+import { climateMeterEmoji, heatmapLegendColor } from '../lib/climate';
+import { useClimateViewModel } from '../lib/use-climate-view';
 import { usePortfolioStore } from '../state/store';
 import { DisplayTitle, P5Panel } from './primitives';
 import { HeatmapCanvas } from './HeatmapCanvas';
@@ -31,84 +22,26 @@ import { HeatmapCanvas } from './HeatmapCanvas';
  * year selector), Open-Meteo attribution and the Climate Defense Fund of
  * Ontario link always visible (REWORK_PLAN §3.2.4).
  */
-export function ClimateView({
-  idPrefix = '',
-  regionLabel,
-}: {
-  idPrefix?: string;
-  /** Distinct landmark name when a second copy is mounted (3D projector
-   *  mirror alongside the live 2D zone view) — axe landmark-unique requires
-   *  two same-role landmarks to have different accessible names. */
-  regionLabel?: string;
-}) {
+export function ClimateView() {
   const climate = usePortfolioStore((s) => s.climate);
-  const loadClimate = usePortfolioStore((s) => s.loadClimate);
-  // Shared with the 3D projector dial (commit 9): one year across both modes.
-  const selectedYear = usePortfolioStore((s) => s.selectedClimateYear);
   const setSelectedYear = usePortfolioStore((s) => s.setSelectedClimateYear);
-  // The 3D dialog renders a second copy of this view; the prefix keeps the
-  // heading/label ids unique so aria references and <label for> stay valid.
-  const headingId = idPrefix
-    ? `${idPrefix}-climate-heading`
-    : 'climate-heading';
-  const yearSelectId = idPrefix ? `${idPrefix}-heatmap-year` : 'heatmap-year';
-
-  useEffect(() => {
-    void loadClimate();
-  }, [loadClimate]);
-
-  // Only offer years that actually have data. A failed build-time refresh can
-  // leave a months-old (but still valid) snapshot, so deriving from the loaded
-  // dataset is safer than assuming the current year is present.
-  const years = useMemo(() => {
-    const withData = yearsWithData(climate.historical);
-    return withData.length > 0
-      ? withData
-      : availableYears(new Date().getFullYear());
-  }, [climate.historical]);
-
-  // Shared guard with the 3D projector: never DRAW a year the dataset lacks.
-  const renderYear = reconcileSelectedYear(selectedYear, years);
-
-  useEffect(() => {
-    if (years.length > 0 && renderYear !== selectedYear) {
-      setSelectedYear(renderYear);
-    }
-  }, [years, renderYear, selectedYear, setSelectedYear]);
-
-  const comparison = useMemo(() => {
-    if (climate.currentTemp === null) return null;
-    return todayComparison(climate.historical, climate.currentTemp, new Date());
-  }, [climate.currentTemp, climate.historical]);
-
-  const cells = useMemo(
-    () =>
-      climate.status === 'ready'
-        ? heatmapForYear(climate.historical, renderYear)
-        : [],
-    [climate.historical, climate.status, renderYear],
-  );
-
-  const loading = climate.status === 'idle' || climate.status === 'loading';
-
-  const sourceLabel =
-    climate.source === 'live'
-      ? 'live Open-Meteo'
-      : climate.source === 'cache'
-        ? 'local cache'
-        : climate.source === 'snapshot'
-          ? 'bundled snapshot'
-          : null;
-  const ageLabel =
-    climate.fetchedAt !== null ? formatDataAge(climate.fetchedAt) : null;
+  // Data loading and derivation are in a hook; this component only renders.
+  const {
+    years,
+    renderYear,
+    comparison,
+    cells,
+    loading,
+    sourceLabel,
+    ageLabel,
+  } = useClimateViewModel();
+  // ONE surface per content: the zone view and the detail are never mounted
+  // together, so the ids can be plain and stable.
+  const headingId = 'climate-heading';
+  const yearSelectId = 'heatmap-year';
 
   return (
-    <section
-      {...(regionLabel
-        ? { 'aria-label': regionLabel }
-        : { 'aria-labelledby': headingId })}
-      className="p5-cut-in"
-    >
+    <section aria-labelledby={headingId} className="p5-cut-in">
       <DisplayTitle level={2} className="mb-4 text-p5-red">
         <span id={headingId}>{CLIMATE_TITLE}</span>
       </DisplayTitle>

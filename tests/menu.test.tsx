@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import App from '../src/App';
 import { POSTS, postId } from '../src/content/posts';
-import { usePortfolioStore } from '../src/state/store';
+import { usePortfolioStore, detailPostId } from '../src/state/store';
 
 // jsdom cannot create WebGL; stub the lazy scene so forcing live-3D state in
 // the pointer-strip test is deterministic.
@@ -102,10 +102,10 @@ describe('P5 main menu', () => {
     render(<App />);
     act(() =>
       usePortfolioStore.setState({
+        activeDetail: { kind: 'post', id: postId(POSTS[0]!) },
         mode: '3d',
         sceneReady: true,
         pointerFine: true,
-        selectedPostId: postId(POSTS[0]!),
       }),
     );
     const strip = document.querySelector('.pointer-menu-strip') as HTMLElement;
@@ -125,7 +125,7 @@ describe('P5 main menu', () => {
     await user.click(
       strip.querySelector('[data-pointer-route="/"]') as HTMLElement,
     );
-    expect(usePortfolioStore.getState().selectedPostId).toBeNull();
+    expect(detailPostId(usePortfolioStore.getState().activeDetail)).toBeNull();
     expect(window.location.hash).toBe('#/');
     // Do not leak live-3D state into the following menu tests.
     act(() =>

@@ -125,7 +125,7 @@ describe('About desktop-OS (2D)', () => {
     expect(dialog).toHaveTextContent('React');
     expect(dialog).toHaveTextContent('Ruby/Rails');
     const skillList = within(dialog).getByRole('list', {
-      name: 'Skills derived from project tags',
+      name: 'Skills',
     });
     expect(skillList).not.toHaveTextContent('★');
   });

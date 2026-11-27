@@ -28,6 +28,7 @@ import { WallPlaque } from '../src/scene/zones/WallPlaque';
 
 beforeEach(() => {
   usePortfolioStore.setState({
+    activeDetail: null,
     mode: '2d',
     activeZone: '/',
     cameraSettled: true,
@@ -36,7 +37,6 @@ beforeEach(() => {
     menuFocusRoute: null,
     crtCloseUp: false,
     hoveredPostId: null,
-    selectedPostId: null,
   });
   document.body.style.cursor = '';
 });
@@ -169,7 +169,7 @@ describe('diegetic pick affordance in the R3F scene', () => {
 
     act(() => {
       usePortfolioStore.getState().setHoveredPost(null);
-      usePortfolioStore.getState().selectPost(id);
+      usePortfolioStore.getState().openDetail({ kind: 'post', id: id });
     });
     expect(outlines()).toHaveLength(1);
     expect(outlineOpacity()).toBe(1);

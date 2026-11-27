@@ -167,12 +167,10 @@
 
 .p5-tag {
   display: inline-block;
-  max-width: 100%;
   padding: 0.15rem 0.6rem;
   font-size: var(--type-xs);
   font-weight: 700;
   text-transform: uppercase;
-  overflow-wrap: anywhere;
   background: var(--p5-white);
   color: var(--p5-black);
   clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%);
@@ -488,6 +486,21 @@
   font-size: var(--type-sm);
 }
 
+/* While a detail is open the menu becomes a slim top bar, so its buttons sit
+   above the centred panel instead of overlapping it. HOME stays reachable. */
+.app-detail-open .pointer-menu-strip {
+  top: 0;
+  left: 0;
+  right: 0;
+  max-width: none;
+  justify-content: center;
+  padding: var(--space-xs) var(--space-md);
+  border-width: 0 0 2px;
+}
+.app-detail-open .pointer-menu-strip__label {
+  display: none;
+}
+
 /* --------------------------------------------------------------------------
  * UX fix pass (2026-11-25): the READABLE detail is one visible, scrollable DOM
  * panel in every mode — the a11y mirror of polish(c) is now the authoritative
@@ -506,19 +519,20 @@
 
 .detail-mirror {
   position: fixed;
-  left: clamp(var(--space-md), 6vw, 6rem);
-  /* Offset the centre down so the panel header clears the pointer menu strip
-     pinned at top-left; the reduced max-height keeps the bottom in viewport. */
-  top: calc(50% + 3.5rem);
+  /* Centred, single surface: never clipped off-screen, never parked under the
+     pointer menu. The slightly lower centre leaves room for the menu strip. */
+  left: 50%;
+  top: calc(50% + 1.25rem);
   z-index: 11;
   display: flex;
   flex-direction: column;
   width: min(94vw, 46rem);
-  max-height: min(80vh, 54rem);
+  max-width: calc(100vw - 2 * var(--space-md));
+  max-height: min(84vh, 54rem);
   margin: 0;
   padding: 0;
   overflow: hidden;
-  transform: translateY(-50%);
+  transform: translate(-50%, -50%);
   background: var(--p5-black);
   color: var(--p5-white);
   border: 2px solid var(--state-focus);
@@ -564,31 +578,27 @@
 }
 
 /* The ONLY place full detail is read: generous 15px type on ink, AA contrast,
-   and a genuine scroll container for long posts/climate panels. */
+   and the SOLE scroll container. `flex: 1` + `min-height: 0` is what actually
+   makes overflow-y:auto scroll inside a fixed-height flex column; focusing it
+   on open makes wheel/keyboard scrolling work before any Tab. */
 .detail-mirror__body {
+  flex: 1 1 auto;
   min-height: 0;
   padding: var(--space-md) var(--space-lg) var(--space-lg);
   overflow-y: auto;
   overscroll-behavior: contain;
-  /* Long tag names and unbroken URLs must wrap inside the panel, never get
-     clipped at the viewport edge. */
   overflow-wrap: anywhere;
   font-size: 15px;
   line-height: 1.6;
   color: var(--p5-white);
 }
-
-/* Focus is moved here on open so wheel/touch/keyboard scrolling targets this
-   container immediately. Keep the ring inside the panel bounds. */
 .detail-mirror__body:focus-visible {
   outline: 3px solid var(--state-focus);
   outline-offset: -3px;
 }
-
-/* The open panel is the ONLY scrollable surface: stop the document from
-   scrolling behind it (the zone column itself is unmounted in App). */
-body:has(.app-detail-open) {
-  overflow: hidden;
+.detail-mirror__body .p5-tag {
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 
 .detail-mirror__body p,

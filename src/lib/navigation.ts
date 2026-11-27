@@ -12,6 +12,6 @@ import { usePortfolioStore } from '../state/store';
 import { navigate, type Route } from './router';
 
 export function navigateAndCloseDetail(route: Route): void {
-  usePortfolioStore.getState().closeAllDetails();
+  usePortfolioStore.getState().closeDetail();
   navigate(route);
 }

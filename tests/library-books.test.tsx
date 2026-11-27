@@ -11,7 +11,7 @@ import * as THREE from 'three';
 import ReactThreeTestRenderer, { act } from '@react-three/test-renderer';
 import App from '../src/App';
 import { POSTS, postId } from '../src/content/posts';
-import { usePortfolioStore } from '../src/state/store';
+import { usePortfolioStore, detailPostId } from '../src/state/store';
 import {
   createRoomMaterials,
   disposeRoomMaterials,
@@ -22,7 +22,7 @@ import { LibraryZone } from '../src/scene/zones/Library';
 
 beforeEach(() => {
   usePortfolioStore.setState({
-    selectedPostId: null,
+    activeDetail: null,
     hoveredPostId: null,
     pointerFine: false,
   });
@@ -44,7 +44,9 @@ describe('book selection → shared DOM detail panel', () => {
   });
 
   it('opens the PostCard detail for the selected post with an aria-live notice', async () => {
-    usePortfolioStore.setState({ selectedPostId: postId(first) });
+    usePortfolioStore.setState({
+      activeDetail: { kind: 'post', id: postId(first) },
+    });
     renderExperience();
 
     const dialog = screen.getByRole('dialog', {
@@ -57,7 +59,7 @@ describe('book selection → shared DOM detail panel', () => {
       /After graduating I happily took a return offer to Gusto/,
     );
     expect(dialog).toHaveTextContent(
-      'Repository is private — details under NDA.',
+      'Source code is private — details under NDA.',
     );
     expect(
       screen.getByText(`Details opened for ${first.title}`),
@@ -66,7 +68,9 @@ describe('book selection → shared DOM detail panel', () => {
 
   it('renders the ★ featured marker inside the detail for a featured post', () => {
     const featured = POSTS.find((post) => post.featured)!;
-    usePortfolioStore.setState({ selectedPostId: postId(featured) });
+    usePortfolioStore.setState({
+      activeDetail: { kind: 'post', id: postId(featured) },
+    });
     renderExperience();
     const dialog = screen.getByRole('dialog', {
       name: new RegExp(featured.title),
@@ -80,7 +84,9 @@ describe('book selection → shared DOM detail panel', () => {
     const opener = document.createElement('button');
     document.body.appendChild(opener);
     opener.focus();
-    usePortfolioStore.setState({ selectedPostId: postId(first) });
+    usePortfolioStore.setState({
+      activeDetail: { kind: 'post', id: postId(first) },
+    });
     render(<App />);
 
     const dialog = await screen.findByRole('dialog', {
@@ -93,7 +99,7 @@ describe('book selection → shared DOM detail panel', () => {
     );
 
     await userEvent.keyboard('{Escape}');
-    expect(usePortfolioStore.getState().selectedPostId).toBeNull();
+    expect(detailPostId(usePortfolioStore.getState().activeDetail)).toBeNull();
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     await waitFor(() => expect(opener).toHaveFocus());
     opener.remove();
@@ -115,11 +121,9 @@ describe('accessible DOM equivalent (never canvas-gated)', () => {
     expect(await screen.findByTestId('post-description')).toBeInTheDocument();
   });
 
-  it('highlights only the matching DOM card on book hover / selection', () => {
+  it('highlights one DOM card on hover and replaces the zone behind an open detail', () => {
     usePortfolioStore.setState({ hoveredPostId: postId(first) });
     renderExperience();
-    // Scope to <main>: an open detail overlay ALSO renders a PostCard with the
-    // same data-post-id, outside the shell, after a selection is set.
     const main = document.getElementById('main') as HTMLElement;
     expect(main.querySelector(`[data-post-id="${postId(first)}"]`)).toHaveClass(
       'p5-card--highlight',
@@ -128,25 +132,17 @@ describe('accessible DOM equivalent (never canvas-gated)', () => {
       main.querySelector(`[data-post-id="${postId(second)}"]`),
     ).not.toHaveClass('p5-card--highlight');
 
-    // A PICKED book drives the same highlight via selectedPostId (the 3D → DOM
-    // bridge), independently of hover. The zone list is unmounted while the
-    // detail panel owns the screen, so the ONLY visible card is the one inside
-    // the panel — never a second copy behind it.
+    // ONE surface per content: selecting a book unmounts the zone list behind
+    // the detail instead of showing the same post twice.
     act(() =>
       usePortfolioStore.setState({
+        activeDetail: { kind: 'post', id: postId(first) },
         hoveredPostId: null,
-        selectedPostId: postId(first),
       }),
     );
     expect(main.querySelector(`[data-post-id="${postId(first)}"]`)).toBeNull();
-    const panelCard = document.querySelector(
-      `.detail-mirror [data-post-id="${postId(first)}"]`,
-    );
-    expect(panelCard).toHaveClass('p5-card--highlight');
-    expect(
-      document.querySelectorAll('.detail-mirror [data-post-id]'),
-    ).toHaveLength(1);
-    act(() => usePortfolioStore.setState({ selectedPostId: null }));
+    expect(screen.getAllByRole('dialog')).toHaveLength(1);
+    act(() => usePortfolioStore.setState({ activeDetail: null }));
   });
 });
 
@@ -180,7 +176,9 @@ describe('R3F book zone (headless, structural only)', () => {
     act(() => {
       instanced!.props.onClick({ instanceId: 2, stopPropagation });
     });
-    expect(usePortfolioStore.getState().selectedPostId).toBe(postId(POSTS[2]!));
+    expect(detailPostId(usePortfolioStore.getState().activeDetail)).toBe(
+      postId(POSTS[2]!),
+    );
     expect(stopPropagation).toHaveBeenCalledTimes(1);
 
     act(() => {
@@ -220,14 +218,16 @@ describe('R3F book zone (headless, structural only)', () => {
     const beforeSelected = labelZ(selected);
     const beforeOther = labelZ(0);
     act(() => {
-      usePortfolioStore.setState({ selectedPostId: postId(POSTS[selected]!) });
+      usePortfolioStore.setState({
+        activeDetail: { kind: 'post', id: postId(POSTS[selected]!) },
+      });
     });
     expect(labelZ(selected) - beforeSelected).toBeCloseTo(0.13, 6);
     // Neighbouring spines stay put — only the selected quad translates.
     expect(labelZ(0)).toBeCloseTo(beforeOther, 6);
 
     act(() => {
-      usePortfolioStore.setState({ selectedPostId: null });
+      usePortfolioStore.setState({ activeDetail: null });
     });
     expect(labelZ(selected)).toBeCloseTo(beforeSelected, 6);
     await renderer.unmount();
@@ -272,10 +272,10 @@ describe('UX fix: no painted book page in the room', () => {
   beforeEach(() => {
     materials = createRoomMaterials({ bookAtlas: new THREE.Texture() });
     usePortfolioStore.setState({
+      activeDetail: { kind: 'post', id: postId(first) },
       mode: '3d',
       sceneReady: true,
       pointerFine: true,
-      selectedPostId: postId(first),
     });
   });
 

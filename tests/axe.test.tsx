@@ -74,7 +74,9 @@ describe('axe-core accessibility scans (2D mode)', () => {
     const user = userEvent.setup();
     const post = POSTS[0]!;
     window.location.hash = '#/experience';
-    usePortfolioStore.setState({ selectedPostId: postId(post) });
+    usePortfolioStore.setState({
+      activeDetail: { kind: 'post', id: postId(post) },
+    });
     const { container } = render(<App />);
 
     const dialog = await screen.findByRole('dialog', {
@@ -111,16 +113,12 @@ describe('axe-core accessibility scans (forced 3D over canvas)', () => {
     const rendered = render(<App />);
     act(() =>
       usePortfolioStore.setState({
-        mode: '3d',
-        // A frame must actually have drawn: sceneReady is what flips the shell
+        activeDetail: null,
+        mode: '3d', // A frame must actually have drawn: sceneReady is what flips the shell
         // into diegetic mode, so these scans exercise the DOM mirrors, not the
         // fallback dialogs (the QA spec covers those fallbacks in a browser).
         sceneReady: true,
         pointerFine: true,
-        desktopOpen: false,
-        selectedPostId: null,
-        selectedProjectId: null,
-        climatePanelOpen: false,
         menuHoverRoute: null,
         menuFocusRoute: null,
         ...dialogState,
@@ -157,23 +155,29 @@ describe('axe-core accessibility scans (forced 3D over canvas)', () => {
     [
       'book',
       '#/experience',
-      { selectedPostId: postId(POSTS[0]!) },
+      { activeDetail: { kind: 'post', id: postId(POSTS[0]!) } },
       new RegExp(POSTS[0]!.title),
       'book',
     ],
     [
       'case',
       '#/projects',
-      { selectedProjectId: postId(PROJECTS[0]!) },
+      { activeDetail: { kind: 'project', id: postId(PROJECTS[0]!) } },
       new RegExp(PROJECTS[0]!.title),
       'case',
     ],
-    ['monitor', '#/about', { desktopOpen: true }, /About/, 'monitor'],
+    [
+      'monitor',
+      '#/about',
+      { activeDetail: { kind: 'about' } },
+      /About Sam/,
+      'monitor',
+    ],
     [
       'projector',
       '#/climate',
-      { climatePanelOpen: true },
-      /Climate details/,
+      { activeDetail: { kind: 'climate' } },
+      /Details/,
       'projector',
     ],
   ];
